@@ -5,6 +5,6 @@ python:
 install:
 - pip install .
 - pip install coveralls
-script: coverage run --source=pytroll-schedule setup.py test
+script: coverage run --source=trollsched setup.py test
 after_success: coveralls
 
