@@ -44,7 +44,7 @@ setup(name='pytroll-schedule',
       entry_points={
           'console_scripts': ['schedule = trollsched.schedule:run',]},
       packages = ['trollsched'],      
-      install_requires=['numpy', 'mpop', 'pyorbital'],
+      install_requires=['numpy', 'scipy', 'mpop', 'pyresample', 'pyorbital'],
       zip_safe=False,
       )
 
