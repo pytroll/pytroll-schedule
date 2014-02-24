@@ -23,7 +23,7 @@
 """Tests for scheduler.
 """
 
-from scheduler.tests import test_schedule, test_spherical
+from trollsched.tests import test_schedule, test_spherical
 
 import unittest
 

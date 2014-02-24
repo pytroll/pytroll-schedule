@@ -23,7 +23,7 @@
 """Test cases for spherical geometry.
 """
 
-from spherical import SphPolygon, get_twilight_poly, Arc, SCoordinate
+from trollsched.spherical import SphPolygon, Arc, SCoordinate
 import unittest
 import numpy as np
 

@@ -25,9 +25,9 @@
 from setuptools import setup
 import imp
 
-version = imp.load_source('pytroll_schedule.version', 'pytroll-schedule/version.py')
+version = imp.load_source('trollsched.version', 'trollsched/version.py')
 
-setup(name='scheduler',
+setup(name='pytroll-schedule',
       version=version.__version__,
       description='Scheduling satellite passes in Python',
       author='Martin Raspaud',
@@ -40,11 +40,11 @@ setup(name='scheduler',
                    "Programming Language :: Python",
                    "Topic :: Scientific/Engineering",
                    "Topic :: Scientific/Engineering :: Astronomy"],
-      test_suite='scheduler.tests.suite',
+      test_suite='trollsched.tests.suite',
       entry_points={
-          'console_scripts': ['schedule = pytroll_schedule.schedule:run',]},
-      packages = ['pytroll_schedule'],      
-      install_requires=['numpy', 'pyorbital'],
+          'console_scripts': ['schedule = trollsched.schedule:run',]},
+      packages = ['trollsched'],      
+      install_requires=['numpy', 'mpop', 'pyorbital'],
       zip_safe=False,
       )
 

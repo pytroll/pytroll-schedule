@@ -27,9 +27,8 @@ import unittest
 import numpy as np
 from datetime import datetime, timedelta
 
-from pyorbital.orbital import Orbital
-from schedule import Boundary, Pass, fermia, fermib, conflicting_passes
-from mpop.projector import get_area_def
+from trollsched.schedule import (Boundary,
+                                 fermia, fermib, conflicting_passes)
 
 #class TestPass(unittest.TestCase):
 

@@ -33,15 +33,16 @@ import numpy as np
 from mpop.projector import get_area_def
 from pyorbital import (orbital, geoloc, geoloc_instrument_definitions,
                        astronomy, tlefile)
-from scheduler.spherical import SphPolygon, get_twilight_poly
-from scheduler.graph import Graph
+from trollsched.spherical import SphPolygon, get_twilight_poly
+from trollsched.graph import Graph
 
 from ConfigParser import ConfigParser
 
 logger = logging.getLogger(__name__)
 
 class Mapper(object):
-
+    """A class to generate nice plots with basemap.
+    """
     def __init__(self):
         from mpl_toolkits.basemap import Basemap
 
@@ -63,7 +64,8 @@ class Mapper(object):
         pass
 
 class Boundary(object):
-
+    """Area boundary objects.
+    """
     def __init__(self, *sides):
         self.sides_lons, self.sides_lats = zip(*sides)
         self.sides_lons = list(self.sides_lons)
@@ -72,6 +74,8 @@ class Boundary(object):
         self._contour_poly = None
 
     def decimate(self, ratio):
+        """Remove some points in the boundaries, but never the corners.
+        """
         for i in range(len(self.sides_lons)):
             l = len(self.sides_lons[i])
             start = (l % ratio) / 2
@@ -110,9 +114,12 @@ class Boundary(object):
             self.draw(mapper, "-r")
 
 class SwathBoundary(Boundary):
-
+    """Boundaries for satellite overpasses.
+    """
     def get_instrument_points(self, overpass, utctime,
                               scans_nb, scanpoints, decimate=1):
+        """Get the boundary points for a given overpass.
+        """
         instrument = overpass.instrument
         # cheating at the moment.
         scan_angle = 55.37
@@ -124,7 +131,8 @@ class SwathBoundary(Boundary):
             scan_angle = 55.25
         instrument = "avhrr"
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
-        sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, decimate=decimate)
+        sgeom = instrument_fun(scans_nb, scanpoints,
+                               scan_angle=scan_angle, decimate=decimate)
         times = sgeom.times(utctime)
         pixel_pos = geoloc.compute_pixels((self.orb.tle._line1,
                                            self.orb.tle._line2),
@@ -947,7 +955,7 @@ def run():
     logging.getLogger('').setLevel(loglevel)
     logging.getLogger('').addHandler(handler)
 
-    logger = logging.getLogger("scheduler")
+    logger = logging.getLogger("trollsched")
 
     if opts.lon and opts.lat and opts.alt:
         coords = (opts.lon, opts.lat, opts.alt)
