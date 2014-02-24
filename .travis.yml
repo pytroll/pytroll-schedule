@@ -6,5 +6,8 @@ install:
 - pip install .
 - pip install coveralls
 script: coverage run --source=trollsched setup.py test
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran
 after_success: coveralls
 
