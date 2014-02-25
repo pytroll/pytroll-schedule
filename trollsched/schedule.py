@@ -856,14 +856,14 @@ def generate_xml_requests(sched, start, end, station_name):
 def generate_xml_file(sched, start, end, directory, station):
     """Create an xml request file.
     """
-    import lxml.etree as ET
+    import xml.etree.ElementTree as ET
     tree, reqtime = generate_xml_requests(sched, start, end, station)
     filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
                 + "-acquisition-schedule-request-"
                 + station + ".xml")
     filename = os.path.join(directory, filename)
     with open(filename, "w") as fp_:
-        fp_.write(ET.tostring(tree, pretty_print=True))
+        fp_.write(ET.tostring(tree))
 
 def parse_datetime(strtime):
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
