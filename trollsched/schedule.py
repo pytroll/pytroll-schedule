@@ -695,8 +695,6 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
 
-    # FIXME: take care of aqua dumps.
-
     for sat in satellites:
         satorb = orbital.Orbital(sat, tle_file=tle_file)
         orbitals[sat] = satorb
@@ -877,8 +875,9 @@ def read_config(filename):
 
     station = cfg.get("default", "station")
     satellites = cfg.get("default", "satellites").split(",")
-    forward = cfg.get("default", "forward")
-    print forward
+    forward = cfg.getfloat("default", "forward")
+    start = cfg.getfloat("default", "start")
+
     station_name = cfg.get(station, "name")
     station_lon = cfg.getfloat(station, "longitude")
     station_lat = cfg.getfloat(station, "latitude")
@@ -894,7 +893,7 @@ def read_config(filename):
 
     
     return ((station_lon, station_lat, station_alt),
-            sat_scores, station_name, area)
+            sat_scores, station_name, area, forward, start)
         
 def run():
     """The schedule command
@@ -911,9 +910,9 @@ def run():
     parser.add_argument("-v", "--verbose", help="print debug messages too",
                         action="store_true")
     parser.add_argument("-t", "--tle", help="tle file to use", default=None)
-    parser.add_argument("-f", "--forward", default=24.0, type=float,
+    parser.add_argument("-f", "--forward", type=float,
                         help="time ahead to compute the schedule")
-    parser.add_argument("-s", "--start-time", default=datetime.utcnow(),
+    parser.add_argument("-s", "--start-time",
                         type=parse_datetime,
                         help="start time of the schedule to compute")
     parser.add_argument("-d", "--delay", default=60, type=float,
@@ -931,7 +930,7 @@ def run():
     opts = parser.parse_args()
 
     if opts.config:
-        coords, scores, station, area = read_config(opts.config)
+        coords, scores, station, area, forward, start = read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -978,8 +977,14 @@ def run():
     logger.info("Computing next satellite passes")
     
     tle_file = opts.tle
-    allpasses = get_next_passes(satellites, opts.start_time,
-                                opts.forward, coords, tle_file)
+    if opts.forward:
+        forward = opts.forward
+    if opts.start_time:
+        start_time = opts.start_time
+    else:
+        start_time = datetime.utcnow() + timedelta(hours=start)
+    allpasses = get_next_passes(satellites, start_time,
+                                forward, coords, tle_file)
 
 
     logger.info("Computation of next overpasses done")
