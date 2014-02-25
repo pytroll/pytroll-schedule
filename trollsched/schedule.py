@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from pprint import pformat
 from scipy.optimize import brentq
 import numpy as np
-from mpop.projector import get_area_def
+from pyresample import utils
 from pyorbital import (orbital, geoloc, geoloc_instrument_definitions,
                        astronomy, tlefile)
 from trollsched.spherical import SphPolygon, get_twilight_poly
@@ -812,7 +812,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
 def generate_xml_requests(sched, start, end, station_name):
     """Create xml requests.
     """
-    import lxml.etree as ET
+    import xml.etree.ElementTree as ET
 
     sats = {"noaa 15": "noaa15",
             "noaa 16": "noaa16",
@@ -888,8 +888,13 @@ def read_config(filename):
     for sat in satellites:
         sat_scores[sat] = (cfg.getfloat(sat, "night"),
                            cfg.getfloat(sat, "day"))
-        
-    return (station_lon, station_lat, station_alt), sat_scores, station_name
+    
+    area = utils.parse_area_file(cfg.get(station, "area_file"),
+                                 cfg.get(station, "area"))[0]
+
+    
+    return ((station_lon, station_lat, station_alt),
+            sat_scores, station_name, area)
         
 def run():
     """The schedule command
@@ -926,7 +931,7 @@ def run():
     opts = parser.parse_args()
 
     if opts.config:
-        coords, scores, station = read_config(opts.config)
+        coords, scores, station, area = read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -981,7 +986,6 @@ def run():
 
     logger.debug(str(sorted(allpasses)))
 
-    area = get_area_def("euron1")
     lons, lats = area.get_boundary_lonlats()
     area_boundary = Boundary((lons.side1, lats.side1),
                              (lons.side2, lats.side2),

@@ -24,8 +24,15 @@
 """
 from setuptools import setup
 import imp
+import sys
 
 version = imp.load_source('trollsched.version', 'trollsched/version.py')
+
+requires = ['numpy', 'scipy', 'pyresample', 'pyorbital']
+
+if sys.version_info < (2, 7):
+    # multiprocessing is not in the standard library
+    requirements.append('argparse')
 
 setup(name='pytroll-schedule',
       version=version.__version__,
@@ -43,8 +50,8 @@ setup(name='pytroll-schedule',
       test_suite='trollsched.tests.suite',
       entry_points={
           'console_scripts': ['schedule = trollsched.schedule:run',]},
-      packages = ['trollsched'],      
-      install_requires=['numpy', 'scipy', 'mpop', 'pyresample', 'pyorbital'],
+      packages=['trollsched'],      
+      install_requires=requires,
       zip_safe=False,
       )
 
