@@ -1013,8 +1013,8 @@ def run():
         generate_sch_file(opts.scisys, allpasses, coords)
 
     if opts.xml:
-        generate_xml_file(allpasses, opts.start_time,
-                          opts.start_time + timedelta(hours=opts.forward),
+        generate_xml_file(allpasses, start_time,
+                          start_time + timedelta(hours=forward),
                           opts.xml, station)
     
     #graph.save("my_graph")
