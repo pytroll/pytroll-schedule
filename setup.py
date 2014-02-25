@@ -32,7 +32,7 @@ requires = ['numpy', 'scipy', 'pyresample', 'pyorbital']
 
 if sys.version_info < (2, 7):
     # multiprocessing is not in the standard library
-    requirements.append('argparse')
+    requires.append('argparse')
 
 setup(name='pytroll-schedule',
       version=version.__version__,
