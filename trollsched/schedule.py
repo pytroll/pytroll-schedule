@@ -964,6 +964,7 @@ def generate_xml_file(sched, start, end, directory, station):
     filename = os.path.join(directory, filename)
     with open(filename, "w") as fp_:
         fp_.write(ET.tostring(tree))
+    return filename
 
 def parse_datetime(strtime):
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
@@ -1025,7 +1026,7 @@ def run():
     group = parser.add_argument_group(title="output")
     group.add_argument("-x", "--xml", default=".",
                         help="generate an xml request file and"
-                       " put it in this directory")
+                       " put it in this directory. Could be a url")
     group.add_argument("--scisys", default=None,
                         help="path to the schedule file")
                         
@@ -1115,10 +1116,28 @@ def run():
         generate_sch_file(opts.scisys, allpasses, coords)
 
     if opts.xml:
-        generate_xml_file(allpasses, start_time,
-                          start_time + timedelta(hours=forward),
-                          opts.xml, station)
-    
+        url = urlparse.urlparse(opts.xml)
+        if url.scheme not in ["file", ""]:
+            directory = "/tmp"
+        else:
+            directory = url.path
+        xmlfile = generate_xml_file(allpasses, start_time,
+                                    start_time + timedelta(hours=forward),
+                                    directory, station)
+
+        pathname, filename = os.path.split(xmlfile)
+        del pathname
+        if url.scheme in ["file", ""]:
+            pass
+        elif url.scheme == "ftp":
+            session = ftplib.FTP(url.hostname, url.username, url.password)
+            with open(xmlfile, "rb"):
+                session.storbinary('STOR ' + str(filename), file)
+            session.quit()
+        else:
+            logger.error("Cannot save to " + str(url.scheme)
+                         + ", but file is now in /tmp")
+        
     #graph.save("my_graph")
 if __name__ == '__main__':
     run()
