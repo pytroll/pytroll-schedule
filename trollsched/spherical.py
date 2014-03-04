@@ -264,6 +264,8 @@ class Arc(object):
             b__ = self.end
             c__ = other_arc.start
             d__ = other_arc.end
+            if i in [a__, b__, c__, d__]:
+                return i
 
             ab_ = a__.hdistance(b__)
             cd_ = c__.hdistance(d__)

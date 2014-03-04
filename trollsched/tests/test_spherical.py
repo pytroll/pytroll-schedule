@@ -58,6 +58,19 @@ class TestArc(unittest.TestCase):
 
         self.assertTrue(arc1.intersection(arc1) is None)
 
+        arc1 = Arc(SCoordinate(np.deg2rad(24.341215776575297),
+                               np.deg2rad(44.987819588259327)),
+                   SCoordinate(np.deg2rad(18.842727517611817),
+                               np.deg2rad(46.512483610284178)))
+        arc2 = Arc(SCoordinate(np.deg2rad(20.165961750361905),
+                               np.deg2rad(46.177305385810541)),
+                   SCoordinate(np.deg2rad(20.253297585831707),
+                               np.deg2rad(50.935830837274324)))
+        inter = SCoordinate(np.deg2rad(20.165957021925202),
+                            np.deg2rad(46.177022633103398))
+        self.assertEquals(arc1.intersection(arc2), inter)
+
+
 
     def test_angle(self):
         arc1 = Arc(SCoordinate(np.deg2rad(157.5),
