@@ -679,8 +679,70 @@ def generate_sch_file(output_file, overpasses, coords):
     
         for overpass in sorted(overpasses):
             out.write(overpass.print_vcs(coords) + "\n")
-
             
+HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/aqua/downlink/"
+import urlparse
+import ftplib
+import socket
+
+def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
+    url = urlparse.urlparse(HOST)
+    try:
+        f = ftplib.FTP(url.netloc)
+    except (socket.error, socket.gaierror), e:
+        logger.error('cannot reach to %s ' % HOST + str(e))
+        return []
+
+    logger.debug("Connect to ftp server")
+
+    try:
+        f.login('anonymous','guest')
+    except ftplib.error_perm:
+        logger.error('cannot login anonymously')
+        f.quit()
+        return []
+    logger.debug("logged on to the ftp server")
+
+    data = []
+
+    f.dir(url.path, data.append)
+    
+    filenames = [line.split()[-1] for line in data]
+    dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
+             for filename in filenames]
+    filedates = dict(zip(dates, filenames))
+
+    dumps = []
+
+    for date in sorted(dates):
+        lines = []
+        if not filedates[date].endswith(".rpt"):
+            continue
+        if not os.path.exists(os.path.join("/tmp", filedates[date])):
+            f.retrlines('RETR ' + os.path.join(url.path, filedates[date]), lines.append)
+            with open(os.path.join("/tmp", filedates[date]), "w") as fd_:
+                for line in lines:
+                    fd_.write(line + "\n")
+        else:
+            with open(os.path.join("/tmp", filedates[date]), "r") as fd_:
+                for line in fd_:
+                    lines.append(line)
+
+        for line in lines[7::2]:
+            if line.strip() == '':
+                break
+            station, aos, elev, los = line.split()[:4]
+            aos = datetime.strptime(aos, "%Y:%j:%H:%M:%S")
+            los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
+            if los >= start_time and aos <= end_time:
+                uptime = aos + (los - aos) / 2
+                overpass = Pass("aqua", aos, los, satorb, uptime, "modis")
+                overpass.station = station
+                overpass.max_elev = elev
+                dumps.append(overpass)
+    return dumps
+            
+
 def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
     passes = {}
     orbitals = {}
@@ -726,6 +788,15 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
         elif sat == "aqua":
+            
+            wpcoords = (-75.457222, 37.938611, 0)
+            passlist_wp = satorb.get_next_passes(utctime - timedelta(minutes=30),
+                                                 forward + 1,
+                                                 *wpcoords,
+                                                 tol=0.001)
+            wp_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                         for rtime, ftime, uptime in passlist_wp]
+            
             svcoords = (15.399, 78.228, 0)
             passlist_sv = satorb.get_next_passes(utctime - timedelta(minutes=30),
                                                  forward + 1,
@@ -744,10 +815,41 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
             aqua_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                            for rtime, ftime, uptime in passlist]
 
+            dumps = get_aqua_dumps_from_ftp(utctime - timedelta(minutes=30),
+                                            utctime + timedelta(hours=forward+0.5),
+                                            satorb)
+
+            # remove the known dumps
+            for dump in dumps:
+                #print "*", dump.station, dump, dump.max_elev
+                logger.debug("dump from ftp: " + str((dump.station, dump,
+                                                      dump.max_elev)))
+                for i, sv_pass in enumerate(sv_passes):
+                    if sv_pass.overlaps(dump, timedelta(minutes=40)):
+                        sv_elevation = sv_pass.orb.get_observer_look(sv_pass.uptime,
+                                                                     *svcoords)[1]
+                        logger.debug("Computed " +str(("SG", sv_pass,
+                                                       sv_elevation)))
+                        del sv_passes[i]
+                for i, pf_pass in enumerate(pf_passes):
+                    if pf_pass.overlaps(dump, timedelta(minutes=40)):
+                        pf_elevation = pf_pass.orb.get_observer_look(pf_pass.uptime,
+                                                                     *pfcoords)[1]
+                        logger.debug("Computed " +str(("PF", pf_pass,
+                                                       pf_elevation)))
+                        del pf_passes[i]
+                for i, wp_pass in enumerate(wp_passes):
+                    if wp_pass.overlaps(dump, timedelta(minutes=40)):
+                        wp_elevation = wp_pass.orb.get_observer_look(wp_pass.uptime,
+                                                                     *wpcoords)[1]
+                        logger.debug("Computed " +str(("WP", wp_pass,
+                                                       wp_elevation)))
+                        del wp_passes[i]
+                        
             # sort out dump passes first
             # between sv an pf, we take the one with the highest elevation if
             # pf < 20°, pf otherwise
-            dumps = []
+            # I think wp is also used if sv is the only other alternative
             used_pf = []
             for sv_pass in sv_passes:
                 found_pass = False
