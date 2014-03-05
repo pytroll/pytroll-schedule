@@ -691,27 +691,39 @@ import socket
 
 def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     url = urlparse.urlparse(HOST)
+    logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP(url.netloc)
     except (socket.error, socket.gaierror), e:
         logger.error('cannot reach to %s ' % HOST + str(e))
-        return []
+        f = None
 
-    logger.debug("Connect to ftp server")
 
-    try:
-        f.login('anonymous','guest')
-    except ftplib.error_perm:
-        logger.error('cannot login anonymously')
-        f.quit()
-        return []
-    logger.debug("logged on to the ftp server")
+    if f is not None:
+        try:
+            f.login('anonymous','guest')
+            logger.debug("Logged in")
+        except ftplib.error_perm:
+            logger.error('cannot login anonymously')
+            f.quit()
+            f = None
 
-    data = []
 
-    f.dir(url.path, data.append)
-    
-    filenames = [line.split()[-1] for line in data]
+    if f is not None:
+        data = []        
+        try:
+            f.dir(url.path, data.append)
+        except socket.error, e:
+            logger.error("Can't get any data: " + str(e))
+            f.quit()
+            f = None
+        else:
+            filenames = [line.split()[-1] for line in data]
+
+    if f is None:
+        logger.info("Can't access ftp server, using cached data")
+        filenames = glob.glob("/tmp/*.rpt")
+        
     dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
              for filename in filenames]
     filedates = dict(zip(dates, filenames))
@@ -744,6 +756,8 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
                 overpass.station = station
                 overpass.max_elev = elev
                 dumps.append(overpass)
+    if f is not None:
+        f.quit()
     return dumps
             
 
