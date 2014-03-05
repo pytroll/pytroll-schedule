@@ -24,6 +24,7 @@
 """
 from tempfile import mkstemp
 import logging
+import logging.handlers
 import operator
 import os
 from datetime import datetime, timedelta
@@ -1006,13 +1007,17 @@ def run():
     """The schedule command
     """
     import argparse
-
+    global logger
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("--lon", help="Longitude, degrees east", type=float)
     parser.add_argument("--lat", help="Latitude, degrees north", type=float)
     parser.add_argument("--alt", help="Altitude, km", type=float)
     parser.add_argument("-l", "--log",
                         help="File to log to (defaults to stdout)",
+                        default=None)
+    parser.add_argument("-m", "--mail", nargs="*",
+                        help="mail address(es) to send error messages to.",
                         default=None)
     parser.add_argument("-v", "--verbose", help="print debug messages too",
                         action="store_true")
@@ -1065,6 +1070,15 @@ def run():
     handler.setLevel(loglevel)
     logging.getLogger('').setLevel(loglevel)
     logging.getLogger('').addHandler(handler)
+
+    if opts.mail:
+        mhandler = logging.handlers.SMTPHandler("localhost",
+                                                "martin.raspaud@smhi.se",
+                                                opts.mail,
+                                                "Scheduler")
+        mhandler.setLevel(logging.WARNING)
+        logging.getLogger('').addHandler(mhandler)
+
 
     logger = logging.getLogger("trollsched")
 
@@ -1144,4 +1158,9 @@ def run():
         
     #graph.save("my_graph")
 if __name__ == '__main__':
-    run()
+    try:
+        run()
+    except:
+        logger.exception("Something wrong happened!")
+        raise
+
