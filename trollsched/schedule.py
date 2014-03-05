@@ -38,6 +38,7 @@ from trollsched.spherical import SphPolygon, get_twilight_poly
 from trollsched.graph import Graph
 
 from ConfigParser import ConfigParser
+import glob
 
 logger = logging.getLogger(__name__)
 
