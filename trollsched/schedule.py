@@ -1150,7 +1150,7 @@ def run():
         elif url.scheme == "ftp":
             session = ftplib.FTP(url.hostname, url.username, url.password)
             with open(xmlfile, "rb"):
-                session.storbinary('STOR ' + str(filename), file)
+                session.storbinary('STOR ' + str(filename), xmlfile)
             session.quit()
         else:
             logger.error("Cannot save to " + str(url.scheme)
