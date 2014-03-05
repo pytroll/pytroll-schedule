@@ -1142,19 +1142,19 @@ def run():
         xmlfile = generate_xml_file(allpasses, start_time,
                                     start_time + timedelta(hours=forward),
                                     directory, station)
-
+        logger.info("Generated " + str(xmlfile))
         pathname, filename = os.path.split(xmlfile)
         del pathname
         if url.scheme in ["file", ""]:
             pass
         elif url.scheme == "ftp":
             session = ftplib.FTP(url.hostname, url.username, url.password)
-            with open(xmlfile, "rb"):
-                session.storbinary('STOR ' + str(filename), xmlfile)
+            with open(xmlfile, "rb") as xfile:
+                session.storbinary('STOR ' + str(filename), xfile)
             session.quit()
         else:
             logger.error("Cannot save to " + str(url.scheme)
-                         + ", but file is now in /tmp")
+                         + ", but file is there" + str(xmlfile))
         
     #graph.save("my_graph")
 if __name__ == '__main__':
