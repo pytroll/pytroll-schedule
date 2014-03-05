@@ -264,14 +264,14 @@ class Arc(object):
             b__ = self.end
             c__ = other_arc.start
             d__ = other_arc.end
-            if i in [a__, b__, c__, d__]:
-                return i
 
             ab_ = a__.hdistance(b__)
             cd_ = c__.hdistance(d__)
 
-            if(abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON and
-               abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON):
+            if(((i in (a__, b__)) or
+                (abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON)) and
+               ((i in (c__, d__)) or
+                (abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON))):
                 return i
         return None
 
@@ -421,18 +421,18 @@ class SphPolygon(object):
 
             if np.sign(arc1.angle(arc2)) != sign :
                 arcs1, arcs2 = arcs2, arcs1
-                #if nodes[-1] != inter:
+
             nodes.append(inter)
 
             for edge1 in arcs1:
                 inter, edge2 = edge1.get_next_intersection(arcs2, inter)
-                
+
                 if inter is not None:
                     break
-                if len(nodes) > 0 and nodes[-1] != edge1.end:
+                elif len(nodes) > 0 and nodes[-1] != edge1.end:
                     nodes.append(edge1.end)
-                    
-            if inter is None and len(nodes) > 2 and nodes[0] == nodes[-1]:
+            
+            if inter is None and len(nodes) > 2 and nodes[-1] == nodes[0]:
                 nodes = nodes[:-1]
                 break
             if inter == nodes[0]:
