@@ -40,6 +40,9 @@ from ConfigParser import ConfigParser
 
 logger = logging.getLogger(__name__)
 
+# shortest allowed pass in minutes
+MIN_PASS = 4
+
 class Mapper(object):
     """A class to generate nice plots with basemap.
     """
@@ -784,7 +787,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                     if new_rise is not None and new_rise < overpass.falltime:
                         overpass.risetime = new_rise
                         overpass.boundary = SwathBoundary(overpass)
-                        if overpass.seconds() > 120:
+                        if overpass.seconds() > MIN_PASS * 60:
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
         elif sat == "aqua":
@@ -898,12 +901,13 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                         if overpass.falltime <= overpass.risetime:
                             add = False
                             logger.debug("skipping " + str(overpass))
-                if add and overpass.seconds() > 120:                    
+                if add and overpass.seconds() > MIN_PASS * 60:                    
                     passes["aqua"].append(overpass)
 
         else:
             passes[sat] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                           for rtime, ftime, uptime in passlist]
+                           for rtime, ftime, uptime in passlist
+                           if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
             
     return set(reduce(operator.concat, passes.values()))
