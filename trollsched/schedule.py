@@ -965,7 +965,7 @@ def generate_xml_requests(sched, start, end, station_name):
     reqon = ET.SubElement(props, "requested-on")
     reqon.text = reqtime.strftime(eum_format)
     for overpass in sorted(sched):
-        if overpass.rec:
+        if overpass.rec and overpass.risetime > start:
             ovpass = ET.SubElement(root, "pass")
             ovpass.set("satellite", sats[overpass.satellite])
             ovpass.set("start-time", overpass.risetime.strftime(eum_format))
@@ -1118,7 +1118,7 @@ def run():
     if opts.start_time:
         start_time = opts.start_time
     else:
-        start_time = datetime.utcnow() + timedelta(hours=start)
+        start_time = datetime.utcnow()# + timedelta(hours=start)
     allpasses = get_next_passes(satellites, start_time,
                                 forward, coords, tle_file)
 
