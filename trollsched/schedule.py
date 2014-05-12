@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Scheduling 
+"""Scheduling
 """
 from tempfile import mkstemp
 import logging
@@ -29,7 +29,6 @@ import operator
 import os
 from datetime import datetime, timedelta
 from pprint import pformat
-from scipy.optimize import brentq
 import numpy as np
 from pyresample import utils
 from pyorbital import (orbital, geoloc, geoloc_instrument_definitions,
@@ -75,7 +74,7 @@ class Boundary(object):
         self.sides_lons, self.sides_lats = zip(*sides)
         self.sides_lons = list(self.sides_lons)
         self.sides_lats = list(self.sides_lats)
-        
+
         self._contour_poly = None
 
     def decimate(self, ratio):
@@ -85,7 +84,7 @@ class Boundary(object):
             l = len(self.sides_lons[i])
             start = (l % ratio) / 2
             points = np.concatenate(([0], np.arange(start, l, ratio), [l-1]))
-            
+
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
 
@@ -105,18 +104,26 @@ class Boundary(object):
         if self._contour_poly is None:
             self._contour_poly = SphPolygon(np.deg2rad(np.vstack(self.contour()).T))
         return self._contour_poly
-    
+
     def draw(self, mapper, options):
         """Draw the current boundary on the *mapper*
         """
         self.contour_poly().draw(mapper, options)
 
-    def show(self):
+    def show(self, poly=None, other_poly=None):
         """Show the current boundary.
         """
-        
+
+        import matplotlib.pyplot as plt
+        plt.clf()
         with Mapper() as mapper:
             self.draw(mapper, "-r")
+            if poly is not None:
+                poly.draw(mapper, "-b")
+            if other_poly is not None:
+                other_poly.draw(mapper, "-g")
+        plt.show()
+
 
 class SwathBoundary(Boundary):
     """Boundaries for satellite overpasses.
@@ -143,7 +150,7 @@ class SwathBoundary(Boundary):
                                            self.orb.tle._line2),
                                           sgeom, times)
         lons, lats, alts = geoloc.get_lonlatalt(pixel_pos, times)
-        
+
         del alts
         return (lons.reshape(-1, len(scanpoints)),
                 lats.reshape(-1, len(scanpoints)))
@@ -241,7 +248,7 @@ class Pass(object):
 
     def __init__(self, satellite, risetime, falltime, orb=None, uptime=None, instrument=None):
         """
-        
+
         Arguments:
         - `satellite`:
         - `risetime`:
@@ -261,7 +268,7 @@ class Pass(object):
         self.subsattrack = {"start": None,
                             "end": None}
         self.rec = False
-        
+
     def overlaps(self, other, delay=timedelta(seconds=0)):
         """Check if two passes overlap.
         """
@@ -315,17 +322,26 @@ class Pass(object):
     def slsearch(self, sublat):
         """Find sublatitude.
         """
-    
+
         def nadirlat(minutes):
             return self.orb.get_lonlatalt(self.risetime +
                                           timedelta(minutes=minutes))[1] - sublat
 
+        def get_root(fun, start, end):
+            p = np.polyfit([start, (start + end) / 2.0, end],
+                           [fun(start), fun((start + end) / 2), fun(end)],
+                           2)
+            for root in np.roots(p):
+                if root <= end and root >= start:
+                    return root
+
+
         arr = np.array([nadirlat(m) for m in range(15)])
         a = np.where(np.diff(np.sign(arr)))[0]
         for guess in a:
-            sublat_mins = brentq(nadirlat, guess, guess + 1)
+            sublat_mins = get_root(nadirlat, guess, guess + 1)
             return self.risetime + timedelta(minutes=sublat_mins)
-        
+
     def area_coverage(self, area_of_interest):
         """Get the score depending on the coverage of the area of interest.
         """
@@ -344,21 +360,22 @@ class Pass(object):
                                  + self.falltime.isoformat()) + ".pdf")
         if not overwrite and os.path.exists(filename):
             return filename
-        
+
         import matplotlib.pyplot as plt
         plt.clf()
+        #plt.xkcd()
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "-r")
             if poly is not None:
                 poly.draw(mapper, "-b")
         plt.title(str(self))
-        for label in (labels or []):
+        for label in labels or []:
             plt.figtext(*label[0], **label[1])
         plt.savefig(filename)
         return filename
 
-    def show(self, poly=None, labels=None):
+    def show(self, poly=None, labels=None, other_poly=None):
         """Show the current pass on screen (matplotlib, basemap).
         """
         import matplotlib.pyplot as plt
@@ -368,6 +385,8 @@ class Pass(object):
             self.draw(mapper, "-r")
             if poly is not None:
                 poly.draw(mapper, "-b")
+            if other_poly is not None:
+                other_poly.draw(mapper, "-g")
         plt.title(str(self))
         for label in (labels or []):
             plt.figtext(*label[0], **label[1])
@@ -386,7 +405,7 @@ class Pass(object):
 #
 NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des N   N   none                  0 19580101 000000 20131204 001450 20131204 003003 15.2
 
-        
+
         """
 
         max_elevation = self.orb.get_observer_look(self.uptime, *coords)[1]
@@ -408,7 +427,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
                      "{risetime}",
                      "{falltime}",
                      "{duration:>4.1f}",
-                     ]                     
+                     ]
         line = " ".join(line_list).format(
             satellite=self.satellite.upper(),
             orbit=self.orb.get_orbit_number(self.risetime),
@@ -420,7 +439,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
             rec=rec,
             direction=self.pass_direction().capitalize()[:3])
         return line
-        
+
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
     """
@@ -465,7 +484,7 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
         for j in range(i+1, order):
             if not overpass.overlaps(passes[j], delay):
                 graph.add_edge(i, j)
-    
+
     groups = []
     for res in graph.bron_kerbosch(set(), set(graph.vertices), set()):
         grp = []
@@ -609,7 +628,7 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
     ncgrs = [get_non_conflicting_groups(gr, delay) for gr in grs]
 
     n_vertices = len(passes)
-    
+
     graph = Graph(n_vertices=n_vertices + 2)
 
 
@@ -618,7 +637,7 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
                      " and " + str(p2) + "...")
         w = combine(p1, p2, area_of_interest, scores)
         logger.debug("...with weight " + str(w))
-        
+
         with open("/tmp/schedule.gv", "a") as fp_:
             fp_.write('        "' + str(p1) + '" -> "' + str(p2) +
                       '" [ label = "' + str(w) + '" ];\n')
@@ -647,12 +666,12 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
         graph.add_arc(passes.index(pr) + 1, n_vertices + 1)
     for first in ncgrs[0][0]:
         graph.add_arc(0, passes.index(first) + 1)
-    
+
     dist, path = graph.dag_longest_path(0, n_vertices + 1)
 
     del dist
     return [passes[idx - 1] for idx in path[1:-1]], graph
-        
+
 
 def argmax(iterable):
     return max((x, i) for i, x in enumerate(iterable))[1]
@@ -671,7 +690,7 @@ def generate_sch_file(output_file, overpasses, coords):
         # create epochs
         out.write("#Orbital elements\n#\n#SCName           Epochtime\n#\n")
         satellites = set()
-        
+
         for overpass in overpasses:
             epoch = "!{0:<16} {1}".format(overpass.satellite.upper(),
                                           overpass.orb.tle.epoch.strftime("%Y%m%d %H%M%S"))
@@ -681,10 +700,10 @@ def generate_sch_file(output_file, overpasses, coords):
         out.write("#\n#\n#Pass List\n#\n")
 
         out.write("#SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration\n#\n")
-    
+
         for overpass in sorted(overpasses):
             out.write(overpass.print_vcs(coords) + "\n")
-            
+
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/aqua/downlink/"
 import urlparse
 import ftplib
@@ -711,7 +730,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
 
 
     if f is not None:
-        data = []        
+        data = []
         try:
             f.dir(url.path, data.append)
         except socket.error, e:
@@ -724,7 +743,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     if f is None:
         logger.info("Can't access ftp server, using cached data")
         filenames = glob.glob("/tmp/*.rpt")
-        
+
     dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
              for filename in filenames]
     filedates = dict(zip(dates, filenames))
@@ -760,7 +779,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     if f is not None:
         f.quit()
     return dumps
-            
+
 
 def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
     passes = {}
@@ -771,7 +790,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
         os.close(fp_)
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
-        
+
     if not os.path.exists(tle_file):
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
@@ -781,8 +800,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
         orbitals[sat] = satorb
         passlist = satorb.get_next_passes(utctime,
                                           forward,
-                                          *coords,
-                                          tol=0.001)
+                                          *coords)
         if sat.startswith("metop") or sat.startswith("noaa"):
             instrument = "avhrr"
         elif sat in ["aqua", "terra"]:
@@ -807,30 +825,27 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
         elif sat == "aqua":
-            
+
             wpcoords = (-75.457222, 37.938611, 0)
             passlist_wp = satorb.get_next_passes(utctime - timedelta(minutes=30),
                                                  forward + 1,
-                                                 *wpcoords,
-                                                 tol=0.001)
+                                                 *wpcoords)
             wp_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                          for rtime, ftime, uptime in passlist_wp]
-            
+
             svcoords = (15.399, 78.228, 0)
             passlist_sv = satorb.get_next_passes(utctime - timedelta(minutes=30),
                                                  forward + 1,
-                                                 *svcoords,
-                                                 tol=0.001)
+                                                 *svcoords)
             sv_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                          for rtime, ftime, uptime in passlist_sv]
             pfcoords = (-147.43, 65.12, 0.51)
             passlist_pf = satorb.get_next_passes(utctime - timedelta(minutes=30),
                                                  forward + 1,
-                                                 *pfcoords,
-                                                 tol=0.001)
+                                                 *pfcoords)
             pf_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                          for rtime, ftime, uptime in passlist_pf]
-            
+
             aqua_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                            for rtime, ftime, uptime in passlist]
 
@@ -864,7 +879,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                         logger.debug("Computed " +str(("WP", wp_pass,
                                                        wp_elevation)))
                         del wp_passes[i]
-                        
+
             # sort out dump passes first
             # between sv an pf, we take the one with the highest elevation if
             # pf < 20°, pf otherwise
@@ -917,7 +932,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                         if overpass.falltime <= overpass.risetime:
                             add = False
                             logger.debug("skipping " + str(overpass))
-                if add and overpass.seconds() > MIN_PASS * 60:                    
+                if add and overpass.seconds() > MIN_PASS * 60:
                     passes["aqua"].append(overpass)
 
         else:
@@ -925,7 +940,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                            for rtime, ftime, uptime in passlist
                            if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
-            
+
     return set(reduce(operator.concat, passes.values()))
 
 
@@ -938,8 +953,8 @@ def generate_xml_requests(sched, start, end, station_name):
             "noaa 16": "noaa16",
             "noaa 18": "noaa18",
             "noaa 19": "noaa19",
-            "metop-a": "metopa",
-            "metop-b": "metopb",
+            "metop-a": "metop-a",
+            "metop-b": "metop-b",
             "terra": "terra",
             "aqua": "aqua",
             "suomi npp": "npp",
@@ -967,7 +982,8 @@ def generate_xml_requests(sched, start, end, station_name):
     for overpass in sorted(sched):
         if overpass.rec and overpass.risetime > start:
             ovpass = ET.SubElement(root, "pass")
-            ovpass.set("satellite", sats[overpass.satellite])
+            ovpass.set("satellite", sats.get(overpass.satellite,
+                                             overpass.satellite))
             ovpass.set("start-time", overpass.risetime.strftime(eum_format))
             ovpass.set("end-time", overpass.falltime.strftime(eum_format))
 
@@ -987,6 +1003,8 @@ def generate_xml_file(sched, start, end, directory, station):
     return filename
 
 def parse_datetime(strtime):
+    """Parse the time string *strtime*
+    """
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
 
 def read_config(filename):
@@ -1010,20 +1028,20 @@ def read_config(filename):
     for sat in satellites:
         sat_scores[sat] = (cfg.getfloat(sat, "night"),
                            cfg.getfloat(sat, "day"))
-    
+
     area = utils.parse_area_file(cfg.get(station, "area_file"),
                                  cfg.get(station, "area"))[0]
 
-    
+
     return ((station_lon, station_lat, station_alt),
             sat_scores, station_name, area, forward, start)
-        
+
 def run():
     """The schedule command
     """
     import argparse
     global logger
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--lon", help="Longitude, degrees east", type=float)
     parser.add_argument("--lat", help="Latitude, degrees north", type=float)
@@ -1053,7 +1071,7 @@ def run():
                        " put it in this directory. Could be a url")
     group.add_argument("--scisys", default=None,
                         help="path to the schedule file")
-                        
+
     opts = parser.parse_args()
 
     if opts.config:
@@ -1062,7 +1080,7 @@ def run():
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
                      "configuration file.")
-        
+
     if not (opts.xml or opts.scisys):
         parser.error("No output specified, use '--scisys' or '-x/--xml'")
 
@@ -1081,7 +1099,7 @@ def run():
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
-        
+
     handler.setLevel(loglevel)
     logging.getLogger('').setLevel(loglevel)
     logging.getLogger('').addHandler(handler)
@@ -1104,14 +1122,16 @@ def run():
     # test line
     # python schedule.py -v 16.148649 58.581844 0.052765 -f 216 -s 20140118140000 -t tle_20140120.txt -x . --scisys myched.txt
 
-    satellites = ["noaa 19", "noaa 18", "noaa 16", "noaa 15",
-                  "metop-a", "metop-b",
-                  "terra", "aqua",
-                  "suomi npp"]
+    satellites = scores.keys()
+
+    # satellites = ["noaa 19", "noaa 18", "noaa 16", "noaa 15",
+    #               "metop-a", "metop-b",
+    #               "terra", "aqua",
+    #               "suomi npp"]
 
 
     logger.info("Computing next satellite passes")
-    
+
     tle_file = opts.tle
     if opts.forward:
         forward = opts.forward
@@ -1138,13 +1158,13 @@ def run():
     logger.info("computing best schedule for area euron1")
     schedule, graph = get_best_sched(allpasses, area, scores,
                                      timedelta(seconds=opts.delay))
-    
+
 
     logger.debug(pformat(schedule))
     for opass in schedule:
         opass.rec = True
     logger.info("generating file")
-    
+
     if opts.scisys:
         generate_sch_file(opts.scisys, allpasses, coords)
 
@@ -1170,7 +1190,7 @@ def run():
         else:
             logger.error("Cannot save to " + str(url.scheme)
                          + ", but file is there" + str(xmlfile))
-        
+
     #graph.save("my_graph")
 if __name__ == '__main__':
     try:

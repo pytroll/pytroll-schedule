@@ -28,7 +28,7 @@ import sys
 
 version = imp.load_source('trollsched.version', 'trollsched/version.py')
 
-requires = ['numpy', 'scipy', 'pyresample', 'pyorbital']
+requires = ['numpy', 'pyresample', 'pyorbital']
 
 if sys.version_info < (2, 7):
     # multiprocessing is not in the standard library
