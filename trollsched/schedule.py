@@ -50,8 +50,8 @@ class Mapper(object):
     def __init__(self):
         from mpl_toolkits.basemap import Basemap
 
-        self.map = Basemap(projection='nsper', lat_0 = 58, lon_0 = 16,
-                           resolution = 'l', area_thresh = 1000.)
+        self.map = Basemap(projection='nsper', lat_0=58, lon_0=16,
+                           resolution='l', area_thresh=1000.)
 
         self.map.drawcoastlines()
         self.map.drawcountries()
@@ -998,8 +998,13 @@ def generate_xml_file(sched, start, end, directory, station):
                 + "-acquisition-schedule-request-"
                 + station + ".xml")
     filename = os.path.join(directory, filename)
-    with open(filename, "w") as fp_:
+    tmp_filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
+                    + "-acquisition-schedule-request-"
+                    + station + ".tmp")
+    tmp_filename = os.path.join(directory, tmp_filename)
+    with open(tmp_filename, "w") as fp_:
         fp_.write(ET.tostring(tree))
+    os.rename(tmp_filename, filename)
     return filename
 
 def parse_datetime(strtime):
