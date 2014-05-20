@@ -27,6 +27,8 @@ import logging
 import logging.handlers
 import pyinotify
 import sys
+import os
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -92,9 +94,12 @@ def compare(file1, file2):
     import xml.etree.ElementTree as ET
     xml1 = ET.parse(file1).getroot()
     xml2 = ET.parse(file2).getroot()
-    if xml_compare(xml1, xml2, logger.warning,
-                   ["confirmed-by", "confirmed-on"]):
+    if xml_compare(xml1, xml2, logger.error,
+                   ["confirmed-by", "confirmed-on", "properties"]):
         logger.info("All passes confirmed.")
+        return True
+    else:
+        return False
 
 
 import fnmatch
@@ -129,7 +134,9 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log", help="file to log to")
     parser.add_argument("-w", "--watch",
                         help="directory to watch for new confirmation files")
-
+    parser.add_argument("-r", "--most-recent",
+                        help="check the most recent request against the" +
+                        " corresponding confirmation, from the given directory")
     opts = parser.parse_args()
 
     if opts.log:
@@ -175,3 +182,16 @@ if __name__ == '__main__':
         notifier.loop()
 
 
+    if opts.most_recent:
+        logger.debug("looking for most recent file in " +
+                     os.path.join(opts.most_recent, "*request*.xml"))
+        filelist = glob.glob(os.path.join(opts.most_recent, "*request*.xml"))
+        newest = max(filelist, key=lambda x: os.stat(x).st_mtime)
+        logger.debug("checking " + newest)
+        confname = newest[:-15] + "confirmation" +  newest[-8:]
+        logger.debug("against " + confname)
+        try:
+            compare(newest, confname)
+        except IOError:
+            logger.exception("Something went wrong!") 
+        
