@@ -119,7 +119,7 @@ def compare(file1, file2):
 #     def process_IN_MOVED_TO(self, event):
 #         self.process_IN_CLOSE_WRITE(event)
 
-if __name__ == '__main__':
+def run():
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -202,3 +202,5 @@ if __name__ == '__main__':
         except IOError:
             logger.exception("Something went wrong!") 
 
+if __name__ == '__main__':
+    run()

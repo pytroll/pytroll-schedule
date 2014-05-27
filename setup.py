@@ -49,8 +49,9 @@ setup(name='pytroll-schedule',
                    "Topic :: Scientific/Engineering :: Astronomy"],
       test_suite='trollsched.tests.suite',
       entry_points={
-          'console_scripts': ['schedule = trollsched.schedule:run',]},
-      packages=['trollsched'],      
+          'console_scripts': ['schedule = trollsched.schedule:run',
+                              'compare_scheds = trollsched.compare:run']},
+      packages=['trollsched'],
       install_requires=requires,
       zip_safe=False,
       )
