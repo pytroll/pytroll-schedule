@@ -444,16 +444,13 @@ def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
     """
 
-    passes = sorted(allpasses)
+    passes = sorted(allpasses, key=lambda x: x.risetime)
 
-    last_time = None
-    group = []
+    overpass = passes[0]
+    last_time = overpass.falltime
+    group = [overpass]
     groups = []
-    for overpass in passes:
-        if last_time is None:
-            last_time = overpass.falltime
-            group.append(overpass)
-            continue
+    for overpass in passes[1:]:
         if overpass.risetime - delay < last_time:
             group.append(overpass)
             if last_time < overpass.falltime:
@@ -488,8 +485,8 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
     groups = []
     for res in graph.bron_kerbosch(set(), set(graph.vertices), set()):
         grp = []
-        for v in res:
-            grp.append(passes[v])
+        for vertex in res:
+            grp.append(passes[vertex])
         groups.append(grp)
 
     return groups
@@ -625,8 +622,9 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
     """
     passes = sorted(overpasses)
     grs = conflicting_passes(passes, delay)
+    logger.debug("conflicting %s", str(grs))
     ncgrs = [get_non_conflicting_groups(gr, delay) for gr in grs]
-
+    logger.debug("non conflicting %s", str(ncgrs))
     n_vertices = len(passes)
 
     graph = Graph(n_vertices=n_vertices + 2)
