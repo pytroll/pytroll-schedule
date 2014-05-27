@@ -55,8 +55,10 @@ class Graph(object):
     def add_arc(self, v1, v2, weight=1):
         self.adj_matrix[v1, v2] = True
         self.weight_matrix[v1, v2] = weight
-        
+
     def bron_kerbosch(self, r, p, x):
+        """Get the maximal cliques.
+        """
         if len(p) == 0 and len(x) == 0:
             yield r
         for v in p:
@@ -84,10 +86,10 @@ class Graph(object):
         the vertices in the vertice list.
         """
         # Dijkstra for DAGs.
-        
+
         dists = [np.inf] * self.order
         paths = [list() for _ in range(self.order)]
-        
+
         dists[v1] = 0
 
         for u in self.vertices:

@@ -25,7 +25,6 @@
 
 import logging
 import logging.handlers
-import pyinotify
 import sys
 import os
 import glob
@@ -102,22 +101,23 @@ def compare(file1, file2):
         return False
 
 
-import fnmatch
+# import fnmatch
+# import pyinotify
 
-class EventHandler(pyinotify.ProcessEvent):
-    """Manage events.
-    """
-    def process_IN_CLOSE_WRITE(self, event):
-        if not fnmatch.fnmatch(event.pathname, "*-acquisition-schedule-confirmation-???.xml"):
-            return
-        logger.info("Processing: %s", event.pathname)
-        reqname = event.pathname[:-20] + "request" +  event.pathname[-8:]
-        logger.info("Validating against: %s", reqname)
-        compare(reqname, event.pathname)
-        sys.exit(0)
+# class EventHandler(pyinotify.ProcessEvent):
+#     """Manage events.
+#     """
+#     def process_IN_CLOSE_WRITE(self, event):
+#         if not fnmatch.fnmatch(event.pathname, "*-acquisition-schedule-confirmation-???.xml"):
+#             return
+#         logger.info("Processing: %s", event.pathname)
+#         reqname = event.pathname[:-20] + "request" +  event.pathname[-8:]
+#         logger.info("Validating against: %s", reqname)
+#         compare(reqname, event.pathname)
+#         sys.exit(0)
 
-    def process_IN_MOVED_TO(self, event):
-        self.process_IN_CLOSE_WRITE(event)
+#     def process_IN_MOVED_TO(self, event):
+#         self.process_IN_CLOSE_WRITE(event)
 
 if __name__ == '__main__':
     import argparse
@@ -132,8 +132,8 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="activate debug messages",
                         action="store_true")
     parser.add_argument("-l", "--log", help="file to log to")
-    parser.add_argument("-w", "--watch",
-                        help="directory to watch for new confirmation files")
+#    parser.add_argument("-w", "--watch",
+#                        help="directory to watch for new confirmation files")
     parser.add_argument("-r", "--most-recent",
                         help="check the most recent request against the" +
                         " corresponding confirmation, from the given directory")
@@ -172,14 +172,15 @@ if __name__ == '__main__':
     if opts.file:
         compare(opts.file[0], opts.file[1])
 
-    if opts.watch:
-        wm = pyinotify.WatchManager() # Watch Manager
-        mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO
-        handler = EventHandler()
-        notifier = pyinotify.Notifier(wm, handler)
-        wdd = wm.add_watch(opts.watch, mask, rec=False)
+    # if opts.watch:
+    #     wm = pyinotify.WatchManager() # Watch Manager
+    #     mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO
+    #     handler = EventHandler()
+    #     notifier = pyinotify.Notifier(wm, handler)
+    #     wdd = wm.add_watch(opts.watch, mask, rec=False)
 
-        notifier.loop()
+    #     notifier.loop()
+
 
 
     if opts.most_recent:
@@ -194,4 +195,4 @@ if __name__ == '__main__':
             compare(newest, confname)
         except IOError:
             logger.exception("Something went wrong!") 
-        
+
