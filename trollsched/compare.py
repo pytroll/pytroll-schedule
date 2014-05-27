@@ -137,6 +137,9 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--most-recent",
                         help="check the most recent request against the" +
                         " corresponding confirmation, from the given directory")
+    parser.add_argument("-c", "--confirmation",
+                        help="directory for the confirmation files")
+    
     opts = parser.parse_args()
 
     if opts.log:
@@ -189,7 +192,10 @@ if __name__ == '__main__':
         filelist = glob.glob(os.path.join(opts.most_recent, "*request*.xml"))
         newest = max(filelist, key=lambda x: os.stat(x).st_mtime)
         logger.debug("checking " + newest)
-        confname = newest[:-15] + "confirmation" +  newest[-8:]
+        reqdir, newfile = os.path.split(newest)
+        confdir = opts.confirmation or reqdir
+        confname = os.path.join(confdir,
+                                newfile[:-15] + "confirmation" +  newfile[-8:])
         logger.debug("against " + confname)
         try:
             compare(newest, confname)
