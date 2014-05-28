@@ -318,7 +318,7 @@ class Pass(object):
 
         def nadirlat(minutes):
             return self.orb.get_lonlatalt(self.risetime +
-                                          timedelta(minutes=minutes))[1] - sublat
+                                          timedelta(minutes=np.float64(minutes)))[1] - sublat
 
         def get_root(fun, start, end):
             p = np.polyfit([start, (start + end) / 2.0, end],
