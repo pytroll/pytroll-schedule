@@ -83,7 +83,7 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
 
     graph = Graph(order)
 
-    for i, overpass in enumerate(passes):
+    for i, overpass in enumerate(sorted(passes, key=lambda x: x.risetime)):
         for j in range(i+1, order):
             if not overpass.overlaps(passes[j], delay):
                 graph.add_edge(i, j)
@@ -93,7 +93,7 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
         grp = []
         for vertex in res:
             grp.append(passes[vertex])
-        groups.append(grp)
+        groups.append(sorted(grp))
 
     return groups
 
@@ -226,7 +226,7 @@ def combine(p1, p2, area_of_interest, scores):
 def get_best_sched(overpasses, area_of_interest, scores, delay):
     """Get the best schedule based on *area_of_interest*.
     """
-    passes = sorted(overpasses)
+    passes = sorted(overpasses, key=lambda x: x.risetime)
     grs = conflicting_passes(passes, delay)
     logger.debug("conflicting %s", str(grs))
     ncgrs = [get_non_conflicting_groups(gr, delay) for gr in grs]
@@ -253,13 +253,12 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
 
     prev = set()
     for ncgr in ncgrs:
-
         for pr in prev:
             foll = set(gr[0] for gr in ncgr)
             for f in foll:
                 add_arc(graph, pr, f)
 
-        prev = set(gr[-1] for gr in ncgr)
+        prev = set(sorted(gr, key=lambda x: x.falltime)[-1] for gr in ncgr)
         for gr in ncgr:
             if len(gr) > 1:
                 for p1, p2 in zip(gr[:-1], gr[1:]):
@@ -516,7 +515,7 @@ def run():
 
     logger.info("Computation of next overpasses done")
 
-    logger.debug(str(sorted(allpasses)))
+    logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
 
     lons, lats = area.get_boundary_lonlats()
     area_boundary = Boundary((lons.side1, lats.side1),
