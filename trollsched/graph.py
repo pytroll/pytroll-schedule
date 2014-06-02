@@ -120,3 +120,17 @@ class Graph(object):
         self.weight_matrix = stuff["weights"]
         self.order = self.adj_matrix.shape[0]
         self.vertices = np.arange(self.order)
+
+    def export(self, filename="./sched.gv", labels=None):
+        """dot sched.gv -Tpdf -otruc.pdf
+        """
+        with open(filename, "w") as fd_:
+            fd_.write("digraph schedule { \n size=\"80, 10\";\n center=\"1\";\n")
+            for v1 in range(1, self.order - 1):
+                for v2 in range(1, self.order - 1):
+                    if self.adj_matrix[v1, v2]:
+                        fd_.write('"' + str(labels[v1 - 1]) + '"' + " -> " +
+                                  '"' + str(labels[v2 - 1]) + '"' +
+                                  ' [ label = "' + str(self.weight_matrix[v1, v2]) + '" ];\n')
+
+            fd_.write("}\n")

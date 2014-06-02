@@ -274,7 +274,7 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
     dist, path = graph.dag_longest_path(0, n_vertices + 1)
 
     del dist
-    return [passes[idx - 1] for idx in path[1:-1]], graph
+    return [passes[idx - 1] for idx in path[1:-1]], (graph, passes)
 
 
 def argmax(iterable):
@@ -423,6 +423,8 @@ def run():
                         default=None)
     parser.add_argument("-v", "--verbose", help="print debug messages too",
                         action="store_true")
+    parser.add_argument("-g", "--graph", help="save graph info to disk",
+                        action="store_true")
     parser.add_argument("-t", "--tle", help="tle file to use", default=None)
     parser.add_argument("-f", "--forward", type=float,
                         help="time ahead to compute the schedule")
@@ -525,8 +527,8 @@ def run():
     area.poly = area_boundary.contour_poly()
 
     logger.info("computing best schedule for area euron1")
-    schedule, graph = get_best_sched(allpasses, area, scores,
-                                     timedelta(seconds=opts.delay))
+    schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
+                                               timedelta(seconds=opts.delay))
 
 
     logger.debug(pformat(schedule))
@@ -560,7 +562,10 @@ def run():
             logger.error("Cannot save to " + str(url.scheme)
                          + ", but file is there" + str(xmlfile))
 
-    #graph.save("my_graph")
+    if opts.graph:
+        graph.save("my_graph")
+        graph.export(labels=[str(label) for label in labels])
+
 if __name__ == '__main__':
     try:
         run()
