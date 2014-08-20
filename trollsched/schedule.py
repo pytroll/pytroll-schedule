@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
+
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
     """
@@ -70,6 +71,7 @@ def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     groups.append(group)
     return groups
 
+
 def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
     """Get the different non-conflicting solutions in a group of conflicting
     passes.
@@ -84,7 +86,7 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
     graph = Graph(order)
 
     for i, overpass in enumerate(sorted(passes, key=lambda x: x.risetime)):
-        for j in range(i+1, order):
+        for j in range(i + 1, order):
             if not overpass.overlaps(passes[j], delay):
                 graph.add_edge(i, j)
 
@@ -101,16 +103,18 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
 def fermia(t):
     a = 0.25
     b = a / 4
-    k = b * np.log(1/3.0) + a
+    k = b * np.log(1 / 3.0) + a
     sh = k - 0.25
-    return 0.5/(np.exp(((t + sh) - a) / b) + 1) + 0.5
+    return 0.5 / (np.exp(((t + sh) - a) / b) + 1) + 0.5
+
 
 def fermib(t):
     a = 0.25
     b = a / 4
-    return 1/(np.exp((t - a) / b) + 1)
+    return 1 / (np.exp((t - a) / b) + 1)
 
 combination = {}
+
 
 def combine(p1, p2, area_of_interest, scores):
     """Combine passes together.
@@ -122,7 +126,6 @@ def combine(p1, p2, area_of_interest, scores):
         pass
 
     area = area_of_interest.poly.area()
-
 
     def pscore(poly, coeff=1):
         if poly is None:
@@ -187,7 +190,6 @@ def combine(p1, p2, area_of_interest, scores):
         sip2 = ns2 + ds2
         p2.score[area_of_interest] = (ip2, sip2)
 
-
     ip1p2 = ip1.intersection(ip2)
 
     if ip1p2 is None:
@@ -235,7 +237,6 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
 
     graph = Graph(n_vertices=n_vertices + 2)
 
-
     def add_arc(graph, p1, p2, hook=None):
         logger.debug("Adding arc between " + str(p1) +
                      " and " + str(p2) + "...")
@@ -264,7 +265,6 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
                 for p1, p2 in zip(gr[:-1], gr[1:]):
                     add_arc(graph, p1, p2)
 
-
     for pr in prev:
         graph.add_arc(passes.index(pr) + 1, n_vertices + 1)
     for first in ncgrs[0][0]:
@@ -279,6 +279,7 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
 def argmax(iterable):
     return max((x, i) for i, x in enumerate(iterable))[1]
 
+
 def get_max(groups, fun):
     """Get the best group of *groups* using the score function *fun*
     """
@@ -286,6 +287,7 @@ def get_max(groups, fun):
     for grp in groups:
         scores.append(sum([fun(p) for p in grp]))
     return groups[argmax(scores)]
+
 
 def generate_sch_file(output_file, overpasses, coords):
 
@@ -302,10 +304,12 @@ def generate_sch_file(output_file, overpasses, coords):
         out.write(sats)
         out.write("#\n#\n#Pass List\n#\n")
 
-        out.write("#SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration\n#\n")
+        out.write(
+            "#SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration\n#\n")
 
         for overpass in sorted(overpasses):
             out.write(overpass.print_vcs(coords) + "\n")
+
 
 def generate_xml_requests(sched, start, end, station_name):
     """Create xml requests.
@@ -321,7 +325,7 @@ def generate_xml_requests(sched, start, end, station_name):
             "terra": "terra",
             "aqua": "aqua",
             "suomi npp": "npp",
-        }
+            }
 
     reqtime = datetime.utcnow()
     eum_format = "%Y-%m-%d-%H:%M:%S"
@@ -352,6 +356,7 @@ def generate_xml_requests(sched, start, end, station_name):
 
     return root, reqtime
 
+
 def generate_xml_file(sched, start, end, directory, station):
     """Create an xml request file.
     """
@@ -370,10 +375,12 @@ def generate_xml_file(sched, start, end, directory, station):
     os.rename(tmp_filename, filename)
     return filename
 
+
 def parse_datetime(strtime):
     """Parse the time string *strtime*
     """
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
+
 
 def read_config(filename):
     """Read the config file *filename* and replace the values in global
@@ -400,9 +407,9 @@ def read_config(filename):
     area = utils.parse_area_file(cfg.get(station, "area_file"),
                                  cfg.get(station, "area"))[0]
 
-
     return ((station_lon, station_lat, station_alt),
             sat_scores, station_name, area, forward, start)
+
 
 def run():
     """The schedule command
@@ -435,17 +442,21 @@ def run():
                         + "consecutive passes (60 seconds by default)")
     parser.add_argument("-c", "--config", help="configuration file to use",
                         default=None)
+    parser.add_argument("-o", "--output-dir",
+                        help="where to put generated plots",
+                        default=None)
     group = parser.add_argument_group(title="output")
     group.add_argument("-x", "--xml", default=".",
-                        help="generate an xml request file and"
+                       help="generate an xml request file and"
                        " put it in this directory. Could be a url")
     group.add_argument("--scisys", default=None,
-                        help="path to the schedule file")
+                       help="path to the schedule file")
 
     opts = parser.parse_args()
 
     if opts.config:
-        coords, scores, station, area, forward, start = read_config(opts.config)
+        coords, scores, station, area, forward, start = read_config(
+            opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -482,15 +493,14 @@ def run():
         mhandler.setLevel(logging.WARNING)
         logging.getLogger('').addHandler(mhandler)
 
-
     logger = logging.getLogger("trollsched")
 
     if opts.lon and opts.lat and opts.alt:
         coords = (opts.lon, opts.lat, opts.alt)
 
-
     # test line
-    # python schedule.py -v 16.148649 58.581844 0.052765 -f 216 -s 20140118140000 -t tle_20140120.txt -x . --scisys myched.txt
+    # python schedule.py -v 16.148649 58.581844 0.052765 -f 216 -s
+    # 20140118140000 -t tle_20140120.txt -x . --scisys myched.txt
 
     satellites = scores.keys()
 
@@ -498,7 +508,6 @@ def run():
     #               "metop-a", "metop-b",
     #               "terra", "aqua",
     #               "suomi npp"]
-
 
     logger.info("Computing next satellite passes")
 
@@ -508,10 +517,9 @@ def run():
     if opts.start_time:
         start_time = opts.start_time
     else:
-        start_time = datetime.utcnow()# + timedelta(hours=start)
+        start_time = datetime.utcnow()  # + timedelta(hours=start)
     allpasses = get_next_passes(satellites, start_time,
                                 forward, coords, tle_file)
-
 
     logger.info("Computation of next overpasses done")
 
@@ -528,7 +536,6 @@ def run():
     logger.info("computing best schedule for area euron1")
     schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
                                                timedelta(seconds=opts.delay))
-
 
     logger.debug(pformat(schedule))
     for opass in schedule:
@@ -553,6 +560,7 @@ def run():
         if url.scheme in ["file", ""]:
             pass
         elif url.scheme == "ftp":
+            import ftplib
             session = ftplib.FTP(url.hostname, url.username, url.password)
             with open(xmlfile, "rb") as xfile:
                 session.storbinary('STOR ' + str(filename), xfile)
@@ -561,9 +569,15 @@ def run():
             logger.error("Cannot save to " + str(url.scheme)
                          + ", but file is there" + str(xmlfile))
 
+    if opts.output_dir is not None:
+        for passage in allpasses:
+            passage.save_fig(directory=opts.output_dir)
+
     if opts.graph:
-        graph.save("my_graph")
-        graph.export(labels=[str(label) for label in labels])
+        now = datetime.now()
+        graph.save("graph" + now.isoformat())
+        graph.export(labels=[str(label) for label in labels],
+                     filename="sched" + now.isoformat() + ".gv")
 
 if __name__ == '__main__':
     try:
@@ -571,4 +585,3 @@ if __name__ == '__main__':
     except:
         logger.exception("Something wrong happened!")
         raise
-
