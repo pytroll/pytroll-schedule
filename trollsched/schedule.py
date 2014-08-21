@@ -429,8 +429,8 @@ def run():
                         default=None)
     parser.add_argument("-v", "--verbose", help="print debug messages too",
                         action="store_true")
-    parser.add_argument("-g", "--graph", help="save graph info to disk",
-                        action="store_true")
+    parser.add_argument("-g", "--graph", help="save graph info to this directory",
+                        default=None)
     parser.add_argument("-t", "--tle", help="tle file to use", default=None)
     parser.add_argument("-f", "--forward", type=float,
                         help="time ahead to compute the schedule")
@@ -573,11 +573,12 @@ def run():
         for passage in allpasses:
             passage.save_fig(directory=opts.output_dir)
 
-    if opts.graph:
+    if opts.graph is not None:
         now = datetime.now()
         graph.save("graph" + now.isoformat())
         graph.export(labels=[str(label) for label in labels],
-                     filename="sched" + now.isoformat() + ".gv")
+                     filename=os.path.join(opts.graph,
+                                           "sched" + now.isoformat() + ".gv"))
 
 if __name__ == '__main__':
     try:
