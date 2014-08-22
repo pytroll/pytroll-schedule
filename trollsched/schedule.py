@@ -459,11 +459,11 @@ def run():
                         help="where to put generated plots",
                         default=None)
     group = parser.add_argument_group(title="output")
-    group.add_argument("-x", "--xml", default=".",
+    group.add_argument("-x", "--xml",
                        help="generate an xml request file and"
                        " put it in this directory. Could be a url",
                        default=None)
-    group.add_argument("-r", "--report", default=".",
+    group.add_argument("-r", "--report",
                        help="generate an xml report file and"
                        " put it in this directory. Could be a url",
                        default=None)
