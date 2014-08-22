@@ -381,6 +381,9 @@ def generate_xml_file(sched, start, end, directory, station, report_mode=False):
                     + station + ".tmp")
     tmp_filename = os.path.join(directory, tmp_filename)
     with open(tmp_filename, "w") as fp_:
+        if report_mode:
+            fp_.write("<?xml version='1.0' encoding='utf-8'?>"
+                      "<?xml-stylesheet type='text / xsl' href='reqreader.xsl'?>")
         fp_.write(ET.tostring(tree))
     os.rename(tmp_filename, filename)
     return filename
