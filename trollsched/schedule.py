@@ -356,7 +356,7 @@ def generate_xml_requests(sched, start, end, station_name, report_mode=False):
             if report_mode:
                 if overpass.fig is not None:
                     ovpass.set("img", overpass.fig)
-                ovpass.set("rec", overpass.fig)
+                ovpass.set("rec", overpass.rec)
 
     return root, reqtime
 
