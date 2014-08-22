@@ -39,9 +39,12 @@ logger = logging.getLogger(__name__)
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
+
 class Mapper(object):
+
     """A class to generate nice plots with basemap.
     """
+
     def __init__(self):
         from mpl_toolkits.basemap import Basemap
 
@@ -62,9 +65,12 @@ class Mapper(object):
     def __exit__(self, etype, value, tb):
         pass
 
+
 class Boundary(object):
+
     """Area boundary objects.
     """
+
     def __init__(self, *sides):
         self.sides_lons, self.sides_lats = zip(*sides)
         self.sides_lons = list(self.sides_lons)
@@ -78,12 +84,10 @@ class Boundary(object):
         for i in range(len(self.sides_lons)):
             l = len(self.sides_lons[i])
             start = (l % ratio) / 2
-            points = np.concatenate(([0], np.arange(start, l, ratio), [l-1]))
+            points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
 
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
-
-
 
     def contour(self):
         """Get the (lons, lats) tuple of the boundary object.
@@ -97,7 +101,8 @@ class Boundary(object):
         """Get the Spherical polygon corresponding to the Boundary
         """
         if self._contour_poly is None:
-            self._contour_poly = SphPolygon(np.deg2rad(np.vstack(self.contour()).T))
+            self._contour_poly = SphPolygon(
+                np.deg2rad(np.vstack(self.contour()).T))
         return self._contour_poly
 
     def draw(self, mapper, options):
@@ -121,8 +126,10 @@ class Boundary(object):
 
 
 class SwathBoundary(Boundary):
+
     """Boundaries for satellite overpasses.
     """
+
     def get_instrument_points(self, overpass, utctime,
                               scans_nb, scanpoints, decimate=1):
         """Get the boundary points for a given overpass.
@@ -156,16 +163,18 @@ class SwathBoundary(Boundary):
         self.overpass = overpass
         self.orb = overpass.orb
 
-        ## compute sides
+        # compute sides
 
         scans_nb = np.ceil(((overpass.falltime - overpass.risetime).seconds +
-                            (overpass.falltime - overpass.risetime).microseconds
+                            (overpass.falltime -
+                             overpass.risetime).microseconds
                             / 1000000.0) * 6 / decimate)
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
-                                                            np.array([0, 2047]),
+                                                            np.array(
+                                                                [0, 2047]),
                                                             decimate=decimate)
 
         self.left_lons = sides_lons[::-1, 0]
@@ -173,12 +182,13 @@ class SwathBoundary(Boundary):
         self.right_lons = sides_lons[:, 1]
         self.right_lats = sides_lats[:, 1]
 
-        ## compute bottom
+        # compute bottom
 
         # avhrr
         maxval = 2048
         rest = maxval % decimate
-        reduced = np.hstack([0, np.arange(rest/2, maxval, decimate), maxval -1])
+        reduced = np.hstack(
+            [0, np.arange(rest / 2, maxval, decimate), maxval - 1])
 
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.falltime,
@@ -188,7 +198,7 @@ class SwathBoundary(Boundary):
         self.bottom_lons = lons[0][::-1]
         self.bottom_lats = lats[0][::-1]
 
-        ## compute top
+        # compute top
 
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.risetime,
@@ -203,7 +213,7 @@ class SwathBoundary(Boundary):
     def decimate(self, ratio):
         l = len(self.top_lons)
         start = (l % ratio) / 2
-        points = np.concatenate(([0], np.arange(start, l, ratio), [l-1]))
+        points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
 
         self.top_lons = self.top_lons[points]
         self.top_lats = self.top_lats[points]
@@ -212,13 +222,12 @@ class SwathBoundary(Boundary):
 
         l = len(self.right_lons)
         start = (l % ratio) / 2
-        points = np.concatenate(([0], np.arange(start, l, ratio), [l-1]))
+        points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
 
         self.right_lons = self.right_lons[points]
         self.right_lats = self.right_lats[points]
         self.left_lons = self.left_lons[points]
         self.left_lats = self.left_lats[points]
-
 
     def contour(self):
         lons = np.concatenate((self.top_lons,
@@ -232,8 +241,8 @@ class SwathBoundary(Boundary):
         return lons, lats
 
 
-
 class Pass(object):
+
     """A pass: satellite, risetime, falltime, (orbital)
     """
 
@@ -257,10 +266,11 @@ class Pass(object):
         self.old_bound = None
         self.boundary = SwathBoundary(self)
         # make boundary lighter.
-        #self.boundary.decimate(100)
+        # self.boundary.decimate(100)
         self.subsattrack = {"start": None,
                             "end": None}
         self.rec = False
+        self.fig = None
 
     def overlaps(self, other, delay=timedelta(seconds=0)):
         """Check if two passes overlap.
@@ -328,7 +338,6 @@ class Pass(object):
                 if root <= end and root >= start:
                     return root
 
-
         arr = np.array([nadirlat(m) for m in range(15)])
         a = np.where(np.diff(np.sign(arr)))[0]
         for guess in a:
@@ -338,9 +347,9 @@ class Pass(object):
     def area_coverage(self, area_of_interest):
         """Get the score depending on the coverage of the area of interest.
         """
-        inter = self.boundary.contour_poly().intersection(area_of_interest.poly)
+        inter = self.boundary.contour_poly().intersection(
+            area_of_interest.poly)
         return inter.area() / area_of_interest.poly.area()
-
 
     def save_fig(self, poly=None, directory="/tmp/plots",
                  overwrite=False, labels=None, extension=".png"):
@@ -351,12 +360,13 @@ class Pass(object):
                                 (self.risetime.isoformat()
                                  + self.satellite
                                  + self.falltime.isoformat()) + extension)
+        self.fig = filename
         if not overwrite and os.path.exists(filename):
             return filename
 
         import matplotlib.pyplot as plt
         plt.clf()
-        #plt.xkcd()
+        # plt.xkcd()
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "-r")
@@ -438,6 +448,7 @@ import urlparse
 import ftplib
 import socket
 
+
 def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     url = urlparse.urlparse(HOST)
     logger.debug("Connect to ftp server")
@@ -447,16 +458,14 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
 
-
     if f is not None:
         try:
-            f.login('anonymous','guest')
+            f.login('anonymous', 'guest')
             logger.debug("Logged in")
         except ftplib.error_perm:
             logger.error('cannot login anonymously')
             f.quit()
             f = None
-
 
     if f is not None:
         data = []
@@ -484,7 +493,8 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
         if not filedates[date].endswith(".rpt"):
             continue
         if not os.path.exists(os.path.join("/tmp", filedates[date])):
-            f.retrlines('RETR ' + os.path.join(url.path, filedates[date]), lines.append)
+            f.retrlines(
+                'RETR ' + os.path.join(url.path, filedates[date]), lines.append)
             with open(os.path.join("/tmp", filedates[date]), "w") as fd_:
                 for line in lines:
                     fd_.write(line + "\n")
@@ -584,34 +594,35 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                            for rtime, ftime, uptime in passlist]
 
             dumps = get_aqua_dumps_from_ftp(utctime - timedelta(minutes=30),
-                                            utctime + timedelta(hours=forward+0.5),
+                                            utctime +
+                                            timedelta(hours=forward + 0.5),
                                             satorb)
 
             # remove the known dumps
             for dump in dumps:
-                #print "*", dump.station, dump, dump.max_elev
+                # print "*", dump.station, dump, dump.max_elev
                 logger.debug("dump from ftp: " + str((dump.station, dump,
                                                       dump.max_elev)))
                 for i, sv_pass in enumerate(sv_passes):
                     if sv_pass.overlaps(dump, timedelta(minutes=40)):
                         sv_elevation = sv_pass.orb.get_observer_look(sv_pass.uptime,
                                                                      *svcoords)[1]
-                        logger.debug("Computed " +str(("SG", sv_pass,
-                                                       sv_elevation)))
+                        logger.debug("Computed " + str(("SG", sv_pass,
+                                                        sv_elevation)))
                         del sv_passes[i]
                 for i, pf_pass in enumerate(pf_passes):
                     if pf_pass.overlaps(dump, timedelta(minutes=40)):
                         pf_elevation = pf_pass.orb.get_observer_look(pf_pass.uptime,
                                                                      *pfcoords)[1]
-                        logger.debug("Computed " +str(("PF", pf_pass,
-                                                       pf_elevation)))
+                        logger.debug("Computed " + str(("PF", pf_pass,
+                                                        pf_elevation)))
                         del pf_passes[i]
                 for i, wp_pass in enumerate(wp_passes):
                     if wp_pass.overlaps(dump, timedelta(minutes=40)):
                         wp_elevation = wp_pass.orb.get_observer_look(wp_pass.uptime,
                                                                      *wpcoords)[1]
-                        logger.debug("Computed " +str(("WP", wp_pass,
-                                                       wp_elevation)))
+                        logger.debug("Computed " + str(("WP", wp_pass,
+                                                        wp_elevation)))
                         del wp_passes[i]
 
             # sort out dump passes first
@@ -643,14 +654,13 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                 if pf_pass not in used_pf:
                     dumps.append(pf_pass)
 
-
             passes["aqua"] = []
             for overpass in aqua_passes:
                 add = True
                 for dump_pass in dumps:
                     if dump_pass.overlaps(overpass):
                         if (dump_pass.uptime < overpass.uptime and
-                            dump_pass.falltime > overpass.risetime):
+                                dump_pass.falltime > overpass.risetime):
                             logger.debug("adjusting " + str(overpass)
                                          + " to new risetime " +
                                          str(dump_pass.falltime))
@@ -674,12 +684,12 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                            for rtime, ftime, uptime in passlist
                            if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
-
     return set(reduce(operator.concat, passes.values()))
 
 if __name__ == '__main__':
     from datetime import datetime
     from trollsched.satpass import get_next_passes
-    passes = get_next_passes(["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))
+    passes = get_next_passes(
+        ["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))
     for p in passes:
         p.save_fig(directory="/tmp/plots/")

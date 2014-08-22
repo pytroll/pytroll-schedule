@@ -311,7 +311,7 @@ def generate_sch_file(output_file, overpasses, coords):
             out.write(overpass.print_vcs(coords) + "\n")
 
 
-def generate_xml_requests(sched, start, end, station_name):
+def generate_xml_requests(sched, start, end, station_name, report_mode=False):
     """Create xml requests.
     """
     import xml.etree.ElementTree as ET
@@ -347,27 +347,37 @@ def generate_xml_requests(sched, start, end, station_name):
     reqon = ET.SubElement(props, "requested-on")
     reqon.text = reqtime.strftime(eum_format)
     for overpass in sorted(sched):
-        if overpass.rec and overpass.risetime > start:
+        if (overpass.rec or report_mode) and overpass.risetime > start:
             ovpass = ET.SubElement(root, "pass")
             ovpass.set("satellite", sats.get(overpass.satellite,
                                              overpass.satellite))
             ovpass.set("start-time", overpass.risetime.strftime(eum_format))
             ovpass.set("end-time", overpass.falltime.strftime(eum_format))
+            if report_mode:
+                if overpass.fig is not None:
+                    ovpass.set("img", overpass.fig)
+                ovpass.set("rec", overpass.fig)
 
     return root, reqtime
 
 
-def generate_xml_file(sched, start, end, directory, station):
+def generate_xml_file(sched, start, end, directory, station, report_mode=False):
     """Create an xml request file.
     """
     import xml.etree.ElementTree as ET
-    tree, reqtime = generate_xml_requests(sched, start, end, station)
+    tree, reqtime = generate_xml_requests(sched,
+                                          start, end,
+                                          station, report_mode)
+    if report_mode:
+        mode = "report"
+    else:
+        mode = "request"
     filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
-                + "-acquisition-schedule-request-"
+                + "-acquisition-schedule-" + mode + "-"
                 + station + ".xml")
     filename = os.path.join(directory, filename)
     tmp_filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
-                    + "-acquisition-schedule-request-"
+                    + "-acquisition-schedule-" + mode + "-"
                     + station + ".tmp")
     tmp_filename = os.path.join(directory, tmp_filename)
     with open(tmp_filename, "w") as fp_:
@@ -448,6 +458,9 @@ def run():
     group = parser.add_argument_group(title="output")
     group.add_argument("-x", "--xml", default=".",
                        help="generate an xml request file and"
+                       " put it in this directory. Could be a url")
+    group.add_argument("-r", "--report", default=".",
+                       help="generate an xml report file and"
                        " put it in this directory. Could be a url")
     group.add_argument("--scisys", default=None,
                        help="path to the schedule file")
@@ -545,7 +558,11 @@ def run():
     if opts.scisys:
         generate_sch_file(opts.scisys, allpasses, coords)
 
-    if opts.xml:
+    if opts.output_dir is not None:
+        for passage in allpasses:
+            passage.save_fig(directory=opts.output_dir)
+
+    if opts.xml or opts.report:
         url = urlparse.urlparse(opts.xml)
         if url.scheme not in ["file", ""]:
             directory = "/tmp"
@@ -553,7 +570,8 @@ def run():
             directory = url.path
         xmlfile = generate_xml_file(allpasses, start_time,
                                     start_time + timedelta(hours=forward),
-                                    directory, station)
+                                    directory, station,
+                                    opts.report)
         logger.info("Generated " + str(xmlfile))
         pathname, filename = os.path.split(xmlfile)
         del pathname
@@ -568,10 +586,6 @@ def run():
         else:
             logger.error("Cannot save to " + str(url.scheme)
                          + ", but file is there" + str(xmlfile))
-
-    if opts.output_dir is not None:
-        for passage in allpasses:
-            passage.save_fig(directory=opts.output_dir)
 
     if opts.graph is not None:
         now = datetime.now()
