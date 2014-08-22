@@ -383,7 +383,7 @@ def generate_xml_file(sched, start, end, directory, station, report_mode=False):
     with open(tmp_filename, "w") as fp_:
         if report_mode:
             fp_.write("<?xml version='1.0' encoding='utf-8'?>"
-                      "<?xml-stylesheet type='text / xsl' href='reqreader.xsl'?>")
+                      "<?xml-stylesheet type='text/xsl' href='reqreader.xsl'?>")
         fp_.write(ET.tostring(tree))
     os.rename(tmp_filename, filename)
     return filename
@@ -461,10 +461,12 @@ def run():
     group = parser.add_argument_group(title="output")
     group.add_argument("-x", "--xml", default=".",
                        help="generate an xml request file and"
-                       " put it in this directory. Could be a url")
+                       " put it in this directory. Could be a url",
+                       default=None)
     group.add_argument("-r", "--report", default=".",
                        help="generate an xml report file and"
-                       " put it in this directory. Could be a url")
+                       " put it in this directory. Could be a url",
+                       default=None)
     group.add_argument("--scisys", default=None,
                        help="path to the schedule file")
 
@@ -478,7 +480,7 @@ def run():
         parser.error("Coordinates must be provided in the absence of "
                      "configuration file.")
 
-    if not (opts.xml or opts.scisys):
+    if not (opts.xml or opts.scisys or opts.report):
         parser.error("No output specified, use '--scisys' or '-x/--xml'")
 
     if opts.log:
@@ -566,7 +568,7 @@ def run():
             passage.save_fig(area.poly, directory=opts.output_dir)
 
     if opts.xml or opts.report:
-        url = urlparse.urlparse(opts.xml)
+        url = urlparse.urlparse(opts.xml or opts.report)
         if url.scheme not in ["file", ""]:
             directory = "/tmp"
         else:
