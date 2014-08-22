@@ -563,7 +563,7 @@ def run():
 
     if opts.output_dir is not None:
         for passage in allpasses:
-            passage.save_fig(directory=opts.output_dir)
+            passage.save_fig(area.poly, directory=opts.output_dir)
 
     if opts.xml or opts.report:
         url = urlparse.urlparse(opts.xml)
