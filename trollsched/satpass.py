@@ -356,17 +356,17 @@ class Pass(object):
         """Save the pass as a figure. Filename is automatically generated.
         """
         logger.debug("Save fig " + str(self))
+        rise = self.risetime.strftime("%Y%m%d%H%M%S")
+        fall = self.falltime.strftime("%Y%m%d%H%M%S")
         filename = os.path.join(directory,
-                                (self.risetime.isoformat()
-                                 + self.satellite
-                                 + self.falltime.isoformat()) + extension)
+                                (rise + self.satellite + fall + extension))
+
         self.fig = filename
         if not overwrite and os.path.exists(filename):
             return filename
 
         import matplotlib.pyplot as plt
         plt.clf()
-        # plt.xkcd()
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "-r")
