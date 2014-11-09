@@ -28,9 +28,12 @@ base type is a numpy array of size (n, 2) (2 for lon and lats)
 
 import numpy as np
 
+
 class SCoordinate(object):
+
     """Spherical coordinates
     """
+
     def __init__(self, lon, lat):
         self.lon = lon
         self.lat = lat
@@ -64,7 +67,6 @@ class SCoordinate(object):
                                      np.cos(self.lat) * np.sin(self.lon),
                                      np.sin(self.lat)]))
 
-
     def distance(self, point):
         """Vincenty formula.
         """
@@ -77,7 +79,7 @@ class SCoordinate(object):
         den = (np.sin(self.lat) * np.sin(point.lat) +
                np.cos(self.lat) * np.cos(point.lat) * np.cos(dlambda))
 
-        return np.arctan2(num**.5, den)
+        return np.arctan2(num ** .5, den)
 
     def hdistance(self, point):
         """Haversine formula
@@ -86,7 +88,7 @@ class SCoordinate(object):
         return 2 * np.arcsin((np.sin((point.lat - self.lat) / 2.0) ** 2.0 +
                               np.cos(point.lat) * np.cos(self.lat) *
                               np.sin((point.lon - self.lon) / 2.0) ** 2.0) ** .5)
-    
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -102,25 +104,26 @@ class SCoordinate(object):
     def __iter__(self):
         return [self.lon, self.lat].__iter__()
 
-    
+
 class CCoordinate(object):
+
     """Cartesian coordinates
     """
+
     def __init__(self, cart):
         self.cart = cart
-
 
     def norm(self):
         """Euclidean norm of the vector.
         """
         return np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
-    
+
     def normalize(self):
         """normalize the vector.
         """
 
         self.cart /= np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
-        
+
         return self
 
     def cross(self, point):
@@ -132,7 +135,7 @@ class CCoordinate(object):
         """dot product with another vector.
         """
         return np.inner(self.cart, point.cart)
-    
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -141,7 +144,23 @@ class CCoordinate(object):
 
     def __str__(self):
         return str(self.cart)
-    
+
+    def __add__(self, other):
+        return CCoordinate(self.cart + other)
+
+    def __radd__(self, other):
+        return CCoordinate(self.cart + other)
+
+    def __mul__(self, other):
+        return CCoordinate(self.cart * other)
+
+    def __rmul__(self, other):
+        return CCoordinate(self.cart * other)
+
+    def to_spherical(self):
+        return SCoordinate(np.arctan2(self.cart[1], self.cart[0]),
+                           np.arcsin(self.cart[2]))
+
 EPSILON = 0.0000001
 
 
@@ -150,7 +169,9 @@ def modpi(val, mod=np.pi):
     """
     return (val + mod) % (2 * mod) - mod
 
+
 class Arc(object):
+
     """An arc of the great circle between two points.
     """
     start = None
@@ -198,27 +219,26 @@ class Arc(object):
         ua_ = a__.cross2cart(b__)
         ub_ = a__.cross2cart(c__)
 
-        val =  ua_.dot(ub_) / (ua_.norm() * ub_.norm())
+        val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
         if abs(val - 1) < EPSILON:
             angle = 0
         elif abs(val + 1) < EPSILON:
             angle = np.pi
         else:
-            angle = np.arccos(val)    
+            angle = np.arccos(val)
 
         n__ = ua_.normalize()
         if n__.dot(c__.to_cart()) > 0:
             return -angle
         else:
             return angle
-        
+
     def intersections(self, other_arc):
         """Gives the two intersections of the greats circles defined by the 
        current arc and *other_arc*.
        From http://williams.best.vwh.net/intersect.htm
         """
-        
-        
+
         if self.end.lon - self.start.lon > np.pi:
             self.end.lon -= 2 * np.pi
         if other_arc.end.lon - other_arc.start.lon > np.pi:
@@ -227,7 +247,7 @@ class Arc(object):
             self.end.lon += 2 * np.pi
         if other_arc.end.lon - other_arc.start.lon < -np.pi:
             other_arc.end.lon += 2 * np.pi
-            
+
         ea_ = self.start.cross2cart(self.end).normalize()
         eb_ = other_arc.start.cross2cart(other_arc.end).normalize()
 
@@ -258,7 +278,7 @@ class Arc(object):
         #     self.start == other_arc.start or
         #     self.start == other_arc.end):
         #     return None
-        
+
         for i in self.intersections(other_arc):
             a__ = self.start
             b__ = self.end
@@ -271,7 +291,7 @@ class Arc(object):
             if(((i in (a__, b__)) or
                 (abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON)) and
                ((i in (c__, d__)) or
-                (abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON))):
+                    (abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON))):
                 return i
         return None
 
@@ -282,8 +302,8 @@ class Arc(object):
         for arc in arcs:
             inter = self.intersection(arc)
             if (inter is not None and
-                inter != arc.end and
-                inter != self.end):
+                    inter != arc.end and
+                    inter != self.end):
                 res.append((inter, arc))
 
         def dist(args):
@@ -291,7 +311,6 @@ class Arc(object):
             """
             return self.start.distance(args[0])
 
-        
         take_next = False
         for inter, arc in sorted(res, key=dist):
             if known_inter is not None:
@@ -301,12 +320,18 @@ class Arc(object):
                     return inter, arc
             else:
                 return inter, arc
-                
+
         return None, None
 
+
 class SphPolygon(object):
+
     """Spherical polygon.
+
+    Vertices as a 2-column array of (col 1) lons and (col 2) lats is given in
+    radians.
     """
+
     def __init__(self, vertices, radius=1):
         self.vertices = vertices
         self.lon = self.vertices[:, 0]
@@ -330,30 +355,31 @@ class SphPolygon(object):
         self.y__ = self.cvertices[:, 1]
         self.z__ = self.cvertices[:, 2]
 
+    def inverse(self):
+        """Return an invesre of the polygon.
+        """
+        return SphPolygon(np.flipud(self.vertices))
+
     def aedges(self):
         """Iterator over the edges, in arcs of Coordinates.
         """
-        i = 0
         for i in range(len(self.lon) - 1):
             yield Arc(SCoordinate(self.lon[i],
                                   self.lat[i]),
-                      SCoordinate(self.lon[i+1],
-                                  self.lat[i+1]))
-        yield Arc(SCoordinate(self.lon[i+1],
-                              self.lat[i+1]),
+                      SCoordinate(self.lon[i + 1],
+                                  self.lat[i + 1]))
+        yield Arc(SCoordinate(self.lon[i + 1],
+                              self.lat[i + 1]),
                   SCoordinate(self.lon[0],
                               self.lat[0]))
 
-
-        
     def edges(self):
         """Iterator over the edges, in geographical coordinates.
         """
-        
-        i = 0
+
         for i in range(len(self.lon) - 1):
-            yield (self.lon[i], self.lat[i]), (self.lon[i+1], self.lat[i+1])
-        yield (self.lon[i+1], self.lat[i+1]), (self.lon[0], self.lat[0])
+            yield (self.lon[i], self.lat[i]), (self.lon[i + 1], self.lat[i + 1])
+        yield (self.lon[i + 1], self.lat[i + 1]), (self.lon[0], self.lat[0])
 
     def area(self):
         """Find the area of a polygon. The inside of the polygon is defined by
@@ -387,12 +413,11 @@ class SphPolygon(object):
         alpha = new_lons_a - new_lons_b
         alpha[alpha < 0] += 2 * np.pi
 
-        return (sum(alpha) - (len(self.lon) - 2)*np.pi) * self.radius**2
+        return (sum(alpha) - (len(self.lon) - 2) * np.pi) * self.radius ** 2
 
     def _bool_oper(self, other, sign=1):
         """(Union by default)
         """
-
 
         def rotate_arcs(start_arc, arcs):
             idx = arcs.index(start_arc)
@@ -410,6 +435,12 @@ class SphPolygon(object):
                 break
 
         if inter is None:
+            polys = [0, self, other]
+            if self._is_inside(other):
+                return polys[-sign]
+            if other._is_inside(self):
+                return polys[sign]
+            # FIXME: wthat is the union of two disjoint polygons ?
             return None
 
         while True:
@@ -419,7 +450,7 @@ class SphPolygon(object):
             arc1 = Arc(inter, edge1.end)
             arc2 = Arc(inter, edge2.end)
 
-            if np.sign(arc1.angle(arc2)) != sign :
+            if np.sign(arc1.angle(arc2)) != sign:
                 arcs1, arcs2 = arcs2, arcs1
 
             nodes.append(inter)
@@ -431,7 +462,7 @@ class SphPolygon(object):
                     break
                 elif len(nodes) > 0 and nodes[-1] != edge1.end:
                     nodes.append(edge1.end)
-            
+
             if inter is None and len(nodes) > 2 and nodes[-1] == nodes[0]:
                 nodes = nodes[:-1]
                 break
@@ -440,24 +471,65 @@ class SphPolygon(object):
 
         return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]))
 
-
     def union(self, other):
         return self._bool_oper(other, 1)
-    
+
     def intersection(self, other):
         return self._bool_oper(other, -1)
 
+    def _is_inside(self, other):
+        """Checks if the polygon is entirely inside the other. Should be use
+        with :meth:`inter` first to check if the is a known intersection.
+        """
+        # This one has no intersections
+        # arc = Arc(SCoordinate(self.lon[0],
+        #                       self.lat[0]),
+        #           SCoordinate(self.lon[1],
+        #                       self.lat[1]))
 
-    def draw(self, map, options):
+        anti_lon_0 = self.lon[0] + np.pi
+        if anti_lon_0 > np.pi:
+            anti_lon_0 -= np.pi * 2
+
+        anti_lon_1 = self.lon[1] + np.pi
+        if anti_lon_1 > np.pi:
+            anti_lon_1 -= np.pi * 2
+
+        arc1 = Arc(SCoordinate(self.lon[1],
+                               self.lat[1]),
+                   SCoordinate(anti_lon_0,
+                               -self.lat[0]))
+
+        arc2 = Arc(SCoordinate(anti_lon_0,
+                               -self.lat[0]),
+                   SCoordinate(anti_lon_1,
+                               -self.lat[1]))
+
+        arc3 = Arc(SCoordinate(anti_lon_1,
+                               -self.lat[1]),
+                   SCoordinate(self.lon[0],
+                               self.lon[0]))
+
+        other_arcs = [edge for edge in other.aedges()]
+        for arc in [arc1, arc2, arc3]:
+            inter, other_arc = arc.get_next_intersection(other_arcs)
+            if inter is not None:
+                sarc = Arc(arc.start, inter)
+                earc = Arc(inter, other_arc.end)
+                return sarc.angle(earc) < 0
+        return other.area() > (2 * np.pi * other.radius ** 2)
+
+    def draw(self, mapper, options):
         lons = np.rad2deg(self.lon.take(np.arange(len(self.lon) + 1),
                                         mode="wrap"))
         lats = np.rad2deg(self.lat.take(np.arange(len(self.lat) + 1),
                                         mode="wrap"))
-        rx, ry = map(lons, lats)
-        map.plot(rx, ry, options)
+        rx, ry = mapper(lons, lats)
+        mapper.plot(rx, ry, options)
 
     def __str__(self):
         return str(np.rad2deg(self.vertices))
+
 
 def get_twilight_poly(utctime):
     """Return a polygon enclosing the sunlit part of the globe at *utctime*.
@@ -468,16 +540,15 @@ def get_twilight_poly(utctime):
     lat = dec
 
     vertices = np.zeros((4, 2))
-    
-    vertices[0, :] = modpi(lon - np.pi/2), 0
-    if lat <= 0:
-        vertices[1, :] = lon, np.pi/2 + lat
-        vertices[3, :] = modpi(lon + np.pi), -(np.pi/2 + lat)
-    else:
-        vertices[1, :] = modpi(lon + np.pi), np.pi/2 - lat
-        vertices[3, :] = lon, -(np.pi/2 - lat)
 
-    vertices[2, :] = modpi(lon + np.pi/2), 0
+    vertices[0, :] = modpi(lon - np.pi / 2), 0
+    if lat <= 0:
+        vertices[1, :] = lon, np.pi / 2 + lat
+        vertices[3, :] = modpi(lon + np.pi), -(np.pi / 2 + lat)
+    else:
+        vertices[1, :] = modpi(lon + np.pi), np.pi / 2 - lat
+        vertices[3, :] = lon, -(np.pi / 2 - lat)
+
+    vertices[2, :] = modpi(lon + np.pi / 2), 0
 
     return SphPolygon(vertices)
-    

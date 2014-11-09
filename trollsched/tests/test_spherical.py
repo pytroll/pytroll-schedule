@@ -27,7 +27,9 @@ from trollsched.spherical import SphPolygon, Arc, SCoordinate
 import unittest
 import numpy as np
 
+
 class TestSCoordinate(unittest.TestCase):
+
     """Test SCoordinates.
     """
 
@@ -38,8 +40,10 @@ class TestSCoordinate(unittest.TestCase):
     def test_hdistance(self):
         d = SCoordinate(0, 0).hdistance(SCoordinate(1, 1))
         self.assertTrue(np.allclose(d, 1.2745557823062943))
-    
+
+
 class TestArc(unittest.TestCase):
+
     """Test arcs
     """
 
@@ -79,10 +83,7 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(-5.893976312685715),
                                np.deg2rad(48.445795283217116)))
 
-        print arc1.intersection(arc2)
         self.assertTrue(arc1.intersection(arc2) is None)
-
-
 
     def test_angle(self):
         arc1 = Arc(SCoordinate(np.deg2rad(157.5),
@@ -95,7 +96,6 @@ class TestArc(unittest.TestCase):
                                np.deg2rad(89)))
 
         self.assertEqual(np.rad2deg(arc1.angle(arc2)), -44.996385007218926)
-        
 
         arc1 = Arc(SCoordinate(np.deg2rad(112.5), np.deg2rad(89.234600944314138)),
                    SCoordinate(np.deg2rad(90), np.deg2rad(89)))
@@ -104,9 +104,9 @@ class TestArc(unittest.TestCase):
 
         self.assertEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883)
 
- 
-        
+
 class TestSphericalPolygon(unittest.TestCase):
+
     """Test the spherical polygon.
     """
 
@@ -116,15 +116,15 @@ class TestSphericalPolygon(unittest.TestCase):
         vertices = np.array([[1, 2, 3, 4, 3, 2],
                              [3, 4, 3, 2, 1, 2]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
-        
-        self.assertAlmostEqual(0.00121732523118, polygon.area())        
-    
+
+        self.assertAlmostEqual(0.00121732523118, polygon.area())
+
         vertices = np.array([[1, 2, 3, 2],
                              [3, 4, 3, 2]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
-        
+
         self.assertAlmostEqual(0.000608430665842, polygon.area())
-        
+
         vertices = np.array([[0, 0, 1, 1],
                              [0, 1, 1, 0]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
@@ -137,26 +137,26 @@ class TestSphericalPolygon(unittest.TestCase):
                              [1, 1, 0, 0]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
 
-        self.assertAlmostEqual(0.000304609684862, polygon.area())        
+        self.assertAlmostEqual(0.000304609684862, polygon.area())
 
         vertices = np.array([[0, 90, 90, 0],
                              [1, 1, 0, 0]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
 
-        self.assertAlmostEqual(0.0349012696772, polygon.area())        
+        self.assertAlmostEqual(0.0349012696772, polygon.area())
 
         vertices = np.array([[90, 0, 0],
                              [0, 0, 90]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
 
-        self.assertAlmostEqual(np.pi/2, polygon.area())        
+        self.assertAlmostEqual(np.pi / 2, polygon.area())
 
         # Around the north pole
 
         vertices = np.array([[0, -90, 180, 90],
                              [89, 89, 89, 89]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
-        
+
         self.assertAlmostEqual(0.000609265770322, polygon.area())
 
         # Around the south pole
@@ -164,8 +164,55 @@ class TestSphericalPolygon(unittest.TestCase):
         vertices = np.array([[0, 90, 180, -90],
                              [-89, -89, -89, -89]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
-        
+
         self.assertAlmostEqual(0.000609265770322, polygon.area())
+
+    def test_is_inside(self):
+        """Test checking if a polygon is inside of another.
+        """
+
+        vertices = np.array([[1, 1, 20, 20],
+                             [1, 20, 20, 1]]).T
+
+        polygon1 = SphPolygon(np.deg2rad(vertices))
+
+        vertices = np.array([[0, 0, 30, 30],
+                             [0, 30, 30, 0]]).T
+
+        polygon2 = SphPolygon(np.deg2rad(vertices))
+
+        self.assertTrue(polygon1._is_inside(polygon2))
+        self.assertFalse(polygon2._is_inside(polygon1))
+        self.assertTrue(polygon2.area() > polygon1.area())
+
+        polygon2.invert()
+        self.assertFalse(polygon1._is_inside(polygon2))
+        self.assertFalse(polygon2._is_inside(polygon1))
+
+        vertices = np.array([[0, 0, 30, 30],
+                             [21, 30, 30, 21]]).T
+
+        polygon2 = SphPolygon(np.deg2rad(vertices))
+        self.assertFalse(polygon1._is_inside(polygon2))
+        self.assertFalse(polygon2._is_inside(polygon1))
+
+        polygon2.invert()
+
+        self.assertTrue(polygon1._is_inside(polygon2))
+        self.assertFalse(polygon2._is_inside(polygon1))
+
+        vertices = np.array([[100, 100, 130, 130],
+                             [41, 50, 50, 41]]).T
+
+        polygon2 = SphPolygon(np.deg2rad(vertices))
+
+        self.assertFalse(polygon1._is_inside(polygon2))
+        self.assertFalse(polygon2._is_inside(polygon1))
+
+        polygon2.invert()
+
+        self.assertTrue(polygon1._is_inside(polygon2))
+        self.assertFalse(polygon2._is_inside(polygon1))
 
     def test_bool(self):
         """Test the intersection and union functions.
@@ -176,34 +223,34 @@ class TestSphericalPolygon(unittest.TestCase):
         vertices = np.array([[-45, -135, 135, 45],
                              [89, 89, 89, 89]]).T
         poly2 = SphPolygon(np.deg2rad(vertices))
-        
-        uni = np.array([[ 157.5       ,   89.23460094],
-                        [-225.        ,   89.        ],
-                        [ 112.5       ,   89.23460094],
-                        [  90.        ,   89.        ],
-                        [  67.5       ,   89.23460094],
-                        [  45.        ,   89.        ],
-                        [  22.5       ,   89.23460094],
-                        [   0.        ,   89.        ],
-                        [ -22.5       ,   89.23460094],
-                        [ -45.        ,   89.        ],
-                        [ -67.5       ,   89.23460094],
-                        [ -90.        ,   89.        ],
-                        [-112.5       ,   89.23460094],
-                        [-135.        ,   89.        ],
-                        [-157.5       ,   89.23460094],
-                        [-180.        ,   89.        ]])
-        inter = np.array([[ 157.5       ,   89.23460094],
-                          [ 112.5       ,   89.23460094],
-                          [  67.5       ,   89.23460094],
-                          [  22.5       ,   89.23460094],
-                          [ -22.5       ,   89.23460094],
-                          [ -67.5       ,   89.23460094],
-                          [-112.5       ,   89.23460094],
-                          [-157.5       ,   89.23460094]])
+
+        uni = np.array([[157.5,   89.23460094],
+                        [-225.,   89.],
+                        [112.5,   89.23460094],
+                        [90.,   89.],
+                        [67.5,   89.23460094],
+                        [45.,   89.],
+                        [22.5,   89.23460094],
+                        [0.,   89.],
+                        [-22.5,   89.23460094],
+                        [-45.,   89.],
+                        [-67.5,   89.23460094],
+                        [-90.,   89.],
+                        [-112.5,   89.23460094],
+                        [-135.,   89.],
+                        [-157.5,   89.23460094],
+                        [-180.,   89.]])
+        inter = np.array([[157.5,   89.23460094],
+                          [112.5,   89.23460094],
+                          [67.5,   89.23460094],
+                          [22.5,   89.23460094],
+                          [-22.5,   89.23460094],
+                          [-67.5,   89.23460094],
+                          [-112.5,   89.23460094],
+                          [-157.5,   89.23460094]])
         poly_inter = poly1.intersection(poly2)
         poly_union = poly1.union(poly2)
-        
+
         self.assertTrue(poly_inter.area() <= poly_union.area())
 
         self.assertTrue(np.allclose(poly_inter.vertices,
@@ -211,37 +258,32 @@ class TestSphericalPolygon(unittest.TestCase):
         self.assertTrue(np.allclose(poly_union.vertices,
                                     np.deg2rad(uni)))
 
-
         vertices1 = np.array([[-10,  10],
-                              [ -5,  10],
-                              [  0,  10],
-                              [  5,  10],
-                              [ 10,  10],
-                              [ 10, -10],
+                              [-5,  10],
+                              [0,  10],
+                              [5,  10],
+                              [10,  10],
+                              [10, -10],
                               [-10, -10]])
 
-        vertices2 = np.array([[ -5,  10],
-                              [  0,  10],
-                              [  5,  10],
-                              [  5,  -5],
-                              [ -5,  -5]])
+        vertices2 = np.array([[-5,  10],
+                              [0,  10],
+                              [5,  10],
+                              [5,  -5],
+                              [-5,  -5]])
 
-        vertices3 = np.array([[  5,  10],
-                              [  5,  -5],
-                              [ -5,  -5],
-                              [ -5,  10],
-                              [  0,  10]])
+        vertices3 = np.array([[5,  10],
+                              [5,  -5],
+                              [-5,  -5],
+                              [-5,  10],
+                              [0,  10]])
 
-        
         poly1 = SphPolygon(np.deg2rad(vertices1))
         poly2 = SphPolygon(np.deg2rad(vertices2))
         poly_inter = poly1.intersection(poly2)
 
         self.assertTrue(np.allclose(poly_inter.vertices,
                                     np.deg2rad(vertices3)))
-
-        
-
 
         # vertices = np.array([[ -84.54058691,   71.80094043],
         #                      [ -74.68557932,   72.16812631],
@@ -364,22 +406,21 @@ class TestSphericalPolygon(unittest.TestCase):
         # map.drawmapboundary(fill_color='white')
         # map.drawmeridians(np.arange(0, 360, 30))
         # map.drawparallels(np.arange(-90, 90, 30))
-        
+
         # poly_inter_day.draw(map, "-r")
         # poly_inter_night.draw(map, "-b")
         # plt.show()
-        
+
     # def test_twilight(self):
     #     """Test the twilight polygon.
     #     """
     #     from datetime import datetime
     #     utctime = datetime(2013, 3, 20, 12, 0)
 
-    #     #print np.rad2deg(get_twilight_poly(utctime).vertices)
+    # print np.rad2deg(get_twilight_poly(utctime).vertices)
 
     #     vertices = np.array([[0, -90, 180, 90],
     #                          [89, 89, 89, 89]]).T
-
 
 
 def suite():
@@ -393,3 +434,5 @@ def suite():
 
     return mysuite
 
+if __name__ == '__main__':
+    unittest.main()

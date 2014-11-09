@@ -28,11 +28,11 @@ import logging.handlers
 import os
 import operator
 from datetime import datetime, timedelta
-from trollsched.spherical import SphPolygon
 import numpy as np
-from pyorbital import geoloc, geoloc_instrument_definitions, tlefile, orbital
+from pyorbital import tlefile, orbital
 from tempfile import mkstemp
-
+from trollsched.boundary import SwathBoundary, AreaDefBoundary
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -65,180 +65,15 @@ class Mapper(object):
     def __exit__(self, etype, value, tb):
         pass
 
-
-class Boundary(object):
-
-    """Area boundary objects.
-    """
-
-    def __init__(self, *sides):
-        self.sides_lons, self.sides_lats = zip(*sides)
-        self.sides_lons = list(self.sides_lons)
-        self.sides_lats = list(self.sides_lats)
-
-        self._contour_poly = None
-
-    def decimate(self, ratio):
-        """Remove some points in the boundaries, but never the corners.
-        """
-        for i in range(len(self.sides_lons)):
-            l = len(self.sides_lons[i])
-            start = (l % ratio) / 2
-            points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
-
-            self.sides_lons[i] = self.sides_lons[i][points]
-            self.sides_lats[i] = self.sides_lats[i][points]
-
-    def contour(self):
-        """Get the (lons, lats) tuple of the boundary object.
-        """
-        lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
-        lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
-
-        return lons, lats
-
-    def contour_poly(self):
-        """Get the Spherical polygon corresponding to the Boundary
-        """
-        if self._contour_poly is None:
-            self._contour_poly = SphPolygon(
-                np.deg2rad(np.vstack(self.contour()).T))
-        return self._contour_poly
-
-    def draw(self, mapper, options):
-        """Draw the current boundary on the *mapper*
-        """
-        self.contour_poly().draw(mapper, options)
-
-    def show(self, poly=None, other_poly=None):
-        """Show the current boundary.
-        """
-
-        import matplotlib.pyplot as plt
-        plt.clf()
-        with Mapper() as mapper:
-            self.draw(mapper, "-r")
-            if poly is not None:
-                poly.draw(mapper, "-b")
-            if other_poly is not None:
-                other_poly.draw(mapper, "-g")
-        plt.show()
-
-
-class SwathBoundary(Boundary):
-
-    """Boundaries for satellite overpasses.
-    """
-
-    def get_instrument_points(self, overpass, utctime,
-                              scans_nb, scanpoints, decimate=1):
-        """Get the boundary points for a given overpass.
-        """
-        instrument = overpass.instrument
-        # cheating at the moment.
-        scan_angle = 55.37
-        if instrument == "modis":
-            scan_angle = 55.0
-        elif instrument == "viirs":
-            scan_angle = 55.84
-        elif overpass.satellite == "noaa 16":
-            scan_angle = 55.25
-        instrument = "avhrr"
-        instrument_fun = getattr(geoloc_instrument_definitions, instrument)
-        sgeom = instrument_fun(scans_nb, scanpoints,
-                               scan_angle=scan_angle, decimate=decimate)
-        times = sgeom.times(utctime)
-        pixel_pos = geoloc.compute_pixels((self.orb.tle._line1,
-                                           self.orb.tle._line2),
-                                          sgeom, times)
-        lons, lats, alts = geoloc.get_lonlatalt(pixel_pos, times)
-
-        del alts
-        return (lons.reshape(-1, len(scanpoints)),
-                lats.reshape(-1, len(scanpoints)))
-
-    def __init__(self, overpass, decimate=500.0):
-        # compute area covered by pass
-
-        self.overpass = overpass
-        self.orb = overpass.orb
-
-        # compute sides
-
-        scans_nb = np.ceil(((overpass.falltime - overpass.risetime).seconds +
-                            (overpass.falltime -
-                             overpass.risetime).microseconds
-                            / 1000000.0) * 6 / decimate)
-
-        sides_lons, sides_lats = self.get_instrument_points(self.overpass,
-                                                            overpass.risetime,
-                                                            scans_nb,
-                                                            np.array(
-                                                                [0, 2047]),
-                                                            decimate=decimate)
-
-        self.left_lons = sides_lons[::-1, 0]
-        self.left_lats = sides_lats[::-1, 0]
-        self.right_lons = sides_lons[:, 1]
-        self.right_lats = sides_lats[:, 1]
-
-        # compute bottom
-
-        # avhrr
-        maxval = 2048
-        rest = maxval % decimate
-        reduced = np.hstack(
-            [0, np.arange(rest / 2, maxval, decimate), maxval - 1])
-
-        lons, lats = self.get_instrument_points(self.overpass,
-                                                overpass.falltime,
-                                                1,
-                                                reduced)
-
-        self.bottom_lons = lons[0][::-1]
-        self.bottom_lats = lats[0][::-1]
-
-        # compute top
-
-        lons, lats = self.get_instrument_points(self.overpass,
-                                                overpass.risetime,
-                                                1,
-                                                reduced)
-
-        self.top_lons = lons[0]
-        self.top_lats = lats[0]
-
-        self._contour_poly = None
-
-    def decimate(self, ratio):
-        l = len(self.top_lons)
-        start = (l % ratio) / 2
-        points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
-
-        self.top_lons = self.top_lons[points]
-        self.top_lats = self.top_lats[points]
-        self.bottom_lons = self.bottom_lons[points]
-        self.bottom_lats = self.bottom_lats[points]
-
-        l = len(self.right_lons)
-        start = (l % ratio) / 2
-        points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
-
-        self.right_lons = self.right_lons[points]
-        self.right_lats = self.right_lats[points]
-        self.left_lons = self.left_lons[points]
-        self.left_lats = self.left_lats[points]
-
-    def contour(self):
-        lons = np.concatenate((self.top_lons,
-                               self.right_lons[1:-1],
-                               self.bottom_lons,
-                               self.left_lons[1:-1]))
-        lats = np.concatenate((self.top_lats,
-                               self.right_lats[1:-1],
-                               self.bottom_lats,
-                               self.left_lats[1:-1]))
-        return lons, lats
+# Platform name to tle names translator
+tle_names = {"Metop-A": "METOP-A",
+             "Metop-B": "METOP-B",
+             "NOAA-15": "NOAA 15",
+             "NOAA-18": "NOAA 18",
+             "NOAA-19": "NOAA 19",
+             "Suomi-NPP": "SUOMI NPP",
+             "EOS-Terra": "TERRA",
+             "EOS-Aqua": "AQUA"}
 
 
 class Pass(object):
@@ -249,21 +84,15 @@ class Pass(object):
     buffer = timedelta(minutes=2)
 
     def __init__(self, satellite, risetime, falltime, orb=None, uptime=None, instrument=None):
-        """
 
-        Arguments:
-        - `satellite`:
-        - `risetime`:
-        - `falltime`:
-        """
         self.satellite = satellite
         self.risetime = risetime
         self.falltime = falltime
         self.uptime = uptime
         self.instrument = instrument
-        self.orb = orb
+        self.orb = orb or orbital.Orbital(tle_names.get(satellite,
+                                                        satellite))
         self.score = {}
-        self.old_bound = None
         self.boundary = SwathBoundary(self)
         # make boundary lighter.
         # self.boundary.decimate(100)
@@ -273,7 +102,7 @@ class Pass(object):
         self.fig = None
 
     def overlaps(self, other, delay=timedelta(seconds=0)):
-        """Check if two passes overlap.
+        """Check if two passes overlap in time.
         """
         return ((self.risetime < other.falltime + delay) and
                 (self.falltime + delay > other.risetime))
@@ -345,11 +174,20 @@ class Pass(object):
             return self.risetime + timedelta(minutes=sublat_mins)
 
     def area_coverage(self, area_of_interest):
-        """Get the score depending on the coverage of the area of interest.
+        """Get the ratio of coverage (between 0 and 1) of the pass with the area
+        of interest.
         """
-        inter = self.boundary.contour_poly().intersection(
-            area_of_interest.poly)
-        return inter.area() / area_of_interest.poly.area()
+        try:
+            area_boundary = area_of_interest.poly
+        except AttributeError:
+            area_boundary = AreaDefBoundary(area_of_interest,
+                                            frequency=500)
+            area_boundary = area_boundary.contour_poly
+        inter = self.boundary.contour_poly.intersection(
+            area_boundary)
+        if inter is None:
+            return None
+        return inter.area() / area_boundary.area()
 
     def save_fig(self, poly=None, directory="/tmp/plots",
                  overwrite=False, labels=None, extension=".png"):
@@ -398,7 +236,7 @@ class Pass(object):
     def draw(self, mapper, options):
         """Draw the pass to the *mapper* object (basemap).
         """
-        self.boundary.contour_poly().draw(mapper, options)
+        self.boundary.contour_poly.draw(mapper, options)
 
     def print_vcs(self, coords):
         """Should look like this::
@@ -412,7 +250,9 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
         """
 
         max_elevation = self.orb.get_observer_look(self.uptime, *coords)[1]
-        anl = self.orb.get_observer_look(self.risetime, *coords)[0]
+        anl = self.orb.get_lonlatalt(
+            self.orb.get_last_an_time(self.risetime))[0] % 360
+        #anl = self.orb.get_observer_look(self.risetime, *coords)[0]
         if self.rec:
             rec = "Y"
         else:
@@ -687,7 +527,6 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
     return set(reduce(operator.concat, passes.values()))
 
 if __name__ == '__main__':
-    from datetime import datetime
     from trollsched.satpass import get_next_passes
     passes = get_next_passes(
         ["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))

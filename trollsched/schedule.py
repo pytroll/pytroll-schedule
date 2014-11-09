@@ -22,24 +22,21 @@
 
 """Scheduling
 """
-from tempfile import mkstemp
 import logging
 import logging.handlers
-import operator
 import urlparse
 import os
 from datetime import datetime, timedelta
 from pprint import pformat
 import numpy as np
 from pyresample import utils
-from pyorbital import (orbital, geoloc, geoloc_instrument_definitions,
-                       astronomy, tlefile)
-from trollsched.spherical import SphPolygon, get_twilight_poly
+from pyorbital import astronomy
+from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
-from trollsched.satpass import get_next_passes, Boundary
+from trollsched.satpass import get_next_passes
+from trollsched.boundary import AreaDefBoundary
 
 from ConfigParser import ConfigParser
-import glob
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +135,7 @@ def combine(p1, p2, area_of_interest, scores):
 
     ip1, sip1 = p1.score.get(area_of_interest, (None, None))
     if sip1 is None:
-        ip1 = p1.boundary.contour_poly().intersection(area_of_interest.poly)
+        ip1 = p1.boundary.contour_poly.intersection(area_of_interest.poly)
         # FIXME: ip1 or ip2 could be None if the pass is entirely inside the
         # area (or vice versa)
         if ip1 is None:
@@ -166,7 +163,7 @@ def combine(p1, p2, area_of_interest, scores):
 
     ip2, sip2 = p2.score.get(area_of_interest, (None, None))
     if sip2 is None:
-        ip2 = p2.boundary.contour_poly().intersection(area_of_interest.poly)
+        ip2 = p2.boundary.contour_poly.intersection(area_of_interest.poly)
         if ip2 is None:
             return 0
 
@@ -543,13 +540,8 @@ def run():
 
     logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
 
-    lons, lats = area.get_boundary_lonlats()
-    area_boundary = Boundary((lons.side1, lats.side1),
-                             (lons.side2, lats.side2),
-                             (lons.side3, lats.side3),
-                             (lons.side4, lats.side4))
-    area_boundary.decimate(500)
-    area.poly = area_boundary.contour_poly()
+    area_boundary = AreaDefBoundary(area, frequency=500)
+    area.poly = area_boundary.contour_poly
 
     logger.info("computing best schedule for area euron1")
     schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
