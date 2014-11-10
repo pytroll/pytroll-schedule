@@ -27,6 +27,7 @@ from trollsched.tests import test_schedule, test_spherical
 
 import unittest
 
+
 def suite():
     """The global test suite.
     """
@@ -34,5 +35,4 @@ def suite():
     mysuite.addTests(test_schedule.suite())
     mysuite.addTests(test_spherical.suite())
 
-    
     return mysuite
