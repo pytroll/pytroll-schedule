@@ -27,6 +27,9 @@ base type is a numpy array of size (n, 2) (2 for lon and lats)
 """
 
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SCoordinate(object):

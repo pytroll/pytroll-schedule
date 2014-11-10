@@ -186,7 +186,7 @@ class Pass(object):
         inter = self.boundary.contour_poly.intersection(
             area_boundary)
         if inter is None:
-            return None
+            return 0
         return inter.area() / area_boundary.area()
 
     def save_fig(self, poly=None, directory="/tmp/plots",
