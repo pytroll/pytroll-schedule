@@ -1,6 +1,7 @@
 [default]
 station=nrk
-satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 16,noaa 15,aqua,terra,suomi npp
+satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 15,aqua,terra,suomi npp
+#satellites=noaa 16,terra
 #7 days
 forward=168
 start=2
@@ -13,7 +14,8 @@ longitude=16.148649
 latitude=58.581844
 # km
 altitude=0.052765
-area_file=/home/sat/smhi/scheduler/areas.def
+#area_file=/home/sat/smhi/scheduler/areas.def
+area_file=/local_disk/usr/src/satprod/etc/areas.def
 area=euron1
 
 [nrk-test]
