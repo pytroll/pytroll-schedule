@@ -39,11 +39,15 @@ class Boundary(object):
     """Boundary objects.
     """
 
-    def __init__(self):
+    def __init__(self, lons=None, lats=None, frequency=1):
         self._contour_poly = None
+        if lons is not None:
+            self.lons = lons[::frequency]
+        if lats is not None:
+            self.lats = lats[::frequency]
 
     def contour(self):
-        raise NotImplementedError
+        return self.lons, self.lats
 
     @property
     def contour_poly(self):
