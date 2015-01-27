@@ -613,6 +613,7 @@ def suite():
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestSCoordinate))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestCCoordinate))
     mysuite.addTest(loader.loadTestsFromTestCase(TestArc))
     mysuite.addTest(loader.loadTestsFromTestCase(TestSphericalPolygon))
 
