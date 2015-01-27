@@ -123,6 +123,10 @@ class TestCCoordinate(unittest.TestCase):
         b = CCoordinate((1., 1., 0.))
         self.assertTrue(np.allclose((d + c).cart, b.cart))
 
+        self.assertTrue(np.allclose((d + (0, 1, 0)).cart, b.cart))
+
+        self.assertTrue(np.allclose(((0, 1, 0) + d).cart, b.cart))
+
     def test_mul(self):
         """Test multiplying (element-wise) cartesian vectors.
         """
@@ -130,6 +134,9 @@ class TestCCoordinate(unittest.TestCase):
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((0., 0., 0.))
         self.assertTrue(np.allclose((d * c).cart, b.cart))
+        self.assertTrue(np.allclose((d * (0, 1, 0)).cart, b.cart))
+
+        self.assertTrue(np.allclose(((0, 1, 0) * d).cart, b.cart))
 
     def test_to_spherical(self):
         """Test converting to spherical coordinates.
@@ -143,6 +150,32 @@ class TestArc(unittest.TestCase):
 
     """Test arcs
     """
+
+    def test_eq(self):
+        arc1 = Arc(SCoordinate(0, 0),
+                   SCoordinate(np.deg2rad(10), np.deg2rad(10)))
+        arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
+                   SCoordinate(np.deg2rad(10), 0))
+
+        self.assertFalse(arc1 == arc2)
+
+        self.assertTrue(arc1 == arc1)
+
+    def test_ne(self):
+        arc1 = Arc(SCoordinate(0, 0),
+                   SCoordinate(np.deg2rad(10), np.deg2rad(10)))
+        arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
+                   SCoordinate(np.deg2rad(10), 0))
+
+        self.assertTrue(arc1 != arc2)
+
+        self.assertFalse(arc1 != arc1)
+
+    def test_str(self):
+        arc1 = Arc(SCoordinate(0, 0),
+                   SCoordinate(np.deg2rad(10), np.deg2rad(10)))
+        self.assertEqual(str(arc1), str(arc1.start) + " -> " + str(arc1.end))
+        self.assertEqual(repr(arc1), str(arc1.start) + " -> " + str(arc1.end))
 
     def test_intersection(self):
         arc1 = Arc(SCoordinate(0, 0),
@@ -200,6 +233,21 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(45), np.deg2rad(89)))
 
         self.assertEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883)
+
+        arc1 = Arc(SCoordinate(0, 0), SCoordinate(1, 0))
+        self.assertEqual(arc1.angle(arc1), 0)
+
+        arc2 = Arc(SCoordinate(1, 0), SCoordinate(0, 0))
+        self.assertEqual(arc1.angle(arc2), 0)
+
+        arc2 = Arc(SCoordinate(0, 0), SCoordinate(-1, 0))
+        self.assertEqual(arc1.angle(arc2), np.pi)
+
+        arc2 = Arc(SCoordinate(2, 0), SCoordinate(1, 0))
+        self.assertEqual(arc1.angle(arc2), np.pi)
+
+        arc2 = Arc(SCoordinate(2, 0), SCoordinate(3, 0))
+        self.assertRaises(ValueError, arc1.angle, arc2)
 
 
 class TestSphericalPolygon(unittest.TestCase):
