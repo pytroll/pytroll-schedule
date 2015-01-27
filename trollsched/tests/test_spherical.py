@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -23,7 +23,7 @@
 """Test cases for spherical geometry.
 """
 
-from trollsched.spherical import SphPolygon, Arc, SCoordinate
+from trollsched.spherical import SphPolygon, Arc, SCoordinate, CCoordinate
 import unittest
 import numpy as np
 
@@ -34,12 +34,109 @@ class TestSCoordinate(unittest.TestCase):
     """
 
     def test_distance(self):
+        """Test Vincenty formula
+        """
         d = SCoordinate(0, 0).distance(SCoordinate(1, 1))
         self.assertEquals(d, 1.2745557823062943)
 
     def test_hdistance(self):
+        """Test Haversine formula
+        """
         d = SCoordinate(0, 0).hdistance(SCoordinate(1, 1))
         self.assertTrue(np.allclose(d, 1.2745557823062943))
+
+    def test_str(self):
+        """Check the string representation
+        """
+        d = SCoordinate(0, 0)
+        self.assertEqual(str(d), "(0.0, 0.0)")
+
+    def test_repr(self):
+        """Check the representation
+        """
+        d = SCoordinate(0, 0)
+        self.assertEqual(repr(d), "(0.0, 0.0)")
+
+
+class TestCCoordinate(unittest.TestCase):
+
+    """Test SCoordinates.
+    """
+
+    def test_str(self):
+        """Check the string representation
+        """
+        d = CCoordinate((0, 0, 0))
+        self.assertEqual(str(d), "[0 0 0]")
+
+    def test_repr(self):
+        """Check the representation
+        """
+        d = CCoordinate((0, 0, 0))
+        self.assertEqual(repr(d), "[0 0 0]")
+
+    def test_norm(self):
+        """Euclidean norm of a cartesian vector
+        """
+        d = CCoordinate((1, 0, 0))
+        self.assertEqual(d.norm(), 1.0)
+
+    def test_normalize(self):
+        """Normalize a cartesian vector
+        """
+        d = CCoordinate((2, 0, 0))
+        self.assertTrue(np.allclose(d.normalize().cart, [1, 0, 0]))
+
+    def test_cross(self):
+        """Test cross product in cartesian coordinates
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = CCoordinate((0., 1., 0.))
+        self.assertTrue(np.allclose(d.cross(c).cart, [0., 0., 1.]))
+
+    def test_dot(self):
+        """Test the dot product of two cartesian vectors.
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = CCoordinate((0., 1., 0.))
+        self.assertEqual(d.dot(c), 0)
+
+    def test_ne(self):
+        """Test inequality of two cartesian vectors.
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = CCoordinate((0., 1., 0.))
+        self.assertTrue(c != d)
+
+    def test_eq(self):
+        """Test equality of two cartesian vectors.
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = CCoordinate((0., 1., 0.))
+        self.assertFalse(c == d)
+
+    def test_add(self):
+        """Test adding cartesian vectors.
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = CCoordinate((0., 1., 0.))
+        b = CCoordinate((1., 1., 0.))
+        self.assertTrue(np.allclose((d + c).cart, b.cart))
+
+    def test_mul(self):
+        """Test multiplying (element-wise) cartesian vectors.
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = CCoordinate((0., 1., 0.))
+        b = CCoordinate((0., 0., 0.))
+        self.assertTrue(np.allclose((d * c).cart, b.cart))
+
+    def test_to_spherical(self):
+        """Test converting to spherical coordinates.
+        """
+        d = CCoordinate((1., 0., 0.))
+        c = SCoordinate(0, 0)
+        self.assertEqual(d.to_spherical(), c)
 
 
 class TestArc(unittest.TestCase):

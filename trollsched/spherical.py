@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -114,7 +114,7 @@ class CCoordinate(object):
     """
 
     def __init__(self, cart):
-        self.cart = cart
+        self.cart = np.array(cart)
 
     def norm(self):
         """Euclidean norm of the vector.
@@ -148,17 +148,26 @@ class CCoordinate(object):
     def __str__(self):
         return str(self.cart)
 
+    def __repr__(self):
+        return str(self.cart)
+
     def __add__(self, other):
-        return CCoordinate(self.cart + other)
+        try:
+            return CCoordinate(self.cart + other.cart)
+        except AttributeError:
+            return CCoordinate(self.cart + np.array(other))
 
     def __radd__(self, other):
-        return CCoordinate(self.cart + other)
+        return self.__add__(other)
 
     def __mul__(self, other):
-        return CCoordinate(self.cart * other)
+        try:
+            return CCoordinate(self.cart * other.cart)
+        except AttributeError:
+            return CCoordinate(self.cart * np.array(other))
 
     def __rmul__(self, other):
-        return CCoordinate(self.cart * other)
+        return self.__mul__(other)
 
     def to_spherical(self):
         return SCoordinate(np.arctan2(self.cart[1], self.cart[0]),
@@ -443,7 +452,7 @@ class SphPolygon(object):
                 return polys[-sign]
             if other._is_inside(self):
                 return polys[sign]
-            # FIXME: wthat is the union of two disjoint polygons ?
+
             return None
 
         while True:
