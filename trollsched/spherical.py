@@ -177,7 +177,7 @@ EPSILON = 0.0000001
 
 
 def modpi(val, mod=np.pi):
-    """Puts *val* between -pi and pi.
+    """Puts *val* between -*mod* and *mod*.
     """
     return (val + mod) % (2 * mod) - mod
 
