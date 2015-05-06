@@ -490,6 +490,8 @@ class TestSphericalPolygon(unittest.TestCase):
         self.assertTrue(np.allclose(poly_union.vertices,
                                     np.deg2rad(uni)))
 
+        # Test 2 polygons sharing 2 contiguous edges.
+
         vertices1 = np.array([[-10,  10],
                               [-5,  10],
                               [0,  10],
@@ -516,6 +518,41 @@ class TestSphericalPolygon(unittest.TestCase):
 
         self.assertTrue(np.allclose(poly_inter.vertices,
                                     np.deg2rad(vertices3)))
+
+        # Test when last node of the intersection is the last vertice of the
+        # second polygon.
+
+        swath_vertices = np.array([[-115.32268301,   66.32946139],
+                                   [-61.48397172,  58.56799254],
+                                   [-60.25004314, 58.00754686],
+                                   [-71.35057076,   49.60229517],
+                                   [-113.746486,  56.03008985]])
+        area_vertices = np.array([[-68.32812107,  52.3480829],
+                                  [-67.84993896,  53.07015692],
+                                  [-55.54651296,  64.9254637],
+                                  [-24.63341856,  74.24628796],
+                                  [-31.8996363,  27.99907764],
+                                  [-39.581043,  37.0639821],
+                                  [-50.90185988,  45.56296169],
+                                  [-67.43022017,  52.12399581]])
+
+        res = np.array([[-62.77837918,   59.12607053],
+                        [-61.48397172,   58.56799254],
+                        [-60.25004314,   58.00754686],
+                        [-71.35057076,   49.60229517],
+                        [-113.746486,     56.03008985],
+                        [-115.32268301,   66.32946139]])
+
+        poly1 = SphPolygon(np.deg2rad(swath_vertices))
+        poly2 = SphPolygon(np.deg2rad(area_vertices))
+
+        poly_inter = poly1.intersection(poly2)
+        self.assertTrue(np.allclose(poly_inter.vertices,
+                                    np.deg2rad(res)))
+
+        poly_inter = poly2.intersection(poly1)
+        self.assertTrue(np.allclose(poly_inter.vertices,
+                                    np.deg2rad(res)))
 
         # vertices = np.array([[ -84.54058691,   71.80094043],
         #                      [ -74.68557932,   72.16812631],

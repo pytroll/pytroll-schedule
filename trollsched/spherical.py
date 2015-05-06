@@ -431,6 +431,15 @@ class SphPolygon(object):
         """(Union by default)
         """
 
+        # The algorithm works this way: find an intersection between the two
+        # polygons. If none can be found, then the two polygons are either not
+        # overlapping, or one is entirely included in the other. Otherwise,
+        # follow the edges of a polygon until another intersection is
+        # encountered, at which point you start following the edges of the other
+        # polygon, and so on until you come back to the first intersection. In
+        # which direction to follow the edges of the polygons depends if you are
+        # interested in the union or the intersection of the two polygons.
+
         def rotate_arcs(start_arc, arcs):
             idx = arcs.index(start_arc)
             return arcs[idx:] + arcs[:idx]
@@ -446,6 +455,8 @@ class SphPolygon(object):
             if inter is not None and inter != edge1.end and inter != edge2.end:
                 break
 
+        # if no intersection is found, find out if the one poly is included in
+        # the other.
         if inter is None:
             polys = [0, self, other]
             if self._is_inside(other):
@@ -455,24 +466,30 @@ class SphPolygon(object):
 
             return None
 
+        # starting from the intersection, follow the edges of one of the
+        # polygons.
+
         while True:
             arcs1 = rotate_arcs(edge1, arcs1)
             arcs2 = rotate_arcs(edge2, arcs2)
+
+            narcs1 = arcs1 + [edge1]
+            narcs2 = arcs2 + [edge2]
 
             arc1 = Arc(inter, edge1.end)
             arc2 = Arc(inter, edge2.end)
 
             if np.sign(arc1.angle(arc2)) != sign:
                 arcs1, arcs2 = arcs2, arcs1
+                narcs1, narcs2 = narcs2, narcs1
 
             nodes.append(inter)
 
-            for edge1 in arcs1:
-                inter, edge2 = edge1.get_next_intersection(arcs2, inter)
-
+            for edge1 in narcs1:
+                inter, edge2 = edge1.get_next_intersection(narcs2, inter)
                 if inter is not None:
                     break
-                elif len(nodes) > 0 and nodes[-1] != edge1.end:
+                elif len(nodes) > 0 and edge1.end not in [nodes[-1], nodes[0]]:
                     nodes.append(edge1.end)
 
             if inter is None and len(nodes) > 2 and nodes[-1] == nodes[0]:
