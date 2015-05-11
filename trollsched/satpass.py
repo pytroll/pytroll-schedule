@@ -65,16 +65,6 @@ class Mapper(object):
     def __exit__(self, etype, value, tb):
         pass
 
-# Platform name to tle names translator
-tle_names = {"Metop-A": "METOP-A",
-             "Metop-B": "METOP-B",
-             "NOAA-15": "NOAA 15",
-             "NOAA-18": "NOAA 18",
-             "NOAA-19": "NOAA 19",
-             "Suomi-NPP": "SUOMI NPP",
-             "EOS-Terra": "TERRA",
-             "EOS-Aqua": "AQUA"}
-
 
 class Pass(object):
 
@@ -90,8 +80,7 @@ class Pass(object):
         self.falltime = falltime
         self.uptime = uptime
         self.instrument = instrument
-        self.orb = orb or orbital.Orbital(tle_names.get(satellite,
-                                                        satellite))
+        self.orb = orb or orbital.Orbital(satellite)
         self.score = {}
         self.boundary = SwathBoundary(self)
         # make boundary lighter.
@@ -385,7 +374,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
         passlist = satorb.get_next_passes(utctime,
                                           forward,
                                           *coords)
-        if sat.startswith("metop") or sat.startswith("noaa"):
+        if sat.lower().startswith("metop") or sat.lower().startswith("noaa"):
             instrument = "avhrr"
         elif sat in ["aqua", "terra"]:
             instrument = "modis"
