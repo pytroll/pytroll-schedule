@@ -128,9 +128,9 @@ class SwathBoundary(Boundary):
             scan_angle = 55.0
         elif instrument == "viirs":
             scan_angle = 55.84
-        elif overpass.satellite == "noaa 16":
+        elif overpass.satellite == "NOAA-16":
             scan_angle = 55.25
-        instrument = "avhrr"
+        instrument = "avhrr/3"
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
         sgeom = instrument_fun(scans_nb, scanpoints,
                                scan_angle=scan_angle, frequency=frequency)
