@@ -84,7 +84,7 @@ class AreaBoundary(Boundary):
             points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
             if points[1] == 0:
                 points = points[1:]
-            if points[-1] == (l - 1):
+            if points[-2] == (l - 1):
                 points = points[:-1]
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
