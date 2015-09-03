@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -82,7 +82,10 @@ class AreaBoundary(Boundary):
             l = len(self.sides_lons[i])
             start = (l % ratio) / 2
             points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
-
+            if points[1] == 0:
+                points = points[1:]
+            if points[-1] == (l - 1):
+                points = points[:-1]
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
 
