@@ -186,7 +186,7 @@ class Pass(object):
         rise = self.risetime.strftime("%Y%m%d%H%M%S")
         fall = self.falltime.strftime("%Y%m%d%H%M%S")
         filename = os.path.join(directory,
-                                (rise + self.satellite + fall + extension))
+                                (rise + self.satellite.replace(" ", "_") + fall + extension))
 
         self.fig = filename
         if not overwrite and os.path.exists(filename):
