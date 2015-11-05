@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -73,14 +73,15 @@ class Pass(object):
 
     buffer = timedelta(minutes=2)
 
-    def __init__(self, satellite, risetime, falltime, orb=None, uptime=None, instrument=None):
+    def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
+                 instrument=None, tle1=None, tle2=None):
 
         self.satellite = satellite
         self.risetime = risetime
         self.falltime = falltime
         self.uptime = uptime
         self.instrument = instrument
-        self.orb = orb or orbital.Orbital(satellite)
+        self.orb = orb or orbital.Orbital(satellite, line1=tle1, line2=tle2)
         self.score = {}
         self.boundary = SwathBoundary(self)
         # make boundary lighter.
@@ -172,8 +173,7 @@ class Pass(object):
             area_boundary = AreaDefBoundary(area_of_interest,
                                             frequency=500)
             area_boundary = area_boundary.contour_poly
-        inter = self.boundary.contour_poly.intersection(
-            area_boundary)
+        inter = self.boundary.contour_poly.intersection(area_boundary)
         if inter is None:
             return 0
         return inter.area() / area_boundary.area()
@@ -192,6 +192,8 @@ class Pass(object):
         if not overwrite and os.path.exists(filename):
             return filename
 
+        import matplotlib as mpl
+        mpl.use('Agg')
         import matplotlib.pyplot as plt
         plt.clf()
         with Mapper() as mapper:
@@ -211,10 +213,10 @@ class Pass(object):
         import matplotlib.pyplot as plt
         plt.clf()
         with Mapper() as mapper:
-            mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, "-r")
+            #mapper.nightshade(self.uptime, alpha=0.2)
+            self.draw(mapper, "+r")
             if poly is not None:
-                poly.draw(mapper, "-b")
+                poly.draw(mapper, "+b")
             if other_poly is not None:
                 other_poly.draw(mapper, "-g")
         plt.title(str(self))
@@ -385,7 +387,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
         # take care of metop-a
         if sat == "metop-a":
             metop_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                            for rtime, ftime, uptime in passlist]
+                            for rtime, ftime, uptime in passlist if rtime < ftime]
 
             passes["metop-a"] = []
             for overpass in metop_passes:
@@ -404,23 +406,23 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                                                  forward + 1,
                                                  *wpcoords)
             wp_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                         for rtime, ftime, uptime in passlist_wp]
+                         for rtime, ftime, uptime in passlist_wp if rtime < ftime]
 
             svcoords = (15.399, 78.228, 0)
             passlist_sv = satorb.get_next_passes(utctime - timedelta(minutes=30),
                                                  forward + 1,
                                                  *svcoords)
             sv_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                         for rtime, ftime, uptime in passlist_sv]
+                         for rtime, ftime, uptime in passlist_sv if rtime < ftime]
             pfcoords = (-147.43, 65.12, 0.51)
             passlist_pf = satorb.get_next_passes(utctime - timedelta(minutes=30),
                                                  forward + 1,
                                                  *pfcoords)
             pf_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                         for rtime, ftime, uptime in passlist_pf]
+                         for rtime, ftime, uptime in passlist_pf if rtime < ftime]
 
             aqua_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                           for rtime, ftime, uptime in passlist]
+                           for rtime, ftime, uptime in passlist if rtime < ftime]
 
             dumps = get_aqua_dumps_from_ftp(utctime - timedelta(minutes=30),
                                             utctime +

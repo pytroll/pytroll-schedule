@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -401,7 +401,7 @@ def read_config(filename):
 
     station = cfg.get("default", "station")
     satellites = cfg.get("default", "satellites").split(",")
-    forward = cfg.getfloat("default", "forward")
+    forward = cfg.getint("default", "forward")
     start = cfg.getfloat("default", "start")
 
     station_name = cfg.get(station, "name")
@@ -419,6 +419,11 @@ def read_config(filename):
 
     return ((station_lon, station_lat, station_alt),
             sat_scores, station_name, area, forward, start)
+
+
+def save_passes(allpasses, poly, output_dir):
+    for passage in allpasses:
+        passage.save_fig(poly, directory=output_dir)
 
 
 def run():
@@ -519,11 +524,6 @@ def run():
 
     satellites = scores.keys()
 
-    # satellites = ["noaa 19", "noaa 18", "noaa 16", "noaa 15",
-    #               "metop-a", "metop-b",
-    #               "terra", "aqua",
-    #               "suomi npp"]
-
     logger.info("Computing next satellite passes")
 
     tle_file = opts.tle
@@ -543,6 +543,13 @@ def run():
     area_boundary = AreaDefBoundary(area, frequency=500)
     area.poly = area_boundary.contour_poly
 
+    if opts.output_dir is not None:
+        from threading import Thread
+        save_passes(allpasses, area.poly, opts.output_dir)
+        image_saver = Thread(target=save_passes, args=(allpasses, area.poly, opts.output_dir))
+        image_saver.start()
+
+
     logger.info("computing best schedule for area euron1")
     schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
                                                timedelta(seconds=opts.delay))
@@ -555,16 +562,16 @@ def run():
     if opts.scisys:
         generate_sch_file(opts.scisys, allpasses, coords)
 
-    if opts.output_dir is not None:
-        for passage in allpasses:
-            passage.save_fig(area.poly, directory=opts.output_dir)
-
     if opts.xml or opts.report:
         url = urlparse.urlparse(opts.xml or opts.report)
         if url.scheme not in ["file", ""]:
             directory = "/tmp"
         else:
             directory = url.path
+        if opts.report:
+            logger.info("Waiting for images to be saved...")
+            image_saver.join()
+            logger.info("Done!")
         xmlfile = generate_xml_file(allpasses, start_time,
                                     start_time + timedelta(hours=forward),
                                     directory, station,

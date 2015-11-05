@@ -138,6 +138,7 @@ class SwathBoundary(Boundary):
         sgeom = instrument_fun(scans_nb, scanpoints,
                                scan_angle=scan_angle, frequency=frequency)
         times = sgeom.times(utctime)
+
         pixel_pos = geoloc.compute_pixels((self.orb.tle._line1,
                                            self.orb.tle._line2),
                                           sgeom, times)
@@ -161,6 +162,8 @@ class SwathBoundary(Boundary):
                             (overpass.falltime -
                              overpass.risetime).microseconds
                             / 1000000.0) / frequency)
+
+        scans_nb = max(scans_nb, 1)
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
