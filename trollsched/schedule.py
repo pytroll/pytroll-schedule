@@ -544,6 +544,7 @@ def run():
     area.poly = area_boundary.contour_poly
 
     if opts.output_dir is not None:
+        logger.info("Saving plots to %s", opts.output_dir)
         from threading import Thread
         save_passes(allpasses, area.poly, opts.output_dir)
         image_saver = Thread(target=save_passes, args=(allpasses, area.poly, opts.output_dir))
