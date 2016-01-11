@@ -532,7 +532,7 @@ def run():
     if opts.start_time:
         start_time = opts.start_time
     else:
-        start_time = datetime.utcnow()  # + timedelta(hours=start)
+        start_time = datetime.utcnow()
     allpasses = get_next_passes(satellites, start_time,
                                 forward, coords, tle_file)
 
@@ -573,7 +573,7 @@ def run():
             logger.info("Waiting for images to be saved...")
             image_saver.join()
             logger.info("Done!")
-        xmlfile = generate_xml_file(allpasses, start_time,
+        xmlfile = generate_xml_file(allpasses, start_time + timedelta(hours=start),
                                     start_time + timedelta(hours=forward),
                                     directory, station,
                                     opts.report)
