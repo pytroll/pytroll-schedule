@@ -324,11 +324,16 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
         if not filedates[date].endswith(".rpt"):
             continue
         if not os.path.exists(os.path.join("/tmp", filedates[date])):
-            f.retrlines(
-                'RETR ' + os.path.join(url.path, filedates[date]), lines.append)
+            try:
+                f.retrlines(
+                    'RETR ' + os.path.join(url.path, filedates[date]), lines.append)
+            except ftplib.error_perm:
+                logger.info("Permission error (???) on ftp server, skipping.")
+                continue
             with open(os.path.join("/tmp", filedates[date]), "w") as fd_:
                 for line in lines:
                     fd_.write(line + "\n")
+
         else:
             with open(os.path.join("/tmp", filedates[date]), "r") as fd_:
                 for line in fd_:
