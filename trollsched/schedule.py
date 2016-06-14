@@ -33,7 +33,7 @@ from pyresample import utils
 from pyorbital import astronomy
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
-from trollsched.satpass import get_next_passes
+from trollsched.satpass import get_next_passes, SimplePass
 from trollsched.boundary import AreaDefBoundary
 
 from ConfigParser import ConfigParser
@@ -222,9 +222,12 @@ def combine(p1, p2, area_of_interest, scores):
     return res
 
 
-def get_best_sched(overpasses, area_of_interest, scores, delay):
+def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None):
     """Get the best schedule based on *area_of_interest*.
     """
+    avoid_list = avoid_list or []
+    print avoid_list
+    raw_input()
     passes = sorted(overpasses, key=lambda x: x.risetime)
     grs = conflicting_passes(passes, delay)
     logger.debug("conflicting %s", str(grs))
@@ -237,7 +240,11 @@ def get_best_sched(overpasses, area_of_interest, scores, delay):
     def add_arc(graph, p1, p2, hook=None):
         logger.debug("Adding arc between " + str(p1) +
                      " and " + str(p2) + "...")
-        w = combine(p1, p2, area_of_interest, scores)
+        if p1 in avoid_list or p2 in avoid_list:
+            w = 0
+            logger.debug("...0 because in the avoid_list!")
+        else:
+            w = combine(p1, p2, area_of_interest, scores)
         logger.debug("...with weight " + str(w))
 
         with open("/tmp/schedule.gv", "a") as fp_:
@@ -425,6 +432,16 @@ def save_passes(allpasses, poly, output_dir):
     for passage in allpasses:
         passage.save_fig(poly, directory=output_dir)
 
+def get_passes_from_xml_file(filename):
+    import xml.etree.ElementTree as ET
+    tree = ET.parse(filename)
+    root = tree.getroot()
+    pass_list = []
+    for overpass in root.iter('pass'):
+        start_time = datetime.strptime(overpass.attrib['start-time'], '%Y-%m-%d-%H:%M:%S')
+        end_time = datetime.strptime(overpass.attrib['end-time'], '%Y-%m-%d-%H:%M:%S')
+        pass_list.append(SimplePass(overpass.attrib['satellite'], start_time, end_time))
+    return pass_list
 
 def run():
     """The schedule command
@@ -460,6 +477,7 @@ def run():
     parser.add_argument("-o", "--output-dir",
                         help="where to put generated plots",
                         default=None)
+    parser.add_argument("-a", "--avoid", help="xml request file with passes to avoid")
     group = parser.add_argument_group(title="output")
     group.add_argument("-x", "--xml",
                        help="generate an xml request file and"
@@ -551,9 +569,15 @@ def run():
         image_saver.start()
 
 
+    if opts.avoid is not None:
+        avoid_list = get_passes_from_xml_file(opts.avoid)
+    else:
+        avoid_list = None
+
     logger.info("computing best schedule for area euron1")
     schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
-                                               timedelta(seconds=opts.delay))
+                                               timedelta(seconds=opts.delay),
+                                               avoid_list)
 
     logger.debug(pformat(schedule))
     for opass in schedule:
@@ -600,6 +624,8 @@ def run():
                                            "sched" + now.isoformat() + ".gv"))
 
 if __name__ == '__main__':
+    print get_passes_from_xml_file("trollsched/tmp.xml")
+    pause
     try:
         run()
     except:

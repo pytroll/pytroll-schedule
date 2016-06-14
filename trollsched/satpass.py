@@ -66,26 +66,18 @@ class Mapper(object):
         pass
 
 
-class Pass(object):
+class SimplePass(object):
 
     """A pass: satellite, risetime, falltime, (orbital)
     """
 
     buffer = timedelta(minutes=2)
 
-    def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
-                 instrument=None, tle1=None, tle2=None):
-
+    def __init__(self, satellite, risetime, falltime):
         self.satellite = satellite
         self.risetime = risetime
         self.falltime = falltime
-        self.uptime = uptime
-        self.instrument = instrument
-        self.orb = orb or orbital.Orbital(satellite, line1=tle1, line2=tle2)
         self.score = {}
-        self.boundary = SwathBoundary(self)
-        # make boundary lighter.
-        # self.boundary.decimate(100)
         self.subsattrack = {"start": None,
                             "end": None}
         self.rec = False
@@ -106,8 +98,9 @@ class Pass(object):
             return 0
 
     def __eq__(self, other):
-        return (self.risetime == other.risetime and
-                self.falltime == other.falltime and
+        tol = timedelta(seconds=1)
+        return (abs(self.risetime - other.risetime) < tol and
+                abs(self.falltime - other.falltime) < tol and
                 self.satellite == other.satellite)
 
     def __str__(self):
@@ -129,6 +122,22 @@ class Pass(object):
         return (duration.days * 24 * 60 * 60
                 + duration.seconds
                 + duration.microseconds * 1e-6)
+
+class Pass(SimplePass):
+
+    """A pass: satellite, risetime, falltime, (orbital)
+    """
+
+
+    def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
+                 instrument=None, tle1=None, tle2=None):
+        SimplePass.__init__(self, satellite, risetime, falltime)
+        self.uptime = uptime
+        self.instrument = instrument
+        self.orb = orb or orbital.Orbital(satellite, line1=tle1, line2=tle2)
+        self.boundary = SwathBoundary(self)
+
+
 
     def pass_direction(self):
         """Get the direction of the pass in (ascending, descending).
