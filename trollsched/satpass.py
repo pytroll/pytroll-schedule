@@ -194,6 +194,9 @@ class Pass(SimplePass):
         logger.debug("Save fig " + str(self))
         rise = self.risetime.strftime("%Y%m%d%H%M%S")
         fall = self.falltime.strftime("%Y%m%d%H%M%S")
+        if not os.path.exists(directory):
+            logger.debug("Create plot dir " + directory)
+            os.makedirs(directory)
         filename = os.path.join(directory,
                                 (rise + self.satellite.replace(" ", "_") + fall + extension))
 
