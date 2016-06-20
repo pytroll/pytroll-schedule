@@ -293,9 +293,9 @@ def get_max(groups, fun):
     return groups[argmax(scores)]
 
 
-def generate_sch_file(output_file, overpasses, coords):
+def generate_sch_file(output_file, station, overpasses, coords):
 
-    with open(output_file, "w") as out:
+    with open(os.path.join(output_file, "scisys-schedule." + station + ".txt"), "w") as out:
         # create epochs
         out.write("#Orbital elements\n#\n#SCName           Epochtime\n#\n")
         satellites = set()
@@ -403,29 +403,34 @@ def read_config(filename):
     """Read the config file *filename* and replace the values in global
     variables.
     """
+    station_list=[]
     cfg = ConfigParser()
     cfg.read(filename)
 
-    station = cfg.get("default", "station")
-    satellites = cfg.get("default", "satellites").split(",")
+    stations = cfg.get("default", "station").split(",")
     forward = cfg.getint("default", "forward")
     start = cfg.getfloat("default", "start")
 
-    station_name = cfg.get(station, "name")
-    station_lon = cfg.getfloat(station, "longitude")
-    station_lat = cfg.getfloat(station, "latitude")
-    station_alt = cfg.getfloat(station, "altitude")
+    for station in stations:
+        station_name = cfg.get(station, "name")
+        station_lon = cfg.getfloat(station, "longitude")
+        station_lat = cfg.getfloat(station, "latitude")
+        station_alt = cfg.getfloat(station, "altitude")
 
-    sat_scores = {}
-    for sat in satellites:
-        sat_scores[sat] = (cfg.getfloat(sat, "night"),
-                           cfg.getfloat(sat, "day"))
+        area = utils.parse_area_file(cfg.get(station, "area_file"),
+                                     cfg.get(station, "area"))[0]
+        
+        satellites = cfg.get(station, "satellites").split(",")
+    
+        sat_scores = {}
+        for sat in satellites:
+            sat_scores[sat] = (cfg.getfloat(sat, "night"),
+                               cfg.getfloat(sat, "day"))
 
-    area = utils.parse_area_file(cfg.get(station, "area_file"),
-                                 cfg.get(station, "area"))[0]
-
-    return ((station_lon, station_lat, station_alt),
-            sat_scores, station_name, area, forward, start)
+        station_list.append(((station_lon, station_lat, station_alt),
+                station_name, area, sat_scores))
+    
+    return (station_list, forward, start)
 
 
 def save_passes(allpasses, poly, output_dir):
@@ -493,8 +498,8 @@ def run():
     opts = parser.parse_args()
 
     if opts.config:
-        coords, scores, station, area, forward, start = read_config(
-            opts.config)
+        # [coords, station, area, scores], forward, start
+        station_list, forward, start = read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -533,14 +538,9 @@ def run():
 
     logger = logging.getLogger("trollsched")
 
-    if opts.lon and opts.lat and opts.alt:
-        coords = (opts.lon, opts.lat, opts.alt)
-
     # test line
     # python schedule.py -v 16.148649 58.581844 0.052765 -f 216 -s
     # 20140118140000 -t tle_20140120.txt -x . --scisys myched.txt
-
-    satellites = scores.keys()
 
     logger.info("Computing next satellite passes")
 
@@ -551,81 +551,102 @@ def run():
         start_time = opts.start_time
     else:
         start_time = datetime.utcnow()
-    allpasses = get_next_passes(satellites, start_time,
-                                forward, coords, tle_file)
 
-    logger.info("Computation of next overpasses done")
+    
+    allpasses = {}
+    graph = {}
+    
+    logger.debug("start: %s forward: %s" % (start, forward))
 
-    logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
-
-    area_boundary = AreaDefBoundary(area, frequency=500)
-    area.poly = area_boundary.contour_poly
-
-    if opts.output_dir is not None:
-        logger.info("Saving plots to %s", opts.output_dir)
-        from threading import Thread
-        save_passes(allpasses, area.poly, opts.output_dir)
-        image_saver = Thread(target=save_passes, args=(allpasses, area.poly, opts.output_dir))
-        image_saver.start()
-
-
-    if opts.avoid is not None:
-        avoid_list = get_passes_from_xml_file(opts.avoid)
-    else:
-        avoid_list = None
-
-    logger.info("computing best schedule for area euron1")
-    schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
-                                               timedelta(seconds=opts.delay),
-                                               avoid_list)
-
-    logger.debug(pformat(schedule))
-    for opass in schedule:
-        opass.rec = True
-    logger.info("generating file")
-
-    if opts.scisys:
-        generate_sch_file(opts.scisys, allpasses, coords)
-
-    if opts.xml or opts.report:
-        url = urlparse.urlparse(opts.xml or opts.report)
-        if url.scheme not in ["file", ""]:
-            directory = "/tmp"
+    for coords, station, area, scores in station_list:
+    
+        logger.debug("station: %s coords: %s area: %s scores: %s" % (station, coords, area.area_id, scores))
+        
+        
+            
+        satellites = scores.keys()
+    
+        if opts.lon and opts.lat and opts.alt:
+            coords = (opts.lon, opts.lat, opts.alt)
+    
+        allpasses[station] = get_next_passes(satellites, start_time,
+                                    forward, coords, tle_file)
+    
+        logger.info("Computation of next overpasses done")
+    
+        logger.debug(str(sorted(allpasses[station], key=lambda x: x.risetime)))
+    
+        area_boundary = AreaDefBoundary(area, frequency=500)
+        area.poly = area_boundary.contour_poly
+    
+        if opts.output_dir is not None:
+            logger.info("Saving plots to %s", os.path.join(opts.output_dir, station))
+            from threading import Thread
+            image_saver = Thread(target=save_passes, args=(allpasses[station], area.poly, os.path.join(opts.output_dir, station)))
+            image_saver.start()
+    
+    
+        if opts.avoid is not None:
+            avoid_list = get_passes_from_xml_file(opts.avoid)
         else:
-            directory = url.path
-        if opts.report:
-            logger.info("Waiting for images to be saved...")
-            image_saver.join()
-            logger.info("Done!")
-        xmlfile = generate_xml_file(allpasses, start_time + timedelta(hours=start),
-                                    start_time + timedelta(hours=forward),
-                                    directory, station,
-                                    opts.report)
-        logger.info("Generated " + str(xmlfile))
-        pathname, filename = os.path.split(xmlfile)
-        del pathname
-        if url.scheme in ["file", ""]:
-            pass
-        elif url.scheme == "ftp":
-            import ftplib
-            session = ftplib.FTP(url.hostname, url.username, url.password)
-            with open(xmlfile, "rb") as xfile:
-                session.storbinary('STOR ' + str(filename), xfile)
-            session.quit()
-        else:
-            logger.error("Cannot save to " + str(url.scheme)
-                         + ", but file is there" + str(xmlfile))
+            avoid_list = None
 
-    if opts.graph is not None:
-        now = datetime.now()
-        graph.save("graph" + now.isoformat())
-        graph.export(labels=[str(label) for label in labels],
-                     filename=os.path.join(opts.graph,
-                                           "sched" + now.isoformat() + ".gv"))
+        logger.info("computing best schedule for area %s" % area.area_id)
+        schedule, (graph[station], labels) = get_best_sched(allpasses[station], area, scores,
+                                                timedelta(seconds=opts.delay),
+                                                avoid_list)
+
+        logger.debug(pformat(schedule))
+        for opass in schedule:
+            opass.rec = True
+        logger.info("generating file")
+    
+        if opts.scisys:
+            generate_sch_file(opts.scisys, station, allpasses[station], coords)
+    
+        if opts.xml or opts.report:
+            url = urlparse.urlparse(opts.xml or opts.report)
+            if url.scheme not in ["file", ""]:
+                directory = "/tmp"
+            else:
+                directory = url.path
+            if opts.report:
+                logger.info("Waiting for images to be saved...")
+                image_saver.join()
+                logger.info("Done!")
+            xmlfile = generate_xml_file(allpasses[station], start_time + timedelta(hours=start),
+                                        start_time + timedelta(hours=forward),
+                                        directory, station,
+                                        opts.report)
+            logger.info("Generated " + str(xmlfile))
+            pathname, filename = os.path.split(xmlfile)
+            del pathname
+            if url.scheme in ["file", ""]:
+                pass
+            elif url.scheme == "ftp":
+                import ftplib
+                session = ftplib.FTP(url.hostname, url.username, url.password)
+                with open(xmlfile, "rb") as xfile:
+                    session.storbinary('STOR ' + str(filename), xfile)
+                session.quit()
+            else:
+                logger.error("Cannot save to " + str(url.scheme)
+                             + ", but file is there" + str(xmlfile))
+
+        if opts.graph is not None:
+            now = datetime.now()
+            graph[station].save(os.path.join(opts.graph, "graph." + station))
+            graph[station].export(labels=[str(label) for label in labels],
+                         filename=os.path.join(opts.graph,
+                                               "sched." + station + ".gv"))
+
+    # TODO: combine graphs
+        
+        
 
 if __name__ == '__main__':
-    print get_passes_from_xml_file("trollsched/tmp.xml")
-    pause
+    #print get_passes_from_xml_file("trollsched/tmp.xml")
+    #pause
     try:
         run()
     except:
