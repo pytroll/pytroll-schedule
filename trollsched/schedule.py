@@ -247,9 +247,9 @@ def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None)
             w = combine(p1, p2, area_of_interest, scores)
         logger.debug("...with weight " + str(w))
 
-        with open("/tmp/schedule.gv", "a") as fp_:
-            fp_.write('        "' + str(p1) + '" -> "' + str(p2) +
-                      '" [ label = "' + str(w) + '" ];\n')
+#         with open("/tmp/schedule.gv", "a") as fp_:
+#             fp_.write('        "' + str(p1) + '" -> "' + str(p2) +
+#                       '" [ label = "' + str(w) + '" ];\n')
 
         graph.add_arc(passes.index(p1) + 1,
                       passes.index(p2) + 1, w)
@@ -376,8 +376,9 @@ def generate_xml_file(sched, start, end, directory, station, report_mode=False):
         mode = "report"
     else:
         mode = "request"
-    filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
-                + "-acquisition-schedule-" + mode + "-"
+    filename = (#reqtime.strftime("%Y-%m-%d-%H-%M-%S")
+                #+ "-acquisition-schedule-" + mode + "-"
+                "acquisition-schedule-" + mode + "."
                 + station + ".xml")
     filename = os.path.join(directory, filename)
     tmp_filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
@@ -542,8 +543,6 @@ def run():
     # python schedule.py -v 16.148649 58.581844 0.052765 -f 216 -s
     # 20140118140000 -t tle_20140120.txt -x . --scisys myched.txt
 
-    logger.info("Computing next satellite passes")
-
     tle_file = opts.tle
     if opts.forward:
         forward = opts.forward
@@ -561,17 +560,16 @@ def run():
     for coords, station, area, scores in station_list:
     
         logger.debug("station: %s coords: %s area: %s scores: %s" % (station, coords, area.area_id, scores))
-        
-        
-            
+
         satellites = scores.keys()
     
         if opts.lon and opts.lat and opts.alt:
             coords = (opts.lon, opts.lat, opts.alt)
     
+
+        logger.info("Computing next satellite passes")
         allpasses[station] = get_next_passes(satellites, start_time,
                                     forward, coords, tle_file)
-    
         logger.info("Computation of next overpasses done")
     
         logger.debug(str(sorted(allpasses[station], key=lambda x: x.risetime)))
