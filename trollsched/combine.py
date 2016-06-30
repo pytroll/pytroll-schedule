@@ -77,14 +77,14 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
         newparlist = []
         for parnode in parlist:
             
-#             print "\nfor parnode",parnode,"from",parlist
+            print "\nfor parnode",parnode,"from",parlist
             if parnode == ((None,None),(None,None)):
-#                 print "skip parnode",parnode
+                print "skip parnode",parnode
                 continue
             
             collected_newnodes = collect_nodes(0, parnode, grl, newgraph, newpasses, pl, delay)
             
-#             print "collected nodes",collected_newnodes
+            print "collected nodes",collected_newnodes
             
             for newnode_list in collected_newnodes:
                 newnode = tuple(newnode_list)
@@ -104,6 +104,9 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                 s = 0
                 for p,n in zip(parnode, newnode):
                     try:
+                        
+                        print "p,n",p,n
+                        
                         if n[0] is None:
                             wl.append(0)
                         else:
@@ -150,16 +153,19 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, allpasses, de
     
     if p == (None,None):
         # there won't be any collectable nodes.
-        return [p]
-    
-    gn = g.neighbours(p[0])
-
-#     print "station",statnr,"parnode",p,"neighbours",gn
-    
-    if gn[0] > len(allpasses[statnr]):
+#         return [p]
         gn = [None]
+
+    else:
+    
+        gn = g.neighbours(p[0])
+    
+    #     print "station",statnr,"parnode",p,"neighbours",gn
         
-#         print "ENDE",statnr,p
+        if gn[0] > len(allpasses[statnr]):
+            gn = [None]
+            
+    #         print "ENDE",statnr,p
         
     if  statnr + 1 == len(parnode):
         
@@ -243,10 +249,12 @@ def get_combined_sched(allgraphs, allpasses):
 #     print_matrix(newgraph.weight_matrix, ly=5)
 #     print newpasses
 
-    dist, path = newgraph.dag_longest_path(0, newgraph.order + 1)
+    dist, path = newgraph.dag_longest_path(0, len(newpasses))
+    
+    print "dist",dist,"path",path
 
     del dist
-    return [newpasses[idx - 1] for idx in path[1:-1]], (newgraph, newpasses)
+    return statlst,[newpasses[idx - 1] for idx in path[1:-1]], (newgraph, newpasses)
 
 
 
@@ -313,12 +321,32 @@ if __name__ == '__main__':
         
 
         
-        schedule, (newgraph, labels) = get_combined_sched(graph, allpasses)
+        stats,schedule, (newgraph, labels) = get_combined_sched(graph, allpasses)
+
+        print "stats",stats,"schedule",schedule,"labels",labels
 
         logger.debug(pformat(schedule))
+        
         for opass in schedule:
-            opass.rec = True
+            
+            print opass,"->"
+            
+            for i,ipass in zip(range(len(opass)),opass):
+                if ipass[0] is None:
+                    continue
+                print "->",i,ipass,allpasses[stats[i]][ipass[0]-1]
+                allpasses[stats[i]][ipass[0]-1].rec = True
+        
         logger.info("generating file")
+    
+    
+        """
+        TODO: 
+        dateien für jede antenne erstellen.
+        - scisys-schedule
+        - xml-schedule
+        funktionen ggf umschreiben/alternative impl
+        """
     
 #         if opts.scisys:
 #             generate_sch_file(opts.scisys, station, allpasses[station], coords)
@@ -330,13 +358,13 @@ if __name__ == '__main__':
 
 
         
-        print_matrix(newgraph.adj_matrix, ly=5)
-        print_matrix(newgraph.weight_matrix, ly=5)
+#         print_matrix(newgraph.adj_matrix, ly=5)
+#         print_matrix(newgraph.weight_matrix, ly=5)
 
         print "test folding newgraph"
         test_folding(newgraph)
         
-#         print newpasses
+        print allpasses
         
         newgraph.save(os.path.join(opts.graph, "newgraph.comb"))
 #         newgraph.export(labels=[str(label) for label in labels],
