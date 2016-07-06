@@ -98,8 +98,9 @@ class SimplePass(object):
             return 0
 
     def __eq__(self, other):
-        tol = timedelta(seconds=1)
-        return (abs(self.risetime - other.risetime) < tol and
+        tol = timedelta(seconds=600)
+        return (other is not None and
+                abs(self.risetime - other.risetime) < tol and
                 abs(self.falltime - other.falltime) < tol and
                 self.satellite == other.satellite)
 

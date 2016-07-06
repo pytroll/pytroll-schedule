@@ -35,6 +35,7 @@ from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
 from trollsched.boundary import AreaDefBoundary
+from trollsched.combine import get_combined_sched
 
 from ConfigParser import ConfigParser
 
@@ -449,6 +450,164 @@ def get_passes_from_xml_file(filename):
         pass_list.append(SimplePass(overpass.attrib['satellite'], start_time, end_time))
     return pass_list
 
+def single_station(opts, graph, allpasses, station, coords, area, scores, start_time, start, forward, tle_file):
+    
+    logger.debug("station: %s coords: %s area: %s scores: %s" % (station, coords, area.area_id, scores))
+
+    satellites = scores.keys()
+
+    if opts.lon and opts.lat and opts.alt:
+        coords = (opts.lon, opts.lat, opts.alt)
+
+
+    logger.info("Computing next satellite passes")
+    allpasses[station] = get_next_passes(satellites, start_time,
+                                forward, coords, tle_file)
+    logger.info("Computation of next overpasses done")
+
+    logger.debug(str(sorted(allpasses[station], key=lambda x: x.risetime)))
+
+    area_boundary = AreaDefBoundary(area, frequency=500)
+    area.poly = area_boundary.contour_poly
+
+    if opts.output_dir is not None:
+        logger.info("Saving plots to %s", os.path.join(opts.output_dir, station))
+        from threading import Thread
+        image_saver = Thread(target=save_passes, args=(allpasses[station], area.poly, os.path.join(opts.output_dir, station)))
+        image_saver.start()
+
+
+    if opts.avoid is not None:
+        avoid_list = get_passes_from_xml_file(opts.avoid)
+    else:
+        avoid_list = None
+
+    logger.info("computing best schedule for area %s" % area.area_id)
+    schedule, (graph[station], labels) = get_best_sched(allpasses[station], area, scores,
+                                            timedelta(seconds=opts.delay),
+                                            avoid_list)
+
+    logger.debug(pformat(schedule))
+    for opass in schedule:
+        opass.rec = True
+    logger.info("generating file")
+
+    if opts.scisys:
+        generate_sch_file(opts.scisys, station, allpasses[station], coords)
+
+    if opts.xml or opts.report:
+        url = urlparse.urlparse(opts.xml or opts.report)
+        if url.scheme not in ["file", ""]:
+            directory = "/tmp"
+        else:
+            directory = url.path
+        if opts.report and opts.output_dir is not None:
+            logger.info("Waiting for images to be saved...")
+            image_saver.join()
+            logger.info("Done!")
+        xmlfile = generate_xml_file(allpasses[station], start_time + timedelta(hours=start),
+                                    start_time + timedelta(hours=forward),
+                                    directory, station,
+                                    opts.report)
+        logger.info("Generated " + str(xmlfile))
+        pathname, filename = os.path.split(xmlfile)
+        del pathname
+        if url.scheme in ["file", ""]:
+            pass
+        elif url.scheme == "ftp":
+            import ftplib
+            session = ftplib.FTP(url.hostname, url.username, url.password)
+            with open(xmlfile, "rb") as xfile:
+                session.storbinary('STOR ' + str(filename), xfile)
+            session.quit()
+        else:
+            logger.error("Cannot save to " + str(url.scheme)
+                         + ", but file is there" + str(xmlfile))
+
+    if opts.graph is not None:
+        now = datetime.now()
+        graph[station].save(os.path.join(opts.graph, "graph." + station))
+        graph[station].export(labels=[str(label) for label in labels],
+                     filename=os.path.join(opts.graph,
+                                           "sched." + station + ".gv"))
+
+
+def combined_stations(opts, station_list, graph, allpasses, start_time, start, forward):
+    
+    passes = {}
+    # reset flag "rec" for all passes
+    try:
+        for s,ap in allpasses.items():
+            passes[s] = list(ap)
+            for p in passes[s]:
+                p.rec = False
+    except:
+        print "s",s
+        print "ap",ap
+        print "passes[s]",passes[s]
+        print "p",p
+        raise
+    
+    station_meta = {}
+    for coords, station, area, scores in station_list:
+        station_meta[station]={'coords':coords,'area':area,'scores':scores}
+    
+    stats,schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
+
+    print "stats",stats
+    print "schedule",schedule
+#     print "newpasses",newpasses
+
+    logger.debug(pformat(schedule))
+    
+    for opass in schedule:
+        
+#         print opass,"->"
+        
+        for i,ipass in zip(range(len(opass)),opass):
+            if ipass[0] is None:
+                continue
+            
+#             print "->",i,ipass
+            
+            ipass[0].rec = True
+    
+    logger.info("generating file")
+
+    newgraph.save(os.path.join(opts.graph, "newgraph.comb"))
+    
+    clabels = []
+    npasses = {s:set() for s in stats}
+    for npass in newpasses:
+        cl = []
+        for i,s in zip(range(len(stats)),stats):
+            if npass[i][0] is None:
+                cl.append("---")
+            else:
+                npasses[s].add(npass[i][0])
+                if npass[i][0].rec:
+                    cl.append("+ " + str(npass[i][0]))
+                else:
+                    cl.append("  " + str(npass[i][0]))
+#             print cl[-1]
+        clabels.append("\\n".join(cl))
+#         print
+    
+#     print "***npasses",npasses
+    
+    newgraph.export(labels=[str(label) for label in clabels],
+                 filename=os.path.join(opts.graph, "newsched.comb.gv"))
+
+    for station in passes.keys():
+        generate_sch_file(opts.scisys, "comb-"+station, passes[station], 
+                          station_meta[station]['coords'])
+        
+        directory=opts.report
+        xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
+                                    start_time + timedelta(hours=forward),
+                                    directory, "comb-"+station, opts.report)
+
+
 def run():
     """The schedule command
     """
@@ -558,88 +717,20 @@ def run():
     logger.debug("start: %s forward: %s" % (start, forward))
 
     for coords, station, area, scores in station_list:
-    
-        logger.debug("station: %s coords: %s area: %s scores: %s" % (station, coords, area.area_id, scores))
+        single_station(opts, graph, allpasses, station, coords, area, scores, start_time, start, forward, tle_file)
 
-        satellites = scores.keys()
-    
-        if opts.lon and opts.lat and opts.alt:
-            coords = (opts.lon, opts.lat, opts.alt)
-    
+    if len(station_list) > 1:
 
-        logger.info("Computing next satellite passes")
-        allpasses[station] = get_next_passes(satellites, start_time,
-                                    forward, coords, tle_file)
-        logger.info("Computation of next overpasses done")
-    
-        logger.debug(str(sorted(allpasses[station], key=lambda x: x.risetime)))
-    
-        area_boundary = AreaDefBoundary(area, frequency=500)
-        area.poly = area_boundary.contour_poly
-    
-        if opts.output_dir is not None:
-            logger.info("Saving plots to %s", os.path.join(opts.output_dir, station))
-            from threading import Thread
-            image_saver = Thread(target=save_passes, args=(allpasses[station], area.poly, os.path.join(opts.output_dir, station)))
-            image_saver.start()
-    
-    
-        if opts.avoid is not None:
-            avoid_list = get_passes_from_xml_file(opts.avoid)
-        else:
-            avoid_list = None
-
-        logger.info("computing best schedule for area %s" % area.area_id)
-        schedule, (graph[station], labels) = get_best_sched(allpasses[station], area, scores,
-                                                timedelta(seconds=opts.delay),
-                                                avoid_list)
-
-        logger.debug(pformat(schedule))
-        for opass in schedule:
-            opass.rec = True
-        logger.info("generating file")
-    
-        if opts.scisys:
-            generate_sch_file(opts.scisys, station, allpasses[station], coords)
-    
-        if opts.xml or opts.report:
-            url = urlparse.urlparse(opts.xml or opts.report)
-            if url.scheme not in ["file", ""]:
-                directory = "/tmp"
-            else:
-                directory = url.path
-            if opts.report:
-                logger.info("Waiting for images to be saved...")
-                image_saver.join()
-                logger.info("Done!")
-            xmlfile = generate_xml_file(allpasses[station], start_time + timedelta(hours=start),
-                                        start_time + timedelta(hours=forward),
-                                        directory, station,
-                                        opts.report)
-            logger.info("Generated " + str(xmlfile))
-            pathname, filename = os.path.split(xmlfile)
-            del pathname
-            if url.scheme in ["file", ""]:
-                pass
-            elif url.scheme == "ftp":
-                import ftplib
-                session = ftplib.FTP(url.hostname, url.username, url.password)
-                with open(xmlfile, "rb") as xfile:
-                    session.storbinary('STOR ' + str(filename), xfile)
-                session.quit()
-            else:
-                logger.error("Cannot save to " + str(url.scheme)
-                             + ", but file is there" + str(xmlfile))
-
-        if opts.graph is not None:
-            now = datetime.now()
-            graph[station].save(os.path.join(opts.graph, "graph." + station))
-            graph[station].export(labels=[str(label) for label in labels],
-                         filename=os.path.join(opts.graph,
-                                               "sched." + station + ".gv"))
-
-    # TODO: combine graphs
+        import pickle
+        ph = open(os.path.join(opts.graph,"opts.pkl"), "wb")
+        pickle.dump(opts, ph)
+        ph.close()
+        ph = open(os.path.join(opts.graph,"allpasses.pkl"), "wb")
+        pickle.dump(allpasses, ph)
+        ph.close()
         
+        combined_stations(opts, station_list,graph, allpasses, start_time, start, forward)
+
         
 
 if __name__ == '__main__':
