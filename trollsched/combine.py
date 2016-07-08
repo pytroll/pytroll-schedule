@@ -65,7 +65,15 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
             
 #             print "\n---for parnode",parnode,"\n---from",parlist
 
-            if parnode == stopper: # ((None,None) * stations)
+            if parnode == stopper:
+                # All antennas reached end of passes list in this line of 
+                # possibilities.
+                # stopper == ((None,None) * stations)
+                #
+                # If this happens for all elements of parlist, newparlist will 
+                # stay empty and (at the bottom of this loop) replace parlist,
+                # which as an empty list will cause the surrounding while-loop 
+                # to end. 
                 
 #                 print "skip parnode eq stopper",parnode,stopper
                 
@@ -90,26 +98,25 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                     newparlist.append(newnode)
 
 #                     print "extended newparlist",newparlist
-
-                wl = []
-                s = 0
                 
 #                 print "collect weight:"
                 
+                # Collecting the weights from each stations weight-matrix ...
+                wl = []
+                s = 0
                 for p,n in zip(parnode, newnode):
                     try:
                         
 #                         print "p,n",p,n
-                        
+                            
                         if n[0] is None:
                             wl.append(0)
                         else:
-                            wl.append( n[1] or grl[s].weight(pl[s].index(p[0]), pl[s].index(n[0])) )
+                            wl.append( n[1] or grl[s].weight(pl[s].index(p[0]) + 1, pl[s].index(n[0]) + 1) )
                         s += 1
                     except:
                         print "\nCATCH\nparnode",parnode,p,"\nnewnode",newnode,n
                         raise
-                
                 # sum of collected weights
                 we = sum(wl)
                 # vertices with reference to same sat-pass, could be 0, 1, 2.
@@ -117,7 +124,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                 # apply vertix-count to weight-sum
                 w = we / 2 ** ws
                 
-#                 print "weight:",parnode,newnode,"we",we,"ws",ws,"w",w
+#                 print "weight:\n",parnode,"\n",newnode,"\nwl",wl,"we",we,"ws",ws,"w",w
 
                 if parnode == newpasses[0]:
                     
@@ -175,24 +182,29 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
 #             print "ENDE",statnr,p
         
     if  statnr + 1 == len(parnode):
-        
+        # It's the 'rightmost' of the list parnode, 
+        # and the deepest point of the recursion.
         if p[1] is not None:
-            
+            # If the parent node is a simulated vertix it is appended.
             bufflist.append( (p[0], None) )
             
 #             print "simulated single ",p
 
         elif None in gn:
+            # That's "no further connection".
             bufflist = [(None, None)]
             
         else:
-            
+            # prepare to return just the list of neighbouring vertices.
+
 #             print "single parnode",gn
             
             bufflist = zip((passes_list[statnr][n-1] for n in gn), (None for _ in gn))
         
     else:
-        
+        # If it's not the last element of the list parnode, we recurse and then
+        # permutade all vertix-lists together.
+
 #         print "recurse"
         
         col = collect_nodes(statnr + 1, parnode, graph_set, newgraph, newpasses, passes_list)
@@ -200,6 +212,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
 #         print "returned:",col,"going into",gn
 
         if p[1] is not None:
+            # A simulated parent node is permutated with all neighbours.
             
 #             print "simulating",p
             
@@ -209,6 +222,8 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
 #                 print "simulated",(p, x)
 
         else:
+            # Creating the permutation of all neighbours with the list returned
+            # by the recursion. 
             for n in gn:
             
 #                 print "append",n,"+",col,"=>",
@@ -222,24 +237,32 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
 #                         print "[",1,"][cx",cx,"]"
                         
                         if n is None:
+                            # The end-of-neighbours dummy.
                             
 #                             print "XXXXXXXXXXXXXXXXXXXXXXX"
                             
                             bufflist.append( ((None, None), cx) )
                             
                         elif cx == (None,None) or passes_list[statnr][n-1].overlaps(cx[0], delay):
+                            # Two passes overlapping, no special handling required.
 
 #                             print "--> n=cx"
                             
                             bufflist.append( ((passes_list[statnr][n-1], None), cx) )
                             
                         elif passes_list[statnr][n-1].risetime > cx[0].falltime + delay:
+                            # If the current parent node's pass is not overlapping 
+                            # but AFTER the pass from the recursion-return-list
+                            # the current parent node gets "simulated".
                             
-#                             print "--> n>cx","p",p,"n",n,"cx",cx,"w",g.weight(passes_list[statnr].index(p[0]), n)
+#                             print "--> n>cx","p",p,"n",n,"cx",cx,"w",g.weight(passes_list[statnr].index(p[0]) + 1, n)
                             
-                            bufflist.append( ((passes_list[statnr][n-1], g.weight(passes_list[statnr].index(p[0]), n)), cx) )
+                            bufflist.append( ((passes_list[statnr][n-1], g.weight(passes_list[statnr].index(p[0]) + 1, n)), cx) )
                              
                         elif passes_list[statnr][n-1].falltime + delay < cx[0].risetime:
+                            # If the current parent node's pass is not overlapping 
+                            # but BEFORE the pass from the recursion-return-list
+                            # the recursion-list-node gets "simulated".
                             
 #                             print "--> n<cx","p",parnode[statnr+1],"n",n,"cx", cx, "w",graph_set[statnr+1].weight(
 #                                                         passes_list[statnr+1].index(parnode[statnr+1][0]), 
@@ -249,11 +272,14 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             bufflist.append( (
                                         (passes_list[statnr][n-1], None), 
                                         (cx[0], graph_set[statnr+1].weight(
-                                                    passes_list[statnr+1].index(parnode[statnr+1][0]), 
-                                                    passes_list[statnr+1].index(cx[0])
+                                                    passes_list[statnr+1].index(parnode[statnr+1][0]) + 1, 
+                                                    passes_list[statnr+1].index(cx[0]) + 1
                                                     )) 
                                         ) )
-                            
+                        
+                        else:
+                            print "XXXXXXXXXXXXXXXXXXXXXXX something curious happened ..."
+                        
 #                         print bufflist[-1],
                     except:
                         print "\nCATCH\ngn:",gn,"-> n",n," col:",col,"-> cx",cx,"statnr",statnr,"statnr+i",statnr+1
