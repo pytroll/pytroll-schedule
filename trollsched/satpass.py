@@ -98,7 +98,7 @@ class SimplePass(object):
             return 0
 
     def __eq__(self, other):
-        tol = timedelta(seconds=600)
+        tol = timedelta(seconds=360)
         return (other is not None and
                 abs(self.risetime - other.risetime) < tol and
                 abs(self.falltime - other.falltime) < tol and
@@ -369,7 +369,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
+def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_dumps=False):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -417,7 +417,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                         if overpass.seconds() > MIN_PASS * 60:
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
-        elif sat == "aqua":
+        elif sat == "aqua" and aqua_dumps:
 
             wpcoords = (-75.457222, 37.938611, 0)
             passlist_wp = satorb.get_next_passes(utctime - timedelta(minutes=30),
