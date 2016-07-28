@@ -1,30 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from scipy.constants.constants import year
-
+#
 # Copyright (c) 2014 Martin Raspaud
-
+#
 # Author(s):
-
+#
 #   Alexander Maul <alexander.maul@dwd.de>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Combine several graphs.
 """
+import logging
 from datetime import datetime, timedelta
 from trollsched.graph import Graph
+
+logger = logging.getLogger("trollsched")
 
 def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     """add all graphs to one combined graph.
@@ -48,9 +50,8 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
         else:
             return 0
 
-    print "station list"
     for s, g in graphs.items():
-        print s, g.order
+        logger.debug("station: %s, order: %d", s, g.order)
 
     # graphs and allpasses are hashmaps of sets or so, but we need lists of lists,
     # forthat they are copied.
@@ -60,6 +61,8 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
         grl.append(graphs[s])
         pl.append(sorted(passes[s], key=lambda x: x.risetime))
 
+#         print "APPENDED",s,pl[-1]
+
     # rough estimate for the size of the combined passes' graph.
     n_vertices = 1
     for g in grl:
@@ -67,20 +70,24 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     n_vertices *= len(statlst)
     newgraph = Graph(n_vertices=n_vertices)
 
-    print "newgraph order:", newgraph.order
+    logger.debug("newgraph order: %d", newgraph.order)
 
     # this value signals the end, when no more passes from any antenna are available.
     stopper = tuple((None, None) for s in range(len(statlst)))
 
     # the new passes list, it'll be filled with tuples of one pass per antenna.
     # it's initialized with the first passes.
-    newpasses = [tuple((pl[s][p - 1], None) for s in range(len(statlst)) for p in grl[s].neighbours(0))]
+    #
+    # TODO: ideally somthing like next line, not "just the first vertix":
+    # newpasses = [tuple((pl[s][p - 1], None) for s in range(len(statlst)) for p in grl[s].neighbours(0))]
+    newpasses = [tuple((pl[s][grl[s].neighbours(0)[0] - 1], None) for s in range(len(statlst)))]
     parlist = [newpasses[0]]
+
+#     print "NEWPASSES",newpasses
 
     x = 0
     while len(parlist) and x < 5:
 #         x+=1
-
 #         print "-----------------------------------------"
 #         print "with parlist",parlist
 
@@ -134,7 +141,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                         else:
                             wl.append(n[1] or grl[s].weight(pl[s].index(p[0]) + 1, pl[s].index(n[0]) + 1))
                     except:
-                        print "\nCATCH\nstat", s, "parnode", parnode, p, "\nnewnode", newnode, n
+                        logger.error("Collecting weights: stat %d - parnode %s %s - newnode %s %s", s, parnode, p, newnode, n, exc_info=1)
                         raise
                 # sum of collected weights
                 ws = sum(wl)
@@ -159,8 +166,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
 
         parlist = newparlist
 
-    print "len(newpasses) =", len(newpasses)
-    print "leave add_graphs()"
+    logger.debug("newpasses length: %d", len(newpasses))
 
     return statlst, newgraph, newpasses
 
@@ -224,7 +230,12 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
 
     else:
 
-        gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
+        try:
+            gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
+        except:
+            print "len(passes_list)", len(passes_list), "   len(graph_set)", len(graph_set), "   statnr", statnr, "   p", p
+            print "passes_list", passes_list
+            raise
 
 #         print "station",statnr,"parnode",p,"neighbours",gn
 
@@ -379,8 +390,8 @@ def get_combined_sched(allgraphs, allpasses, delay_sec=60):
 
     dist, path = newgraph.dag_longest_path(0, len(newpasses))
 
-    print "---dist---", dist
-    print "---path---", path
+    logger.debug("Distance: %d", dist)
+    logger.debug("Path through newpasses: %s", path)
 
     del dist
     return statlst, [newpasses[idx - 1] for idx in path[1:-1]], (newgraph, newpasses)
@@ -475,7 +486,7 @@ if __name__ == '__main__':
                         }
         dir_output = build_filename("dir_output", pattern, pattern_args)
         if not os.path.exists(dir_output):
-            print dir_output,"does not exist!"
+            print dir_output, "does not exist!"
             sys.exit(1)
         ph = open(os.path.join(dir_output, "opts.pkl"), "rb")
         opts = pickle.load(ph)
@@ -484,8 +495,9 @@ if __name__ == '__main__':
         graph = {}
         allpasses = {}
         for coords, station, area, scores in station_list:
+            pattern_args["station"] = station
             graph[station] = Graph()
-            graph[station].load(build_filename("file_graph", pattern, pattern_args))
+            graph[station].load(build_filename("file_graph", pattern, pattern_args) + ".npz")
 
 #             print "---",station,"---"
 #             print_matrix(graph[station].adj_matrix, ly=5)
@@ -516,7 +528,7 @@ if __name__ == '__main__':
 
 
 
-        combined_stations(opts, station_list, graph, allpasses, start_time, start, forward)
+        combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
 
 
     except:
