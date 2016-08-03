@@ -6,6 +6,7 @@
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Alexander Maul <alexander.maul@dwd.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -98,8 +99,14 @@ class SimplePass(object):
             return 0
 
     def __eq__(self, other):
-        tol = timedelta(seconds=1)
-        return (abs(self.risetime - other.risetime) < tol and
+
+        # TODO: the seconds=360 is a workaround to determine if two passes, observed
+        # from two distinct stations, are actually equal (by satellite name and epoch).
+        #
+        # Original value from branch develop: seconds=1
+        tol = timedelta(seconds=360)
+        return (other is not None and
+                abs(self.risetime - other.risetime) < tol and
                 abs(self.falltime - other.falltime) < tol and
                 self.satellite == other.satellite)
 
@@ -225,7 +232,7 @@ class Pass(SimplePass):
         import matplotlib.pyplot as plt
         plt.clf()
         with Mapper() as mapper:
-            #mapper.nightshade(self.uptime, alpha=0.2)
+            # mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "+r")
             if poly is not None:
                 poly.draw(mapper, "+b")
@@ -255,7 +262,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
         max_elevation = self.orb.get_observer_look(self.uptime, *coords)[1]
         anl = self.orb.get_lonlatalt(
             self.orb.get_last_an_time(self.risetime))[0] % 360
-        #anl = self.orb.get_observer_look(self.risetime, *coords)[0]
+        # anl = self.orb.get_observer_look(self.risetime, *coords)[0]
         if self.rec:
             rec = "Y"
         else:
@@ -368,7 +375,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
+def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_dumps=False):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -416,7 +423,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None):
                         if overpass.seconds() > MIN_PASS * 60:
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
-        elif sat == "aqua":
+        elif sat == "aqua" and aqua_dumps:
 
             wpcoords = (-75.457222, 37.938611, 0)
             passlist_wp = satorb.get_next_passes(utctime - timedelta(minutes=30),
