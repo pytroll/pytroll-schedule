@@ -6,6 +6,7 @@
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Alexander Maul <alexander.maul@dwd.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -98,6 +99,11 @@ class SimplePass(object):
             return 0
 
     def __eq__(self, other):
+
+        # TODO: the seconds=360 is a workaround to determine if two passes, observed
+        # from two distinct stations, are actually equal (by satellite name and epoch).
+        #
+        # Original value from branch develop: seconds=1
         tol = timedelta(seconds=360)
         return (other is not None and
                 abs(self.risetime - other.risetime) < tol and
@@ -226,7 +232,7 @@ class Pass(SimplePass):
         import matplotlib.pyplot as plt
         plt.clf()
         with Mapper() as mapper:
-            #mapper.nightshade(self.uptime, alpha=0.2)
+            # mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "+r")
             if poly is not None:
                 poly.draw(mapper, "+b")
@@ -256,7 +262,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
         max_elevation = self.orb.get_observer_look(self.uptime, *coords)[1]
         anl = self.orb.get_lonlatalt(
             self.orb.get_last_an_time(self.risetime))[0] % 360
-        #anl = self.orb.get_observer_look(self.risetime, *coords)[0]
+        # anl = self.orb.get_observer_look(self.risetime, *coords)[0]
         if self.rec:
             rec = "Y"
         else:

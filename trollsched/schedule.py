@@ -6,6 +6,7 @@
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Alexander Maul <alexander.maul@dwd.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -227,8 +228,6 @@ def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None)
     """Get the best schedule based on *area_of_interest*.
     """
     avoid_list = avoid_list or []
-#     print avoid_list
-#     raw_input()
     passes = sorted(overpasses, key=lambda x: x.risetime)
     grs = conflicting_passes(passes, delay)
     logger.debug("conflicting %s", str(grs))
@@ -378,16 +377,6 @@ def generate_xml_file(sched, start, end, xml_file, station, report_mode=False):
     else:
         mode = "request"
 
-#     filename = (# reqtime.strftime("%Y-%m-%d-%H-%M-%S")
-#                 # + "-acquisition-schedule-" + mode + "-"
-#                 "acquisition-schedule-" + mode + "."
-#                 + station + ".xml")
-#     filename = os.path.join(directory, filename)
-#     tmp_filename = (reqtime.strftime("%Y-%m-%d-%H-%M-%S")
-#                     + "-acquisition-schedule-" + mode + "-"
-#                     + station + ".tmp")
-#     tmp_filename = os.path.join(directory, tmp_filename)
-
     filename = xml_file
     tmp_filename = xml_file + reqtime.strftime("%Y-%m-%d-%H-%M-%S") + ".tmp"
 
@@ -460,6 +449,7 @@ def get_passes_from_xml_file(filename):
         pass_list.append(SimplePass(overpass.attrib['satellite'], start_time, end_time))
     return pass_list
 
+
 def build_filename(pattern_name, pattern_dict, kwargs):
     """Build absolute path from pattern dictionary."""
     for k in pattern_dict.keys():
@@ -468,10 +458,9 @@ def build_filename(pattern_name, pattern_dict, kwargs):
                 kwargs[k] = pattern_dict[k].format(**kwargs)
     return pattern_dict[pattern_name].format(**kwargs)
 
-def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file):
 
-    # graph, allpasses,
-    # allpasses[station] graph[station]
+def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file):
+    """Calculate passes, graph, and schedule for one station."""
 
     logger.debug("station: %s coords: %s area: %s scores: %s", station, coords, area.area_id, scores)
 
@@ -510,7 +499,6 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
                              args=(allpasses,
                                    area.poly,
                                    build_filename("dir_plots", pattern, pattern_args)
-                                   # os.path.join(opts.output_dir, station)
                                    )
                              )
         image_saver.start()
@@ -567,11 +555,6 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
                          str(url.scheme), str(xmlfile))
 
     if opts.graph or opts.comb:
-#         now = datetime.now()
-#         graph[station].save(os.path.join(opts.graph, "graph." + station))
-#         graph[station].export(labels=[str(label) for label in labels],
-#                      filename=os.path.join(opts.graph,
-#                                            "sched." + station + ".gv"))
         graph.save(build_filename("file_graph", pattern, pattern_args))
         graph.export(
                     labels=[str(label) for label in labels],
@@ -587,6 +570,7 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
 
 
 def combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward):
+    """The works around the combination of schedules for two or more stations."""
 
     logger.info("Generating coordinated schedules ...")
 
@@ -601,7 +585,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         pattern_args['mode'] = "report"
 
     passes = {}
-    # reset flag "rec" for all passes
+    # reset flag "rec" for all passes.
     try:
         for s, ap in allpasses.items():
             passes[s] = list(ap)
@@ -619,33 +603,23 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
-
-#     print "stats",stats
-#     print "schedule",schedule
-#     print "newpasses",newpasses
-
 #     logger.debug(pformat(schedule))
 
     for opass in schedule:
-
-#         print opass,"->"
-
         for i, ipass in zip(range(len(opass)), opass):
             if ipass[0] is None:
                 continue
-
-#             print "->",i,ipass
-
             ipass[0].rec = True
 
     logger.info("generating files")
 
     if opts.graph:
-        # save graph as npz file
+        # save graph as npz file.
         pattern_args["station"] = "comb"
         newgraph.save(build_filename("file_graph", pattern, pattern_args))
 
-        # collect labels, each with one pass per station
+        # collect labels, each with one pass per station.
+        # TODO: is there a simpler way?
         clabels = []
         npasses = {s:set() for s in stats}
         for npass in newpasses:
@@ -685,49 +659,8 @@ def run():
     import argparse
     global logger
 
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--lon", help="Longitude, degrees east", type=float)
-#     parser.add_argument("--lat", help="Latitude, degrees north", type=float)
-#     parser.add_argument("--alt", help="Altitude, km", type=float)
-#     parser.add_argument("-l", "--log",
-#                         help="File to log to (defaults to stdout)",
-#                         default=None)
-#     parser.add_argument("-m", "--mail", nargs="*",
-#                         help="mail address(es) to send error messages to.",
-#                         default=None)
-#     parser.add_argument("-v", "--verbose", help="print debug messages too",
-#                         action="store_true")
-#     parser.add_argument("-g", "--graph", help="save graph info to this directory",
-#                         default=None)
-#     parser.add_argument("-t", "--tle", help="tle file to use", default=None)
-#     parser.add_argument("-f", "--forward", type=float,
-#                         help="time ahead to compute the schedule")
-#     parser.add_argument("-s", "--start-time",
-#                         type=parse_datetime,
-#                         help="start time of the schedule to compute")
-#     parser.add_argument("-d", "--delay", default=60, type=float,
-#                         help="delay (in seconds) needed between two "
-#                         + "consecutive passes (60 seconds by default)")
-#     parser.add_argument("-c", "--config", help="configuration file to use",
-#                         default=None)
-#     parser.add_argument("-o", "--output-dir",
-#                         help="where to put generated plots",
-#                         default=None)
-#     parser.add_argument("-a", "--avoid", help="xml request file with passes to avoid")
-#     parser.add_argument("--no_aqua_dump", default=True,
-#                        help="do not consider Aqua-dumps", action="store_false")
-#     group = parser.add_argument_group(title="output")
-#     group.add_argument("-x", "--xml",
-#                        help="generate an xml request file and"
-#                        " put it in this directory. Could be a url",
-#                        default=None)
-#     group.add_argument("-r", "--report",
-#                        help="generate an xml report file and"
-#                        " put it in this directory. Could be a url",
-#                        default=None)
-#     group.add_argument("--scisys", default=None,
-#                        help="path to the schedule file")
     parser = argparse.ArgumentParser()
+    # general arguments
     parser.add_argument("-c", "--config", default=None,
                         help="configuration file to use")
     parser.add_argument("-t", "--tle", default=None,
@@ -738,7 +671,9 @@ def run():
                         help="mail address(es) to send error messages to.")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="print debug messages too")
-    group_postim = parser.add_argument_group(title="start-parameter", description="(or set values in the configuration file)")
+    # argument group: coordinates and times
+    group_postim = parser.add_argument_group(title="start-parameter",
+                        description="(or set values in the configuration file)")
     group_postim.add_argument("--lat", type=float,
                         help="Latitude, degrees north")
     group_postim.add_argument("--lon", type=float,
@@ -752,14 +687,18 @@ def run():
     group_postim.add_argument("-d", "--delay", default=60, type=float,
                         help="delay (in seconds) needed between two "
                         + "consecutive passes (60 seconds by default)")
-    group_spec = parser.add_argument_group(title="special", description="(additional parameter changing behaviour)")
+    # argument group: special behaviour
+    group_spec = parser.add_argument_group(title="special",
+                        description="(additional parameter changing behaviour)")
     group_spec.add_argument("-a", "--avoid",
                         help="xml request file with passes to avoid")
     group_spec.add_argument("--no-aqua-dump", action="store_false",
                        help="do not consider Aqua-dumps")
     group_spec.add_argument("--multiproc", action="store_true",
                         help="use multiple parallel processes")
-    group_outp = parser.add_argument_group(title="output", description="(file pattern are taken from configuration file)")
+    # argument group: output-related
+    group_outp = parser.add_argument_group(title="output",
+                        description="(file pattern are taken from configuration file)")
     group_outp.add_argument("-o", "--output-dir", default=None,
                         help="where to put generated files")
     group_outp.add_argument("-u", "--output-url", default=None,
@@ -779,7 +718,8 @@ def run():
     opts = parser.parse_args()
 
     if opts.config:
-        # [(coords, station, area, scores)], forward, start, {pattern}
+        # read_config() returns:
+        #     [(coords, station, area, scores)], forward, start, {pattern}
         station_list, forward, start, pattern = read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
@@ -796,8 +736,7 @@ def run():
 
     if opts.log:
         previous = os.path.exists(opts.log)
-        handler = logging.handlers.RotatingFileHandler(opts.log,
-                                                       backupCount=7)
+        handler = logging.handlers.RotatingFileHandler(opts.log, backupCount=7)
         if previous:
             handler.doRollover()
     else:
@@ -823,10 +762,6 @@ def run():
         logging.getLogger('').addHandler(mhandler)
 
     logger = logging.getLogger("trollsched")
-
-    # test line
-    # python schedule.py -v 16.148649 58.581844 0.052765 -f 216 -s
-    # 20140118140000 -t tle_20140120.txt -x . --scisys myched.txt
 
     tle_file = opts.tle
     if opts.forward:
@@ -861,20 +796,19 @@ def run():
 
     # single- or multi-processing?
     if not opts.multiproc:
-        #-----------
-        # first variant, for sequential processing all stations' single scedule.
-        #
+        # sequential processing all stations' single scedule.
         for coords, station, area, scores in station_list:
             graph[station], allpasses[station] = single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file)
-        # end 1st variant.
-        #-----------
+
     else:
-        #-----------
-        # second variant, processing the stations' single schedules with multiprocessing.
-        #
-        # the pickling of allpasses is done inside single_station().
+        # processing the stations' single schedules with multiprocessing.
+
         process_single = {}
         statlst_ordered = []
+
+        # first round through the stations, forking sub-processes to do the
+        # "single station calculations" in parallel.
+        # the pickling of passes and graphs is done inside single_station().
         for coords, station, area, scores in station_list:
             statlst_ordered.append(station)
             from multiprocessing import Process
@@ -886,6 +820,8 @@ def run():
                           )
                     )
             process_single[station].start()
+
+        # second round through the stations, collecting the sub-processes and their results.
         for station in statlst_ordered:
             process_single[station].join()
             pattern_args["station"] = station
@@ -896,15 +832,12 @@ def run():
             ph = open(os.path.join(dir_output, "allpasses.%s.pkl" % station), "rb")
             allpasses[station] = pickle.load(ph)
             ph.close()
-        # end 2nd variant.
-        #-----------
+
     if opts.comb:
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
 
 
 if __name__ == '__main__':
-    # print get_passes_from_xml_file("trollsched/tmp.xml")
-    # pause
     try:
         run()
     except:

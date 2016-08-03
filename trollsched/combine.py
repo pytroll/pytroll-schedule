@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2016 Martin Raspaud
 #
 # Author(s):
 #
@@ -29,16 +29,13 @@ from trollsched.graph import Graph
 logger = logging.getLogger("trollsched")
 
 def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
-    """add all graphs to one combined graph.
-    """
+    """Add all graphs to one combined graph. """
     statlst = graphs.keys()
 
     def count_neq_passes(pl):
-        """Counts how many satellite passes in a list are really distinct (satellite/epoch).
-
-        TODO: The "same epoch" is only guessed by comparing with a time window
-        hard-coded in SimplePass.__eq__() -- this is highly impovable!
-        """
+        """Counts how many satellite passes in a list are really distinct (satellite/epoch)."""
+        # TODO: the "same epoch" is only guessed by comparing with a time window
+        # hard-coded in SimplePass.__eq__() -- this is highly impovable!
         if len(pl):
             r = []
             s = 1
@@ -53,7 +50,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     for s, g in graphs.items():
         logger.debug("station: %s, order: %d", s, g.order)
 
-    # graphs and allpasses are hashmaps of sets or so, but we need lists of lists,
+    # Gaphs and allpasses are hashmaps of sets or so, but we need lists of lists,
     # forthat they are copied.
     grl = []
     pl = []
@@ -61,9 +58,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
         grl.append(graphs[s])
         pl.append(sorted(passes[s], key=lambda x: x.risetime))
 
-#         print "APPENDED",s,pl[-1]
-
-    # rough estimate for the size of the combined passes' graph.
+    # Rough estimate for the size of the combined passes' graph.
     n_vertices = 1
     for g in grl:
         n_vertices += g.order
@@ -72,32 +67,26 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
 
     logger.debug("newgraph order: %d", newgraph.order)
 
-    # this value signals the end, when no more passes from any antenna are available.
+    # This value signals the end, when no more passes from any antenna are available.
     stopper = tuple((None, None) for s in range(len(statlst)))
 
-    # the new passes list, it'll be filled with tuples of one pass per antenna.
-    # it's initialized with the first passes.
+    # The new passes list, it'll be filled with tuples, each with of one pass per antenna.
+    # It's initialized with the first passes.
     #
-    # TODO: ideally somthing like next line, not "just the first vertix":
+    # TODO: ideally something like next line, but this doesn't work faultless
+    # if one or more stations have multiple "first passes":
     # newpasses = [tuple((pl[s][p - 1], None) for s in range(len(statlst)) for p in grl[s].neighbours(0))]
+    #
+    # TODO: not "just the first vertix" with the line:
+    # parlist = [newpasses[0]]
+    #
     newpasses = [tuple((pl[s][grl[s].neighbours(0)[0] - 1], None) for s in range(len(statlst)))]
     parlist = [newpasses[0]]
-
-#     print "NEWPASSES",newpasses
-
-    x = 0
-    while len(parlist) and x < 5:
-#         x+=1
-#         print "-----------------------------------------"
-#         print "with parlist",parlist
-
+    while len(parlist):
         newparlist = []
         for parnode in parlist:
-
-#             print "\n---for parnode",parnode,"\n---from",parlist
-
             if parnode == stopper:
-                # All antennas reached end of passes list in this line of
+                # All antennas reached the end of passes list in this path of
                 # possibilities.
                 # stopper == ((None,None) * stations)
                 #
@@ -105,34 +94,20 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                 # stay empty and (at the bottom of this loop) replace parlist,
                 # which as an empty list will cause the surrounding while-loop
                 # to end.
-
-#                 print "skip parnode eq stopper",parnode,stopper
-
                 continue
 
             collected_newnodes = collect_nodes(0, parnode, grl, newgraph, newpasses, pl, delay)
 
-#             print "collected nodes",collected_newnodes
-
             for newnode_list in collected_newnodes:
                 newnode = tuple(newnode_list)
                 if newnode not in newpasses:
-
-#                     print "add newnode",newnode,"to newpasses",newpasses
-
                     newpasses.append(newnode)
-
-#                     print "with index",newpasses.index(newnode)
-#                     print "added",newnode,"index",newpasses.index(newnode)
 
                 if newnode not in newparlist:
                     newparlist.append(newnode)
 
-#                     print "extended newparlist",newparlist
-
-#                 print "collect weight:"
-
                 # Collecting the weights from each stations weight-matrix ...
+                # (could be more compact if it weren't for the None-values)
                 wl = []
                 for s, p, n in zip(range(len(statlst)), parnode, newnode):
                     try:
@@ -143,24 +118,16 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                     except:
                         logger.error("Collecting weights: stat %d - parnode %s %s - newnode %s %s", s, parnode, p, newnode, n, exc_info=1)
                         raise
-                # sum of collected weights
-                ws = sum(wl)
-                # vertices with reference to same sat-pass, 'we' can result to 0, 1, 2.
-                we = 4 - count_neq_passes(parnode) - count_neq_passes(newnode)
-                # apply vertix-count to weight-sum
-                w = ws / 2 ** we
+                # Apply vertix-count to the sum of collected weights.
+                # vertix-count: number of vertices with reference to same
+                # satellite pass, it can result to 0, 1, 2.
+                w = sum(wl) / 2 ** ((2 * len(parnode)) - count_neq_passes(parnode) - count_neq_passes(newnode))
 
-#                 print "weight:\n",parnode,"\n",newnode,"\nwl",wl,"-> ws",ws,"/2**we",we,"== w",w
-
+                # TODO: if the starting point isn't "just the first vertix",
+                # the comparison must be changed
                 if parnode == newpasses[0]:
-
-                    # for the starting point
-#                     print "add_arc",0, newpasses.index(parnode), w
-
+                    # "virtual" weight for the starting point.
                     newgraph.add_arc(0, newpasses.index(parnode) + 1, w)
-#                 else:
-
-#                     print "add_arc",newpasses.index(parnode) + 1, newpasses.index(newnode) + 1, w
 
                 newgraph.add_arc(newpasses.index(parnode) + 1, newpasses.index(newnode) + 1, w)
 
@@ -176,6 +143,10 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
 
     RETURN: [[a1, b1], [a1, b2], ..., [a2, b1], ...]
     """
+    # All collected nodes are virtually occuring at the same time, so some nodes
+    # might be pulled up in the timeline to create a set "overlapping" passes.
+    # If there are no more passes available for one station, None is set.
+
     bufflist = []
     p = parnode[statnr]
     g = graph_set[statnr]
@@ -213,9 +184,6 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         # There won't be any collectable nodes.
         # This None will act as a filler in the combined-vertices-tuples,
         # to get the access-by-index right.
-
-#         print "there won't be any collectable nodes."
-
         gn = [None]
 
     elif p[1] is not None:
@@ -223,13 +191,11 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         # It'll be processed as if it's the node which occurs in this
         # time-slot -- which it propably does, otherwise it's subjected
         # to simulation (again!).
-
         gn = [passes_list[statnr].index(p[0]) + 1]
 
-#         print "simulated",p, gn
-
     else:
-
+        # Special cases aside, this creates a list of neighbours to the
+        # current passes node.
         try:
             gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
         except:
@@ -237,14 +203,9 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
             print "passes_list", passes_list
             raise
 
-#         print "station",statnr,"parnode",p,"neighbours",gn
-
         if gn[0] > len(passes_list[statnr]):
+            # But if there weren't any neighbours, set an empty list.
             gn = [None]
-
-#             print "ENDE",statnr,p
-
-#     print "statnr",statnr,"len(parnode)",len(parnode),parnode,"[stat]->",p
 
     if  statnr + 1 == len(parnode):
         # It's the 'rightmost' of the list parnode,
@@ -254,61 +215,36 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
             # That's "no further connection".
             # It get's a special treatment, because there is no None in the
             # passes-list we could access by index.
-
             bufflist = [[(None, None)]]
 
         else:
             # Prepare to return just the list of neighbouring vertices.
-
-#             print "single parnode",gn
-
             for m in zip((passes_list[statnr][n - 1] for n in gn), (None for _ in gn)):
                 bufflist.append([m])
 
     else:
         # Since it's not the last element of the list parnode, we recurse and
         # then permutade all vertix-lists together.
-
-#         print "recurse"
-
         col = collect_nodes(statnr + 1, parnode, graph_set, newgraph, newpasses, passes_list)
-
-#         print "returned:",col,"going into",gn
 
         # Creating the permutation of all neighbours with the list returned
         # by the recursion.
         # A simulated parent node is seen as a regular list of neighbours.
         for n in gn:
-
-#                 print "append",n,"+",col,"=>"
-
             for cx in col:
                 try:
-
                     if n is None:
                         # The end-of-neighbours dummy.
-
-#                             print "XXXXXXXXXXXXXXXXXXXXXXX"
-
                         cc = cx[:]
                         cc.insert(0, (None, None))
                         bufflist.append(cc)
 
                     else:
-
-#                         if n is None:
-#                             print "compare [",statnr,"][n",n,"] <=>",
-#                         else:
-#                             print "compare [",statnr,"][n",passes_list[statnr][n-1],"] <=>",
-#                         print "[",1,"][cx",cx,"]"
-
+                        # Are two passes are overlapping?
                         overlap = overlap_any(passes_list[statnr][n - 1], cx)
 
-                        if overlap == 0: # cx[0] == (None, None) or
+                        if overlap == 0:
                             # Two passes overlapping, no special handling required.
-
-#                             print "--> n=cx"
-
                             cc = cx[:]
                             cc.insert(0, (
                                           (passes_list[statnr][n - 1], None)
@@ -319,9 +255,6 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             # If the current parent node's pass is not overlapping
                             # but AFTER the pass from the recursion-return-list
                             # the current parent node gets "simulated".
-
-#                             print "--> n>cx","p",p,"n",n,"cx",cx,"w",g.weight(passes_list[statnr].index(p[0]) + 1, n)
-
                             cc = cx[:]
                             cc.insert(0, (
                                           passes_list[statnr][n - 1],
@@ -342,15 +275,11 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                                   for s, c in zip(range(statnr + 1, len(parnode)), cx)
                                 ]
                             cc.insert(0, (passes_list[statnr][n - 1], None))
-
-#                             print "--> n<cx","p",passes_list[statnr][n-1],"n",n,"cx", cx, "cc",cc
-
                             bufflist.append(cc)
 
                         else:
                             print "uh-oh, something curious happened ..."
 
-    #                         print bufflist[-1],
                 except:
                     print "\nCATCH\ngn:", gn, "-> n", n, " col:", col, "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1
                     print "len(passes_list -n -cx)", len(passes_list[statnr]), len(passes_list[statnr + 1])
@@ -358,35 +287,23 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                         print "passes_list[", s, "] =>", passes_list[s]
                     raise
 
-#                 print
-#     print "returning",bufflist
-#     print
-
     return bufflist
-
 
 
 def get_combined_sched(allgraphs, allpasses, delay_sec=60):
 
     delay = timedelta(seconds=delay_sec)
 
-#     for s, g in allgraphs.items():
-#         print "***", s, "***"
-#         print_matrix(g.adj_matrix, ly=5)
-#         print_matrix(g.weight_matrix, ly=5, lx=-1)
-
     statlst, newgraph, newpasses = add_graphs(allgraphs, allpasses, delay)
 
-#     print_matrix(newgraph.adj_matrix, ly=5)
-#     print_matrix(newgraph.weight_matrix, ly=5)
-#     print newpasses
-
-#     for s, g in allgraphs.items():
-#         print "test folding", s
-#         test_folding(g)
-#     print "test folding newgraph"
-#     if test_folding(newgraph):
-#         print_matrix(newgraph.adj_matrix, 25, 36)
+    # >>> DEV: test if the graphs could be "folded".
+    #     for s, g in allgraphs.items():
+    #         print "test folding", s
+    #         test_folding(g)
+    #     print "test folding newgraph"
+    #     if test_folding(newgraph):
+    #         print_matrix(newgraph.adj_matrix, 25, 36)
+    # <<<
 
     dist, path = newgraph.dag_longest_path(0, len(newpasses))
 
@@ -395,10 +312,6 @@ def get_combined_sched(allgraphs, allpasses, delay_sec=60):
 
     del dist
     return statlst, [newpasses[idx - 1] for idx in path[1:-1]], (newgraph, newpasses)
-
-
-
-
 
 
 def print_matrix(m, ly=-1, lx=-1):
@@ -415,8 +328,11 @@ def print_matrix(m, ly=-1, lx=-1):
         print i, ": ...", l[-lx:]
 
 
-
 def test_folding(g):
+    """Test if the graphs could be "folded", or better "squished", to reduce
+    size on cost of calculating the real x',y' from the x,y of the "unfolded"
+    graph.
+    """
     r = False
     for u in range(g.order):
         for n in g.neighbours(u):
@@ -424,7 +340,6 @@ def test_folding(g):
                 print n, "<", u
                 r = True
     return r
-
 
 
 if __name__ == '__main__':
@@ -447,7 +362,6 @@ if __name__ == '__main__':
     try:
         from trollsched.schedule import read_config
         import argparse
-        # global logger
         logger = logging.getLogger("trollsched")
         parser = argparse.ArgumentParser()
         parser.add_argument("-c", "--config", default=None,
@@ -513,7 +427,6 @@ if __name__ == '__main__':
             allpasses[station] = pickle.load(ph)
             ph.close()
 
-
         from trollsched.schedule import conflicting_passes
         totpas = []
         for s, sp in allpasses.items():
@@ -526,13 +439,8 @@ if __name__ == '__main__':
         print "CONFLGRPS", len(cpg) # ,cpg
         print "MAX", max([len(g) for g in cpg])
 
-
-
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
-
 
     except:
         logger.exception("Something wrong happened!")
         raise
-
-
