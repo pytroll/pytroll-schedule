@@ -140,7 +140,13 @@ class Pass(SimplePass):
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
         self.orb = orb or orbital.Orbital(satellite, line1=tle1, line2=tle2)
-        self.boundary = SwathBoundary(self)
+        self._boundary = None
+
+    @property
+    def boundary(self):
+        if not self._boundary:
+            self._boundary = SwathBoundary(self)
+        return self._boundary
 
     def pass_direction(self):
         """Get the direction of the pass in (ascending, descending).
