@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014, 2016 Martin Raspaud
 
 # Author(s):
 
@@ -54,6 +54,7 @@ setup(name='pytroll-schedule',
       entry_points={
           'console_scripts': ['schedule = trollsched.schedule:run',
                               'compare_scheds = trollsched.compare:run']},
+      scripts=['generate_schedule_xmlpage.py'],
       packages=['trollsched'],
       install_requires=requires,
       zip_safe=False,
