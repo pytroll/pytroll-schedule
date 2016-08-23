@@ -113,10 +113,10 @@ def start_plotting(jobreg, message, **kwargs):
     LOG.info("\tMessage:")
     LOG.info(message)
     urlobj = urlparse(message.data['uri'])
-    path, fname = os.path.split(urlobj.path)
+    # path, fname = os.path.split(urlobj.path)
 
     process_xmlrequest(urlobj.path,
-                       OPTIONS['posttroll_topic'], OPTIONS['xmlfilepath'])
+                       OPTIONS['path_plots'], OPTIONS['xmlfilepath'])
 
     return jobreg
 
