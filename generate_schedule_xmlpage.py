@@ -51,15 +51,9 @@ _DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 _DEFAULT_LOG_FORMAT = '[%(levelname)s: %(asctime)s : %(name)s] %(message)s'
 
 import sys
-import netifaces
 from urlparse import urlparse
 import posttroll.subscriber
 from posttroll.publisher import Publish
-from posttroll.message import Message
-
-from multiprocessing import Pool, Manager
-import threading
-from Queue import Empty
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import os.path
@@ -70,6 +64,10 @@ sat_dict = {'npp': 'Suomi NPP',
             'noaa19': 'NOAA 19',
             'noaa18': 'NOAA 18',
             'noaa15': 'NOAA 15',
+            'aqua': 'Aqua',
+            'terra': 'Terra',
+            'metop-b': 'Metop-B',
+            'metop-a': 'Metop-A',
             }
 
 
