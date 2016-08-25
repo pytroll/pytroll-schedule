@@ -100,8 +100,13 @@ class SimplePass(object):
 
     def __eq__(self, other):
 
-        # TODO: the seconds=360 is a workaround to determine if two passes, observed
-        # from two distinct stations, are actually equal (by satellite name and epoch).
+        # TODO: create a different method checking for equality.
+        #
+        # The seconds=360 is a workaround to determine if two passes, observed
+        # from two distinct stations, are actually equal (by satellite name and
+        # epoch).
+        # The value was set as the time difference between two rise times of
+        # one satellite, seen from the two stations Norrköping and Offenbach.
         #
         # Original value from branch develop: seconds=1
         tol = timedelta(seconds=360)

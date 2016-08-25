@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015, 2016 Martin Raspaud
 
 # Author(s):
 
@@ -45,6 +45,9 @@ logger = logging.getLogger(__name__)
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
+# name/id for centre/org creating schedules
+# CENTER_ID = "SMHI"
+CENTER_ID = "DWD-OF"
 
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
@@ -347,7 +350,7 @@ def generate_xml_requests(sched, start, end, station_name, report_mode=False):
     file_end = ET.SubElement(props, "file-end")
     file_end.text = end.strftime(eum_format)
     reqby = ET.SubElement(props, "requested-by")
-    reqby.text = "SMHI"
+    reqby.text = CENTER_ID
     reqon = ET.SubElement(props, "requested-on")
     reqon.text = reqtime.strftime(eum_format)
     for overpass in sorted(sched):
@@ -796,9 +799,11 @@ def run():
 
     # single- or multi-processing?
     if not opts.multiproc:
-        # sequential processing all stations' single scedule.
+        # sequential processing all stations' single schedule.
         for coords, station, area, scores in station_list:
-            graph[station], allpasses[station] = single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file)
+            graph[station], allpasses[station] = single_station(opts, pattern, station, coords,
+                                                                area, scores, start_time, start,
+                                                                forward, tle_file)
 
     else:
         # processing the stations' single schedules with multiprocessing.

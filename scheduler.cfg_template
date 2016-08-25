@@ -6,10 +6,10 @@ start=2
 
 # dir/file pattern, follows rules of str.format()
 #   pre-set names:
-#   date, time,
-#   station (as in [station]->name, for combined schedules ".comb" is appended),
-#   mode (request|report),
-#   output_dir (as in cmd-param --output-dir)
+#   {date}, time},
+#   {station} (as in [station]->name, for combined schedules ".comb" is appended),
+#   {mode} (request|report),
+#   {output_dir} (as in cmd-param --output-dir)
 [pattern]
 dir_output= {output_dir}/{date}-{time}
 dir_plots= {dir_output}/plots.{station}

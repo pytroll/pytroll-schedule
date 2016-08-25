@@ -50,8 +50,8 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     for s, g in graphs.items():
         logger.debug("station: %s, order: %d", s, g.order)
 
-    # Gaphs and allpasses are hashmaps of sets or so, but we need lists of lists,
-    # forthat they are copied.
+    # Graphs and allpasses are hashmaps of sets, or similar, but we need 
+    # lists of lists, forthat they are copied.
     grl = []
     pl = []
     for s in statlst:
@@ -296,13 +296,13 @@ def get_combined_sched(allgraphs, allpasses, delay_sec=60):
 
     statlst, newgraph, newpasses = add_graphs(allgraphs, allpasses, delay)
 
-    # >>> DEV: test if the graphs could be "folded".
-    #     for s, g in allgraphs.items():
-    #         print "test folding", s
-    #         test_folding(g)
-    #     print "test folding newgraph"
-    #     if test_folding(newgraph):
-    #         print_matrix(newgraph.adj_matrix, 25, 36)
+    # >>> DEV: test if the graphs could be "folded" to use use less RAM.
+    #for s, g in allgraphs.items():
+    #    print "test folding", s
+    #    test_folding(g)
+    #print "test folding newgraph"
+    #if test_folding(newgraph):
+    #    print_matrix(newgraph.adj_matrix, 25, 36)
     # <<<
 
     dist, path = newgraph.dag_longest_path(0, len(newpasses))
