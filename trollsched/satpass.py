@@ -24,16 +24,21 @@
 """Satellite passes.
 """
 
+import ftplib
+import glob
 import logging
 import logging.handlers
-import os
 import operator
+import os
+import socket
+import urlparse
 from datetime import datetime, timedelta
-import numpy as np
-from pyorbital import tlefile, orbital
 from tempfile import mkstemp
-from trollsched.boundary import SwathBoundary, AreaDefBoundary
-import glob
+
+import numpy as np
+
+from pyorbital import orbital, tlefile
+from trollsched.boundary import AreaDefBoundary, SwathBoundary
 
 logger = logging.getLogger(__name__)
 
@@ -135,21 +140,25 @@ class SimplePass(object):
                 + duration.seconds
                 + duration.microseconds * 1e-6)
 
+
 class Pass(SimplePass):
 
     """A pass: satellite, risetime, falltime, (orbital)
     """
 
-
     def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
                  instrument=None, tle1=None, tle2=None):
         SimplePass.__init__(self, satellite, risetime, falltime)
-        self.uptime = uptime
+        self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
         self.orb = orb or orbital.Orbital(satellite, line1=tle1, line2=tle2)
-        self.boundary = SwathBoundary(self)
+        self._boundary = None
 
-
+    @property
+    def boundary(self):
+        if not self._boundary:
+            self._boundary = SwathBoundary(self)
+        return self._boundary
 
     def pass_direction(self):
         """Get the direction of the pass in (ascending, descending).
@@ -299,9 +308,6 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
         return line
 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/aqua/downlink/"
-import urlparse
-import ftplib
-import socket
 
 
 def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
