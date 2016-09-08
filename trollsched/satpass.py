@@ -160,6 +160,10 @@ class Pass(SimplePass):
             self._boundary = SwathBoundary(self)
         return self._boundary
 
+    @boundary.setter
+    def boundary(self, value):
+        self._boundary = SwathBoundary(self)
+
     def pass_direction(self):
         """Get the direction of the pass in (ascending, descending).
         """
