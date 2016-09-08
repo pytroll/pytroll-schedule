@@ -624,7 +624,10 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         # collect labels, each with one pass per station.
         # TODO: is there a simpler way?
         clabels = []
-        npasses = {s:set() for s in stats}
+        if sys.version_info < (2, 7):
+            npasses = dict((s, set() for s in stats))
+        else:
+            npasses = {s:set() for s in stats}
         for npass in newpasses:
             cl = []
             for i, s in zip(range(len(stats)), stats):
