@@ -460,18 +460,18 @@ def build_filename(pattern_name, pattern_dict, kwargs):
 
 
 def send_file(url, file):
-    pathname, filename = os.path.split(xmlfile)
+    pathname, filename = os.path.split(file)
     del pathname
     if url.scheme in ["file", ""]:
         pass
     elif url.scheme == "ftp":
         import ftplib
         session = ftplib.FTP(url.hostname, url.username, url.password)
-        with open(xmlfile, "rb") as xfile:
+        with open(file, "rb") as xfile:
             session.storbinary('STOR ' + str(filename), xfile)
         session.quit()
     else:
-        logger.error("Cannot save to %s, but file is there:", str(url.scheme), str(xmlfile))
+        logger.error("Cannot save to %s, but file is there:", str(url.scheme), str(file))
 
 
 def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file):
@@ -559,19 +559,6 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
                                     )
             logger.info("Generated " + str(xmlfile))
             send_file(url, xmlfile)
-#             pathname, filename = os.path.split(xmlfile)
-#             del pathname
-#             if url.scheme in ["file", ""]:
-#                 pass
-#             elif url.scheme == "ftp":
-#                 import ftplib
-#                 session = ftplib.FTP(url.hostname, url.username, url.password)
-#                 with open(xmlfile, "rb") as xfile:
-#                     session.storbinary('STOR ' + str(filename), xfile)
-#                 session.quit()
-#             else:
-#                 logger.error("Cannot save to %s, but file is there:",
-#                              str(url.scheme), str(xmlfile))
         if opts.report:
             """'If report-mode was set"""
             pattern_args['mode'] = "report"
