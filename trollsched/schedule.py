@@ -342,7 +342,10 @@ def generate_xml_requests(sched, start, end, station_name, report_mode=False):
     proj = ET.SubElement(props, "project")
     proj.text = "Pytroll"
     typep = ET.SubElement(props, "type")
-    typep.text = "request"
+    if report_mode:
+        typep.text = "report"
+    else:
+        typep.text = "request"
     station = ET.SubElement(props, "station")
     station.text = station_name
     file_start = ET.SubElement(props, "file-start")
@@ -375,14 +378,8 @@ def generate_xml_file(sched, start, end, xml_file, station, report_mode=False):
     tree, reqtime = generate_xml_requests(sched,
                                           start, end,
                                           station, report_mode)
-    if report_mode:
-        mode = "report"
-    else:
-        mode = "request"
-
     filename = xml_file
     tmp_filename = xml_file + reqtime.strftime("%Y-%m-%d-%H-%M-%S") + ".tmp"
-
     with open(tmp_filename, "w") as fp_:
         if report_mode:
             fp_.write("<?xml version='1.0' encoding='utf-8'?>"
@@ -462,6 +459,21 @@ def build_filename(pattern_name, pattern_dict, kwargs):
     return pattern_dict[pattern_name].format(**kwargs)
 
 
+def send_file(url, file):
+    pathname, filename = os.path.split(xmlfile)
+    del pathname
+    if url.scheme in ["file", ""]:
+        pass
+    elif url.scheme == "ftp":
+        import ftplib
+        session = ftplib.FTP(url.hostname, url.username, url.password)
+        with open(xmlfile, "rb") as xfile:
+            session.storbinary('STOR ' + str(filename), xfile)
+        session.quit()
+    else:
+        logger.error("Cannot save to %s, but file is there:", str(url.scheme), str(xmlfile))
+
+
 def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file):
     """Calculate passes, graph, and schedule for one station."""
 
@@ -535,27 +547,42 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
             logger.info("Waiting for images to be saved...")
             image_saver.join()
             logger.info("Done!")
-        xmlfile = generate_xml_file(allpasses,
+        if opts.xml or opts.report:
+            """Allways create xml-file in request-mode"""
+            pattern_args['mode'] = "request"
+            xmlfile = generate_xml_file(allpasses,
                                     start_time + timedelta(hours=start),
                                     start_time + timedelta(hours=forward),
                                     build_filename("file_xml", pattern, pattern_args),
                                     station,
-                                    opts.report
+                                    False
                                     )
-        logger.info("Generated " + str(xmlfile))
-        pathname, filename = os.path.split(xmlfile)
-        del pathname
-        if url.scheme in ["file", ""]:
-            pass
-        elif url.scheme == "ftp":
-            import ftplib
-            session = ftplib.FTP(url.hostname, url.username, url.password)
-            with open(xmlfile, "rb") as xfile:
-                session.storbinary('STOR ' + str(filename), xfile)
-            session.quit()
-        else:
-            logger.error("Cannot save to %s, but file is there:",
-                         str(url.scheme), str(xmlfile))
+            logger.info("Generated " + str(xmlfile))
+            send_file(url, xmlfile)
+#             pathname, filename = os.path.split(xmlfile)
+#             del pathname
+#             if url.scheme in ["file", ""]:
+#                 pass
+#             elif url.scheme == "ftp":
+#                 import ftplib
+#                 session = ftplib.FTP(url.hostname, url.username, url.password)
+#                 with open(xmlfile, "rb") as xfile:
+#                     session.storbinary('STOR ' + str(filename), xfile)
+#                 session.quit()
+#             else:
+#                 logger.error("Cannot save to %s, but file is there:",
+#                              str(url.scheme), str(xmlfile))
+        if opts.report:
+            """'If report-mode was set"""
+            pattern_args['mode'] = "report"
+            xmlfile = generate_xml_file(allpasses,
+                                    start_time + timedelta(hours=start),
+                                    start_time + timedelta(hours=forward),
+                                    build_filename("file_xml", pattern, pattern_args),
+                                    station,
+                                    True
+                                    )
+            logger.info("Generated " + str(xmlfile))
 
     if opts.graph or opts.comb:
         graph.save(build_filename("file_graph", pattern, pattern_args))
@@ -625,7 +652,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         # TODO: is there a simpler way?
         clabels = []
         if sys.version_info < (2, 7):
-            npasses = dict((s, set() for s in stats))
+            npasses = dict((s, set()) for s in stats)
         else:
             npasses = {s:set() for s in stats}
         for npass in newpasses:
@@ -650,11 +677,22 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         if opts.scisys:
             generate_sch_file(build_filename("file_sci", pattern, pattern_args), passes[station],
                               station_meta[station]['coords'])
-        if opts.xml:
+        if opts.xml or opts.report:
+            pattern_args['mode'] = "request"
             xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
                                     start_time + timedelta(hours=forward),
                                     build_filename("file_xml", pattern, pattern_args),
-                                    station, opts.report)
+                                    station, False)
+            logger.info("Generated " + str(xmlfile))
+            url = urlparse.urlparse(opts.output_url or opts.output_dir)
+            send_file(url, xmlfile)
+        if opts.report:
+            pattern_args['mode'] = "report"
+            xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
+                                    start_time + timedelta(hours=forward),
+                                    build_filename("file_xml", pattern, pattern_args),
+                                    station, True)
+            logger.info("Generated " + str(xmlfile))
 
     logger.info("Finished coordinated schedules.")
 
@@ -782,18 +820,19 @@ def run():
 
     logger.debug("start: %s forward: %s" % (start, forward))
 
+    pattern_args = {
+                    "output_dir":opts.output_dir,
+                    "date":start_time.strftime("%Y%m%d"),
+                    "time":start_time.strftime("%H%M%S")
+                    }
+    dir_output = build_filename("dir_output", pattern, pattern_args)
+    if not os.path.exists(dir_output):
+        logger.debug("Create output dir " + dir_output)
+        os.makedirs(dir_output)
+
     if len(station_list) > 1:
         opts.comb = True
-        pattern_args = {
-                        "output_dir":opts.output_dir,
-                        "date":start_time.strftime("%Y%m%d"),
-                        "time":start_time.strftime("%H%M%S")
-                        }
         import pickle
-        dir_output = build_filename("dir_output", pattern, pattern_args)
-        if not os.path.exists(dir_output):
-            logger.debug("Create output dir " + dir_output)
-            os.makedirs(dir_output)
         ph = open(os.path.join(dir_output, "opts.pkl"), "wb")
         pickle.dump(opts, ph)
         ph.close()
