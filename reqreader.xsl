@@ -8,8 +8,19 @@
     <html>
       <head>
         <meta charset="UTF-8" />
-        <title>Überflugplan
-        </title>
+        <title>Überflugplan</title>
+        <style>
+          body { font-family:sans-serif; font-size:10pt; font-weight:normal; }
+          h1 { font-size:16pt; font-weight:bold; }
+          h2 { font-size:12pt; font-weight:bold; }
+          div.header { position:fixed; max-height:15%; }
+          div.passes { position:absolute; height:85%; bottom:0px; overflow:auto; width:45%; margin-left:2%; font-family:monospace; }
+          div.plot { position:fixed; width:50%; top:200px; right:0px; text-align:center; }
+          div.plot_rmk { position:fixed; width:50%; top:300px; right:0px; text-align:center; }
+          img.plot_img { width:600px; height:450px; visibility:hidden; }
+          .rec_true { font-weight:bold; }
+          .rec_false { font-weight:normal; }
+        </style>
         <script type="text/javascript">
           function switcher(src) {
           bild = document.getElementById("plot");
@@ -19,7 +30,7 @@
         </script>
       </head>
       <body>
-        <div style="position:fixed; height:15%; ">
+        <div class="header">
           <h1>Überflugplan</h1>
           <h2>
             Erstellt von:
@@ -32,43 +43,40 @@
             <xsl:value-of select="properties/station" />
           </h2>
         </div>
-        <div style="position:absolute; height:85%; bottom:0px; overflow:auto; width:45%; margin-left:2%; ">
+        <div class="passes">
           <table style="border-spacing:12px;">
             <tr>
               <th>Pass</th>
               <th>Satellit</th>
-              <th>Aufnahme-Anfang</th>
-              <th>Aufnahme-Ende</th>
+              <th>Datum</th>
+              <th>Anfang</th>
+              <th>Ende</th>
             </tr>
             <xsl:apply-templates select="child::node()" />
           </table>
         </div>
-        <div style="position:fixed; width:50%; top:300px; right:0px; text-align:center;">
+        <div class="plot_rmk">
           (Click auf Überflug zeigt Plot)
         </div>
-        <div style="position:fixed; width:50%; top:200px; right:0px; text-align:center; ">
-          <img id="plot" src="" style="width:600px; height:450px; visibility:hidden;" />
+        <div class="plot">
+          <img id="plot" src="" class="plot_img" />
         </div>
       </body>
     </html>
   </xsl:template>
 
-  <xsl:attribute-set name="css">
-    <xsl:attribute name="style">font-size:10pt;</xsl:attribute>
-  </xsl:attribute-set>
-
   <xsl:template match="pass">
     <xsl:variable name="plotname">
-      <xsl:value-of select="substring-after(./@img, 'plots.ofb' )" />
+      <xsl:value-of select="substring-after(./@img, 'plots.' )" />
     </xsl:variable>
     <xsl:element name="tr">
-      <xsl:attribute name="onClick">javascript:switcher('plots.ofb<xsl:value-of select="$plotname" />')</xsl:attribute>
+      <xsl:attribute name="onClick">javascript:switcher('plots.<xsl:value-of select="$plotname" />')</xsl:attribute>
       <xsl:choose>
         <xsl:when test="./@rec = 'True'">
-          <xsl:attribute name="style">font-family:monospace; font-weight:bold;</xsl:attribute>
+          <xsl:attribute name="class">rec_true</xsl:attribute>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:attribute name="style">font-family:monospace; font-weight:normal;</xsl:attribute>
+          <xsl:attribute name="class">rec_false</xsl:attribute>
         </xsl:otherwise>
       </xsl:choose>
       <xsl:call-template name="passvalues">
@@ -82,14 +90,17 @@
     <td>
       <xsl:number format="1" />
     </td>
-    <xsl:element name="td" use-attribute-sets="css">
+    <xsl:element name="td">
       <xsl:value-of select="./@satellite" />
     </xsl:element>
-    <xsl:element name="td" use-attribute-sets="css">
-      <xsl:value-of select="./@start-time" />
+    <xsl:element name="td">
+      <xsl:value-of select="substring(@start-time, 0, 11)" />
     </xsl:element>
-    <xsl:element name="td" use-attribute-sets="css">
-      <xsl:value-of select="./@end-time" />
+    <xsl:element name="td">
+      <xsl:value-of select="substring(@start-time, 12)" />
+    </xsl:element>
+    <xsl:element name="td">
+      <xsl:value-of select="substring(@end-time, 12)" />
     </xsl:element>
   </xsl:template>
 
