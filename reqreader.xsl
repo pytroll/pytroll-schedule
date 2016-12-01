@@ -87,9 +87,9 @@
 
   <xsl:template name="passvalues">
     <xsl:param name="sat" />
-    <td>
+    <xsl:element name="td">
       <xsl:number format="1" />
-    </td>
+    </xsl:element>
     <xsl:element name="td">
       <xsl:value-of select="./@satellite" />
     </xsl:element>
