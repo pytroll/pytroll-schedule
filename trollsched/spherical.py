@@ -537,7 +537,7 @@ class SphPolygon(object):
         arc3 = Arc(SCoordinate(anti_lon_1,
                                -self.lat[1]),
                    SCoordinate(self.lon[0],
-                               self.lon[0]))
+                               self.lat[0]))
 
         other_arcs = [edge for edge in other.aedges()]
         for arc in [arc1, arc2, arc3]:
