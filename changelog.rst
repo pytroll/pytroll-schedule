@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v0.3.1 (2016-12-08)
+-------------------
+
+- Update changelog. [Martin Raspaud]
+
+- Bump version: 0.3.0 → 0.3.1. [Martin Raspaud]
+
+- Bugfix in spherical. [Martin Raspaud]
+
 v0.3.0 (2016-10-27)
 -------------------
 
