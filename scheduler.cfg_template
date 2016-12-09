@@ -1,10 +1,22 @@
 [default]
-station=nrk
-satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 15,aqua,terra,suomi npp
-#satellites=noaa 16,terra
+station=nrk,bch
 #7 days
 forward=168
 start=2
+
+# dir/file pattern, follows rules of str.format()
+#   pre-set names:
+#   {date}, time},
+#   {station} (as in [station]->name, for combined schedules ".comb" is appended),
+#   {mode} (request|report),
+#   {output_dir} (as in cmd-param --output-dir)
+[pattern]
+dir_output= {output_dir}/{date}-{time}
+dir_plots= {dir_output}/plots.{station}
+file_xml= {dir_output}/aquisition-schedule-{mode}_{station}.xml
+file_sci= {dir_output}/scisys-schedule-{station}.txt
+file_graph= {dir_output}/graph
+
 
 [nrk]
 name=nrk
@@ -17,6 +29,8 @@ altitude=0.052765
 #area_file=/home/sat/smhi/scheduler/areas.def
 area_file=/local_disk/usr/src/satprod/etc/areas.def
 area=euron1
+satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 15,aqua,terra,suomi npp
+#satellites=noaa 16,terra
 
 [nrk-test]
 name=nrk
@@ -28,6 +42,8 @@ latitude=58.581844
 altitude=0.052765
 area_file=/home/sat/smhi/scheduler_test/areas.def
 area=euron1
+satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 15,aqua,terra,suomi npp
+#satellites=noaa 16,terra
 
 [bch]
 name=bch
@@ -39,6 +55,9 @@ latitude=51.505070
 altitude=0.14
 area_file=/local_disk/usr/src/satprod/etc/areas.def
 area=euron1
+satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 15,aqua,terra,suomi npp
+#satellites=noaa 16,terra
+
 
 [metop-a]
 night=0.1
