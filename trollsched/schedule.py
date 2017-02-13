@@ -318,7 +318,7 @@ def generate_sch_file(output_file, overpasses, coords):
             out.write(overpass.print_vcs(coords) + "\n")
 
 
-def generate_xml_requests(sched, start, end, station_name, report_mode=False):
+def generate_xml_requests(sched, start, end, station_name, center_id, report_mode=False):
     """Create xml requests.
     """
     import xml.etree.ElementTree as ET
@@ -353,7 +353,7 @@ def generate_xml_requests(sched, start, end, station_name, report_mode=False):
     file_end = ET.SubElement(props, "file-end")
     file_end.text = end.strftime(eum_format)
     reqby = ET.SubElement(props, "requested-by")
-    reqby.text = CENTER_ID
+    reqby.text = center_id
     reqon = ET.SubElement(props, "requested-on")
     reqon.text = reqtime.strftime(eum_format)
     for overpass in sorted(sched):
@@ -371,13 +371,13 @@ def generate_xml_requests(sched, start, end, station_name, report_mode=False):
     return root, reqtime
 
 
-def generate_xml_file(sched, start, end, xml_file, station, report_mode=False):
+def generate_xml_file(sched, start, end, xml_file, station, center_id, report_mode=False):
     """Create an xml request file.
     """
     import xml.etree.ElementTree as ET
     tree, reqtime = generate_xml_requests(sched,
                                           start, end,
-                                          station, report_mode)
+                                          station, center_id, report_mode)
     filename = xml_file
     tmp_filename = xml_file + reqtime.strftime("%Y-%m-%d-%H-%M-%S") + ".tmp"
     with open(tmp_filename, "w") as fp_:
@@ -406,6 +406,11 @@ def read_config(filename):
     stations = cfg.get("default", "station").split(",")
     forward = cfg.getint("default", "forward")
     start = cfg.getfloat("default", "start")
+    center_id = CENTER_ID
+    try:
+        center_id = cfg.get("default", "center_id")
+    except:
+        pass
 
     pattern = {}
     for k, v in cfg.items("pattern"):
@@ -430,7 +435,7 @@ def read_config(filename):
         station_list.append(((station_lon, station_lat, station_alt),
                 station_name, area, sat_scores))
 
-    return (station_list, forward, start, pattern)
+    return (station_list, forward, start, pattern, center_id)
 
 
 def save_passes(allpasses, poly, output_dir):
@@ -474,7 +479,7 @@ def send_file(url, file):
         logger.error("Cannot save to %s, but file is there:", str(url.scheme), str(file))
 
 
-def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file):
+def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file, center_id):
     """Calculate passes, graph, and schedule for one station."""
 
     logger.debug("station: %s coords: %s area: %s scores: %s", station, coords, area.area_id, scores)
@@ -586,7 +591,7 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
     return graph, allpasses
 
 
-def combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward):
+def combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward, center_id):
     """The works around the combination of schedules for two or more stations."""
 
     logger.info("Generating coordinated schedules ...")
@@ -669,7 +674,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
             xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
                                     start_time + timedelta(hours=forward),
                                     build_filename("file_xml", pattern, pattern_args),
-                                    station, False)
+                                    station, center_id, False)
             logger.info("Generated " + str(xmlfile))
             url = urlparse.urlparse(opts.output_url or opts.output_dir)
             send_file(url, xmlfile)
@@ -678,7 +683,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
             xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
                                     start_time + timedelta(hours=forward),
                                     build_filename("file_xml", pattern, pattern_args),
-                                    station, True)
+                                    station, center_id, True)
             logger.info("Generated " + str(xmlfile))
 
     logger.info("Finished coordinated schedules.")
@@ -751,7 +756,7 @@ def run():
     if opts.config:
         # read_config() returns:
         #     [(coords, station, area, scores)], forward, start, {pattern}
-        station_list, forward, start, pattern = read_config(opts.config)
+        station_list, forward, start, pattern, center_id = read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -832,7 +837,7 @@ def run():
         for coords, station, area, scores in station_list:
             graph[station], allpasses[station] = single_station(opts, pattern, station, coords,
                                                                 area, scores, start_time, start,
-                                                                forward, tle_file)
+                                                                forward, tle_file, center_id)
 
     else:
         # processing the stations' single schedules with multiprocessing.
@@ -850,7 +855,7 @@ def run():
                     target=single_station,
                     args=(
                           opts, pattern, station, coords,
-                          area, scores, start_time, start, forward, tle_file
+                          area, scores, start_time, start, forward, tle_file, center_id
                           )
                     )
             process_single[station].start()
@@ -868,7 +873,7 @@ def run():
             ph.close()
 
     if opts.comb:
-        combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
+        combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward, center_id)
 
 
 if __name__ == '__main__':
