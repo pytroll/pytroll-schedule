@@ -421,6 +421,11 @@ def read_config(filename):
         station_lon = cfg.getfloat(station, "longitude")
         station_lat = cfg.getfloat(station, "latitude")
         station_alt = cfg.getfloat(station, "altitude")
+        station_min_pass = MIN_PASS
+        try:
+            station_min_pass = cfg.getint(station, "min_pass")
+        except:
+            pass
 
         area = utils.parse_area_file(cfg.get(station, "area_file"),
                                      cfg.get(station, "area"))[0]
@@ -433,7 +438,7 @@ def read_config(filename):
                                cfg.getfloat(sat, "day"))
 
         station_list.append(((station_lon, station_lat, station_alt),
-                station_name, area, sat_scores))
+                station_name, station_min_pass, area, sat_scores))
 
     return (station_list, forward, start, pattern, center_id)
 
@@ -479,7 +484,7 @@ def send_file(url, file):
         logger.error("Cannot save to %s, but file is there:", str(url.scheme), str(file))
 
 
-def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file, center_id):
+def single_station(opts, pattern, station, coords, min_pass, area, scores, start_time, start, forward, tle_file, center_id):
     """Calculate passes, graph, and schedule for one station."""
 
     logger.debug("station: %s coords: %s area: %s scores: %s", station, coords, area.area_id, scores)
@@ -503,7 +508,7 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
 
     logger.info("Computing next satellite passes")
     allpasses = get_next_passes(satellites, start_time,
-                                forward, coords, tle_file, aqua_dumps=opts.no_aqua_dump)
+                                forward, coords, min_pass, tle_file, aqua_dumps=opts.no_aqua_dump)
     logger.info("Computation of next overpasses done")
 
     logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
@@ -621,7 +626,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         raise
 
     station_meta = {}
-    for coords, station, area, scores in station_list:
+    for coords, station, min_pass, area, scores in station_list:
         station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
@@ -834,9 +839,9 @@ def run():
     # single- or multi-processing?
     if not opts.multiproc:
         # sequential processing all stations' single schedule.
-        for coords, station, area, scores in station_list:
+        for coords, station, min_pass, area, scores in station_list:
             graph[station], allpasses[station] = single_station(opts, pattern, station, coords,
-                                                                area, scores, start_time, start,
+                                                                min_pass, area, scores, start_time, start,
                                                                 forward, tle_file, center_id)
 
     else:
@@ -848,13 +853,13 @@ def run():
         # first round through the stations, forking sub-processes to do the
         # "single station calculations" in parallel.
         # the pickling of passes and graphs is done inside single_station().
-        for coords, station, area, scores in station_list:
+        for coords, station, min_pass, area, scores in station_list:
             statlst_ordered.append(station)
             from multiprocessing import Process
             process_single[station] = Process(
                     target=single_station,
                     args=(
-                          opts, pattern, station, coords,
+                          opts, pattern, station, coords, min_pass,
                           area, scores, start_time, start, forward, tle_file, center_id
                           )
                     )

@@ -390,7 +390,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_dumps=False):
+def get_next_passes(satellites, utctime, forward, coords, min_pass=MIN_PASS, tle_file=None, aqua_dumps=False):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -435,7 +435,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
                     if new_rise is not None and new_rise < overpass.falltime:
                         overpass.risetime = new_rise
                         overpass.boundary = SwathBoundary(overpass)
-                        if overpass.seconds() > MIN_PASS * 60:
+                        if overpass.seconds() > min_pass * 60:
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
         elif sat == "aqua" and aqua_dumps:
@@ -546,13 +546,13 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
                         if overpass.falltime <= overpass.risetime:
                             add = False
                             logger.debug("skipping " + str(overpass))
-                if add and overpass.seconds() > MIN_PASS * 60:
+                if add and overpass.seconds() > min_pass * 60:
                     passes["aqua"].append(overpass)
 
         else:
             passes[sat] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                            for rtime, ftime, uptime in passlist
-                           if ftime - rtime > timedelta(minutes=MIN_PASS)]
+                           if ftime - rtime > timedelta(minutes=min_pass)]
 
     return set(reduce(operator.concat, passes.values()))
 
