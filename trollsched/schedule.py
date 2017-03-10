@@ -296,6 +296,15 @@ def get_max(groups, fun):
     return groups[argmax(scores)]
 
 
+def generate_meos_file(output_file, allpasses, coords):
+
+    with open(output_file, "w") as out:
+        out.write(" No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)\n")
+        line_no = 1
+        for overpass in sorted(allpasses):
+            out.write(overpass.print_meos(coords, line_no) + "\n")
+            line_no+=1
+
 def generate_sch_file(output_file, overpasses, coords):
 
     with open(output_file, "w") as out:
@@ -329,10 +338,14 @@ def generate_xml_requests(sched, start, end, station_name, center_id, report_mod
             "noaa 19": "noaa19",
             "metop-a": "metop-a",
             "metop-b": "metop-b",
+            "metop-c": "metop-c",
             "terra": "terra",
             "aqua": "aqua",
             "suomi npp": "npp",
-            }
+            "fengyun 3a": "fengyun-3a",
+            "fengyun 3b": "fengyun-3b",
+            "fengyun 3c": "fengyun-3c",
+    }
 
     reqtime = datetime.utcnow()
     eum_format = "%Y-%m-%d-%H:%M:%S"
@@ -412,6 +425,37 @@ def read_config(filename):
     except:
         pass
 
+    #Plot parameters.
+    plot_parameters = {}
+    try:
+        plot_parameters['projection'] = cfg.get("default","plot_projection")
+    except:
+        pass
+
+    try:
+        plot_parameters['lat_0'] = cfg.get("default","plot_lat_0")
+    except:
+        pass
+
+    try:
+        plot_parameters['lon_0'] = cfg.get("default","plot_lon_0")
+    except:
+        pass
+
+    try:
+        plot_parameters['resolution'] = cfg.get("default","plot_resolution")
+    except:
+        pass
+
+    try:
+        plot_parameters['area_threshold'] = cfg.get("default","plot_area_threshold")
+    except:
+        pass
+    try:
+        plot_parameters['plot_title'] = cfg.get("default","plot_title")
+    except:
+        pass
+
     pattern = {}
     for k, v in cfg.items("pattern"):
         pattern[k] = v
@@ -422,6 +466,12 @@ def read_config(filename):
         station_lat = cfg.getfloat(station, "latitude")
         station_alt = cfg.getfloat(station, "altitude")
         station_min_pass = MIN_PASS
+        station_local_horizon = 0
+        try:
+            station_local_horizon = cfg.getfloat(station,"local_horizon")
+        except:
+            pass
+
         try:
             station_min_pass = cfg.getint(station, "min_pass")
         except:
@@ -438,14 +488,14 @@ def read_config(filename):
                                cfg.getfloat(sat, "day"))
 
         station_list.append(((station_lon, station_lat, station_alt),
-                station_name, station_min_pass, area, sat_scores))
+                station_name, station_min_pass, station_local_horizon, area, sat_scores))
 
-    return (station_list, forward, start, pattern, center_id)
+    return (station_list, forward, start, pattern, center_id, plot_parameters)
 
 
-def save_passes(allpasses, poly, output_dir):
+def save_passes(allpasses, poly, output_dir, plot_parameters):
     for passage in allpasses:
-        passage.save_fig(poly, directory=output_dir)
+        passage.save_fig(poly, directory=output_dir, plot_parameters=plot_parameters)
 
 def get_passes_from_xml_file(filename):
     """Read passes from aquisition xml file."""
@@ -484,7 +534,7 @@ def send_file(url, file):
         logger.error("Cannot save to %s, but file is there:", str(url.scheme), str(file))
 
 
-def single_station(opts, pattern, station, coords, min_pass, area, scores, start_time, start, forward, tle_file, center_id):
+def single_station(opts, pattern, station, coords, min_pass, local_horizon, area, scores, start_time, start, forward, tle_file, center_id, plot_parameters):
     """Calculate passes, graph, and schedule for one station."""
 
     logger.debug("station: %s coords: %s area: %s scores: %s", station, coords, area.area_id, scores)
@@ -508,8 +558,12 @@ def single_station(opts, pattern, station, coords, min_pass, area, scores, start
 
     logger.info("Computing next satellite passes")
     allpasses = get_next_passes(satellites, start_time,
-                                forward, coords, min_pass, tle_file, aqua_dumps=opts.no_aqua_dump)
+                                forward, coords, min_pass, local_horizon, tle_file, aqua_dumps=opts.no_aqua_dump)
+
     logger.info("Computation of next overpasses done")
+
+    if opts.meos:
+        generate_meos_file(build_filename("file_meos_all", pattern, pattern_args), allpasses, coords)
 
     logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
 
@@ -523,7 +577,8 @@ def single_station(opts, pattern, station, coords, min_pass, area, scores, start
                              target=save_passes,
                              args=(allpasses,
                                    area.poly,
-                                   build_filename("dir_plots", pattern, pattern_args)
+                                   build_filename("dir_plots", pattern, pattern_args),
+                                   plot_parameters
                                    )
                              )
         image_saver.start()
@@ -546,6 +601,9 @@ def single_station(opts, pattern, station, coords, min_pass, area, scores, start
 
     if opts.scisys:
         generate_sch_file(build_filename("file_sci", pattern, pattern_args), allpasses, coords)
+
+    if opts.meos:
+        generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses, coords)
 
     if opts.xml or opts.report:
         url = urlparse.urlparse(opts.output_url or opts.output_dir)
@@ -626,7 +684,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         raise
 
     station_meta = {}
-    for coords, station, min_pass, area, scores in station_list:
+    for coords, station, min_pass, local_horizon, area, scores in station_list:
         station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
@@ -756,12 +814,14 @@ def run():
                         help="generate plot images")
     group_outp.add_argument("-g", "--graph", action="store_true",
                         help="save graph info")
+    group_outp.add_argument("--meos", action="store_true",
+                       help="generate a MEOS schedule file")
     opts = parser.parse_args()
 
     if opts.config:
         # read_config() returns:
         #     [(coords, station, area, scores)], forward, start, {pattern}
-        station_list, forward, start, pattern, center_id = read_config(opts.config)
+        station_list, forward, start, pattern, center_id, plot_parameters = read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -839,10 +899,12 @@ def run():
     # single- or multi-processing?
     if not opts.multiproc:
         # sequential processing all stations' single schedule.
-        for coords, station, min_pass, area, scores in station_list:
+        for coords, station, min_pass, local_horizon, area, scores in station_list:
             graph[station], allpasses[station] = single_station(opts, pattern, station, coords,
-                                                                min_pass, area, scores, start_time, start,
-                                                                forward, tle_file, center_id)
+                                                                min_pass, local_horizon,
+                                                                area, scores, start_time, start,
+                                                                forward, tle_file, center_id,
+                                                                plot_parameters)
 
     else:
         # processing the stations' single schedules with multiprocessing.
@@ -853,14 +915,15 @@ def run():
         # first round through the stations, forking sub-processes to do the
         # "single station calculations" in parallel.
         # the pickling of passes and graphs is done inside single_station().
-        for coords, station, min_pass, area, scores in station_list:
+        for coords, station, min_pass, local_horizon, area, scores in station_list:
             statlst_ordered.append(station)
             from multiprocessing import Process
             process_single[station] = Process(
                     target=single_station,
                     args=(
-                          opts, pattern, station, coords, min_pass,
-                          area, scores, start_time, start, forward, tle_file, center_id
+                          opts, pattern, station, coords, min_pass, local_horizon,
+                          area, scores, start_time, start, forward, tle_file, center_id,
+                          plot_parameters
                           )
                     )
             process_single[station].start()

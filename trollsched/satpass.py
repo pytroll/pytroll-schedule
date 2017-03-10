@@ -39,6 +39,7 @@ import numpy as np
 
 from pyorbital import orbital, tlefile
 from trollsched.boundary import AreaDefBoundary, SwathBoundary
+from trollsift.parser import compose
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +52,14 @@ class Mapper(object):
     """A class to generate nice plots with basemap.
     """
 
-    def __init__(self):
+    def __init__(self, plot_parameters):
         from mpl_toolkits.basemap import Basemap
-
-        self.map = Basemap(projection='nsper', lat_0=58, lon_0=16,
-                           resolution='l', area_thresh=1000.)
+        
+        self.map = Basemap(projection=plot_parameters.get('projection', 'nsper'),
+                           lat_0=plot_parameters.get('lat_0', 58),
+                           lon_0=plot_parameters.get('lon_0', 16),
+                           resolution=plot_parameters.get('resolution','l'),
+                           area_thresh=plot_parameters.get('area_threshold', 1000.))
 
         self.map.drawcoastlines()
         self.map.drawcountries()
@@ -213,7 +217,7 @@ class Pass(SimplePass):
         return inter.area() / area_boundary.area()
 
     def save_fig(self, poly=None, directory="/tmp/plots",
-                 overwrite=False, labels=None, extension=".png"):
+                 overwrite=False, labels=None, extension=".png", plot_parameters={}):
         """Save the pass as a figure. Filename is automatically generated.
         """
         logger.debug("Save fig " + str(self))
@@ -233,12 +237,16 @@ class Pass(SimplePass):
         mpl.use('Agg')
         import matplotlib.pyplot as plt
         plt.clf()
-        with Mapper() as mapper:
+        with Mapper(plot_parameters) as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "-r")
             if poly is not None:
                 poly.draw(mapper, "-b")
-        plt.title(str(self))
+        
+        plot_title = {'satellite_name': self.satellite.upper(),
+                      'risetime': self.risetime,
+                      'falltime': self.falltime}
+        plt.title(str(compose(plot_parameters.get('plot_title',str(self)),plot_title)))
         for label in labels or []:
             plt.figtext(*label[0], **label[1])
         plt.savefig(filename)
@@ -265,6 +273,72 @@ class Pass(SimplePass):
         """Draw the pass to the *mapper* object (basemap).
         """
         self.boundary.contour_poly.draw(mapper, options)
+
+    def print_meos(self, coords, line_no):
+        """
+         No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)
+        """
+
+        asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
+        #anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
+        asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
+        orbit=self.orb.get_orbit_number(self.risetime)
+        aos_epoch=int((self.risetime-datetime(1970,1,1)).total_seconds())
+        sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
+        
+        dur_secs = (self.falltime - self.risetime).seconds
+        dur_hours, dur_reminder = divmod(dur_secs, 3600)
+        dur_minutes, dur_seconds = divmod(dur_reminder, 60)
+        duration = "{:0>2}:{:0>2}".format(dur_minutes, dur_seconds)
+        
+        satellite_meos_translation = {"NOAA 19": "NOAA_19",
+                                      "NOAA 18": "NOAA_18",
+                                      "NOAA 15": "NOAA_15",
+                                      "METOP-A": "M02",
+                                      "METOP-B": "M01",
+                                      "FENGYUN 3A": "FENGYUN-3A",
+                                      "FENGYUN 3B": "FENGYUN-3B",
+                                      "FENGYUN 3C": "FENGYUN-3C",
+                                      "SUOMI NPP": "NPP"}
+                                      
+        import md5
+        pass_key = md5.new("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".format(satellite_meos_translation.get(self.satellite.upper(), self.satellite.upper()),
+                                                                 int(orbit),
+                                                                 aos_epoch,
+                                                                 sat_lon,
+                                                                 sat_lat)).hexdigest()
+
+        line_list = [" {line_no:>2}",                     
+                     "{date}",
+                     "{satellite:<9}",
+                     "{orbit:>6}",
+                     "{elevation:>6.3f} ",
+                     "{risetime}",
+                     "{overlap:<5s}",                     
+                     "{falltime}",
+                     "{duration}",
+                     "{asimuth_at_aos:>5.1f}",
+                     "{asimuth_at_max:>5.1f}",
+                     "-- Undefined(Scheduling not done {aos_epoch} )",
+                     "{passkey}"
+                     ]
+
+        line = " ".join(line_list).format(
+            #line_no=line_no,
+            line_no=1,
+            date=self.risetime.strftime("%Y%m%d"),
+            satellite=satellite_meos_translation.get(self.satellite.upper(), self.satellite.upper()),
+            orbit=orbit,
+            elevation=max_elevation,
+            risetime=self.risetime.strftime("%H:%M:%S"),
+            overlap="n/a",
+            falltime=self.falltime.strftime("%H:%M:%S"),
+            duration=duration,
+            asimuth_at_aos=asimuth_at_aos,
+            asimuth_at_max=asimuth_at_max_elevation,
+            aos_epoch=aos_epoch,
+            passkey=pass_key)
+        return line
 
     def print_vcs(self, coords):
         """Should look like this::
@@ -390,7 +464,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, min_pass=MIN_PASS, tle_file=None, aqua_dumps=False):
+def get_next_passes(satellites, utctime, forward, coords, min_pass=MIN_PASS, local_horizon=0, tle_file=None, aqua_dumps=False):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -414,13 +488,17 @@ def get_next_passes(satellites, utctime, forward, coords, min_pass=MIN_PASS, tle
         orbitals[sat] = satorb
         passlist = satorb.get_next_passes(utctime,
                                           forward,
-                                          *coords)
+                                          horizon=local_horizon,
+                                          *coords
+                                          )
         if sat.lower().startswith("metop") or sat.lower().startswith("noaa"):
             instrument = "avhrr"
         elif sat in ["aqua", "terra"]:
             instrument = "modis"
         elif sat.endswith("npp"):
             instrument = "viirs"
+        elif sat.lower in ["fengyun 3a", "fengyun 3b", "fengyun 3c"]:
+            instrument = "mersi"
         else:
             instrument = "unknown"
         # take care of metop-a
