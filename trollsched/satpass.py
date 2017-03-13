@@ -310,8 +310,8 @@ class Pass(SimplePass):
 
         line_list = [" {line_no:>2}",                     
                      "{date}",
-                     "{satellite:<9}",
-                     "{orbit:>6}",
+                     "{satellite:<10}",
+                     "{orbit:>5}",
                      "{elevation:>6.3f} ",
                      "{risetime}",
                      "{overlap:<5s}",                     
