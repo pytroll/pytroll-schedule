@@ -296,14 +296,17 @@ def get_max(groups, fun):
     return groups[argmax(scores)]
 
 
-def generate_meos_file(output_file, allpasses, coords):
+def generate_meos_file(output_file, allpasses, coords, start, report_mode=False):
 
     with open(output_file, "w") as out:
         out.write(" No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)\n")
         line_no = 1
-        for overpass in sorted(allpasses):
-            out.write(overpass.print_meos(coords, line_no) + "\n")
-            line_no+=1
+        for overpass in sorted(allpasses, key=lambda x: x.risetime):
+            if ( overpass.rec or report_mode ) and overpass.risetime > start:
+                out.write(overpass.print_meos(coords, line_no) + "\n")
+                line_no+=1
+        out.close()
+    return output_file
 
 def generate_sch_file(output_file, overpasses, coords):
 
@@ -562,9 +565,6 @@ def single_station(opts, pattern, station, coords, min_pass, local_horizon, area
 
     logger.info("Computation of next overpasses done")
 
-    if opts.meos:
-        generate_meos_file(build_filename("file_meos_all", pattern, pattern_args), allpasses, coords)
-
     logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
 
     area_boundary = AreaDefBoundary(area, frequency=500)
@@ -603,7 +603,7 @@ def single_station(opts, pattern, station, coords, min_pass, local_horizon, area
         generate_sch_file(build_filename("file_sci", pattern, pattern_args), allpasses, coords)
 
     if opts.meos:
-        generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses, coords)
+        generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses, coords, start_time + timedelta(hours=start), True) #Ie report mode
 
     if opts.xml or opts.report:
         url = urlparse.urlparse(opts.output_url or opts.output_dir)
@@ -748,6 +748,13 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
                                     build_filename("file_xml", pattern, pattern_args),
                                     station, center_id, True)
             logger.info("Generated " + str(xmlfile))
+        if opts.meos:
+            meosfile = generate_meos_file(build_filename("file_meos", pattern, pattern_args),
+                                          passes[station],
+                                          station_meta[station]['coords'],
+                                          start_time + timedelta(hours=start),
+                                          False) #Ie only print schedule passes
+            logger.info("Generated " + str(meosfile))
 
     logger.info("Finished coordinated schedules.")
 
