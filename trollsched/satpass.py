@@ -280,6 +280,7 @@ class Pass(SimplePass):
         """
 
         asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
+        pass_direction = self.pass_direction().capitalize()[:1]
         #anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
         asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
         orbit=self.orb.get_orbit_number(self.risetime)
@@ -320,7 +321,8 @@ class Pass(SimplePass):
                      "{asimuth_at_aos:>5.1f}",
                      "{asimuth_at_max:>5.1f}",
                      "-- Undefined(Scheduling not done {aos_epoch} )",
-                     "{passkey}"
+                     "{passkey}",
+                     "{pass_direction}"
                      ]
 
         line = " ".join(line_list).format(
@@ -337,7 +339,8 @@ class Pass(SimplePass):
             asimuth_at_aos=asimuth_at_aos,
             asimuth_at_max=asimuth_at_max_elevation,
             aos_epoch=aos_epoch,
-            passkey=pass_key)
+            passkey=pass_key,
+            pass_direction=pass_direction)
         return line
 
     def print_vcs(self, coords):
