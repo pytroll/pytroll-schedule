@@ -296,6 +296,43 @@ def get_max(groups, fun):
     return groups[argmax(scores)]
 
 
+def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_name, center_id, report_mode=False):
+    import xml.etree.ElementTree as ET
+
+    reqtime = datetime.utcnow()
+
+    with open(output_file, "w") as out:
+        out.write("<?xml version='1.0' encoding='utf-8'?>")
+
+        root = ET.Element("acquisition-schedule")
+        props = ET.SubElement(root, "properties")
+        proj = ET.SubElement(props, "project")
+        proj.text = "Pytroll"
+        typep = ET.SubElement(props, "type")
+        if report_mode:
+            typep.text = "report"
+        else:
+            typep.text = "request"
+        station = ET.SubElement(props, "station")
+        station.text = station_name
+        file_start = ET.SubElement(props, "file-start")
+        file_start.text = start.strftime("%Y-%m-%dT%H:%M:%S")
+        file_end = ET.SubElement(props, "file-end")
+        file_end.text = end.strftime("%Y-%m-%dT%H:%M:%S")
+        reqby = ET.SubElement(props, "requested-by")
+        reqby.text = center_id
+        reqon = ET.SubElement(props, "requested-on")
+        reqon.text = reqtime.strftime("%Y-%m-%dT%H:%M:%S")
+
+        for overpass in sorted(allpasses, key=lambda x: x.risetime):
+            if ( overpass.rec or report_mode ) and overpass.risetime > start:
+                overpass.generate_metno_xml(coords, root)
+
+               
+        out.write(ET.tostring(root))
+        out.close()
+    return output_file
+
 def generate_meos_file(output_file, allpasses, coords, start, report_mode=False):
 
     with open(output_file, "w") as out:
@@ -605,6 +642,9 @@ def single_station(opts, pattern, station, coords, min_pass, local_horizon, area
     if opts.meos:
         generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses, coords, start_time + timedelta(hours=start), True) #Ie report mode
 
+    if opts.metno_xml:
+        generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), allpasses, coords, start_time + timedelta(hours=start), start_time + timedelta(hours=forward), station, center_id, True)
+
     if opts.xml or opts.report:
         url = urlparse.urlparse(opts.output_url or opts.output_dir)
         if url.scheme not in ["file", ""]:
@@ -755,6 +795,15 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
                                           start_time + timedelta(hours=start),
                                           False) #Ie only print schedule passes
             logger.info("Generated " + str(meosfile))
+        if opts.metno_xml:
+            metno_xmlfile = generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args),
+                                                    passes[station],
+                                                    station_meta[station]['coords'],
+                                                    start_time + timedelta(hours=start),
+                                                    start_time + timedelta(hours=forward),
+                                                    station, center_id, False)
+            logger.info("Generated " + str(metno_xmlfile))
+            
 
     logger.info("Finished coordinated schedules.")
 
@@ -823,6 +872,8 @@ def run():
                         help="save graph info")
     group_outp.add_argument("--meos", action="store_true",
                        help="generate a MEOS schedule file")
+    group_outp.add_argument("--metno-xml", action="store_true",
+                       help="generate a METNO xml pass data file")
     opts = parser.parse_args()
 
     if opts.config:
