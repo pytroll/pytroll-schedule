@@ -274,6 +274,33 @@ class Pass(SimplePass):
         """
         self.boundary.contour_poly.draw(mapper, options)
 
+    def generate_metno_xml(self, coords, root):
+        import xml.etree.ElementTree as ET
+
+        asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
+        pass_direction = self.pass_direction().capitalize()[:1]
+        #anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
+        asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
+        orbit=self.orb.get_orbit_number(self.risetime)
+        #aos_epoch=int((self.risetime-datetime(1970,1,1)).total_seconds())
+        sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
+        
+        ovpass = ET.SubElement(root, "pass")
+        ovpass.set("satellite", self.satellite)
+        ovpass.set("aos", self.risetime.strftime("%Y%m%d%H%M%S"))
+        ovpass.set("los", self.falltime.strftime("%Y%m%d%H%M%S"))
+        ovpass.set("orbit", "{:d}".format(orbit))
+        ovpass.set("max-elevation", "{:.3f}".format(max_elevation))
+        ovpass.set("asimuth-at-max-elevation", "{:.3f}".format(asimuth_at_max_elevation))
+        ovpass.set("asimuth-at-aos", "{:.3f}".format(asimuth_at_aos))
+        ovpass.set("pass-direction", pass_direction)
+        ovpass.set("satellite-lon-at-aos", "{:.3f}".format(sat_lon))
+        ovpass.set("satellite-lat-at-aos", "{:.3f}".format(sat_lat))
+        ovpass.set("tle-epoch", self.orb.orbit_elements.epoch.strftime("%Y%m%d%H%M%S.%f"))
+
+        return True
+
+
     def print_meos(self, coords, line_no):
         """
          No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)
