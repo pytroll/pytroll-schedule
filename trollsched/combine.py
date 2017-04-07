@@ -34,8 +34,6 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
 
     def count_neq_passes(pl):
         """Counts how many satellite passes in a list are really distinct (satellite/epoch)."""
-        # TODO: the "same epoch" is only guessed by comparing with a time window
-        # hard-coded in SimplePass.__eq__() -- this is highly impovable!
         if len(pl):
             r = []
             s = 1
