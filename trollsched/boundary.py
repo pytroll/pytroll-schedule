@@ -131,6 +131,8 @@ class SwathBoundary(Boundary):
             scan_angle = 55.0
         elif instrument == "viirs":
             scan_angle = 55.84
+        elif instrument == "iasi":
+            scan_angle = 48.3
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
         instrument = "avhrr"
