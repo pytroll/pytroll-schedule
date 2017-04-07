@@ -246,7 +246,7 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Gives the two intersections of the greats circles defined by the 
+        """Gives the two intersections of the greats circles defined by the
        current arc and *other_arc*.
        From http://williams.best.vwh.net/intersect.htm
         """
