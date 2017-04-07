@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015 Martin Raspaud
+# Copyright (c) 2014, 2015, 2017 Martin Raspaud
 
 # Author(s):
 
@@ -104,17 +104,15 @@ class SimplePass(object):
             return 0
 
     def __eq__(self, other):
-
-        # TODO: create a different method checking for equality.
-        #
-        # The seconds=360 is a workaround to determine if two passes, observed
-        # from two distinct stations, are actually equal (by satellite name and
-        # epoch).
-        # The value was set as the time difference between two rise times of
-        # one satellite, seen from the two stations Norrköping and Offenbach.
-        #
-        # Original value from branch develop: seconds=1
-        tol = timedelta(seconds=360)
+        """Determine if two satellite passes are the same."""
+        # Two passes, maybe observed from two distinct stations, are compared by
+        # a) satellite name and orbit number,
+        # or if the later is not available
+        # b) the time difference between rise- and fall-times.
+        if other is not None and isinstance(self, Pass) and isinstance(other, Pass):
+            return (self.satellite == other.satellite and
+                    self.orb.get_orbit_number(self.risetime) == other.orb.get_orbit_number(other.risetime))
+        tol = timedelta(seconds=1)
         return (other is not None and
                 abs(self.risetime - other.risetime) < tol and
                 abs(self.falltime - other.falltime) < tol and
