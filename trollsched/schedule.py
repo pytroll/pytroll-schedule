@@ -21,6 +21,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+
+# TODO:
+# - Plot all passes in one globe, with different colours per antenna,
+#    like red:ofb blue:nrk green:both.
+# - config-entry (in [default]) for center-id and warn-email-rcpt.
+#
+
 """Scheduling
 """
 import logging
@@ -227,10 +235,11 @@ def combine(p1, p2, area_of_interest, scores):
     return res
 
 
-def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None):
+def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None, force_list=None):
     """Get the best schedule based on *area_of_interest*.
     """
     avoid_list = avoid_list or []
+    force_list = force_list or []
     passes = sorted(overpasses, key=lambda x: x.risetime)
     grs = conflicting_passes(passes, delay)
     logger.debug("conflicting %s", str(grs))
@@ -243,9 +252,12 @@ def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None)
     def add_arc(graph, p1, p2, hook=None):
         logger.debug("Adding arc between " + str(p1) +
                      " and " + str(p2) + "...")
-        if p1 in avoid_list or p2 in avoid_list:
+        if p1 in force_list or p2 in force_list:
+            w = 2
+            logger.debug("... 2.0 because in the force_list!")
+        elif p1 in avoid_list or p2 in avoid_list:
             w = 0
-            logger.debug("...0 because in the avoid_list!")
+            logger.debug("... 0.0 because in the avoid_list!")
         else:
             w = combine(p1, p2, area_of_interest, scores)
         logger.debug("...with weight " + str(w))
@@ -523,11 +535,15 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
         avoid_list = get_passes_from_xml_file(opts.avoid)
     else:
         avoid_list = None
+    if opts.force_pass is not None:
+        force_list = get_passes_from_xml_file(opts.force_pass)
+    else:
+        force_list = None
 
     logger.info("computing best schedule for area %s" % area.area_id)
     schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
                                             timedelta(seconds=opts.delay),
-                                            avoid_list)
+                                            avoid_list, force_list)
 
     logger.debug(pformat(schedule))
     for opass in schedule:
@@ -642,6 +658,17 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
     for coords, station, area, scores in station_list:
         station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
 
+    # Explaining some variables:
+    # 'passes' : dict(station, list(Pass)).
+    # 'newpasses' : dictionary, station is key, values are lists of tuples,
+    #    each with references into 'passes'. This dict has all permutations
+    #    of overpasses.
+    # 'schedule' is a list of references into elements of 'passes', only
+    #    overpasses in this list are scheduled.
+    # Each 'opass' a tuple of objects, one "node" per station.
+    # 'ipass[0]' references a Pass object inside 'passes', 'ipass[1]' the
+    #    corresponding weight for that node.
+
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
 #     logger.debug(pformat(schedule))
 
@@ -728,6 +755,8 @@ def run():
                         description="(additional parameter changing behaviour)")
     group_spec.add_argument("-a", "--avoid",
                         help="xml request file with passes to avoid")
+    group_spec.add_argument("--force-pass",
+                        help="file with passes to schedule (xml request format)")
     group_spec.add_argument("--no-aqua-dump", action="store_false",
                        help="do not consider Aqua-dumps")
     group_spec.add_argument("--multiproc", action="store_true",
