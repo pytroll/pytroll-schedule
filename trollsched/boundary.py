@@ -26,10 +26,11 @@
 
 import logging
 import logging.handlers
-from trollsched.spherical import SphPolygon
-import numpy as np
-from pyorbital import geoloc, geoloc_instrument_definitions
 
+import numpy as np
+
+from pyorbital import geoloc, geoloc_instrument_definitions
+from trollsched.spherical import SphPolygon
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class AreaBoundary(Boundary):
         """
         for i in range(len(self.sides_lons)):
             l = len(self.sides_lons[i])
-            start = (l % ratio) / 2
+            start = int((l % ratio) / 2)
             points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
             if points[1] == 0:
                 points = points[1:]
