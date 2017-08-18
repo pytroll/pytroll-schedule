@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015 Martin Raspaud
+# Copyright (c) 2014, 2015, 2017 Martin Raspaud
 
 # Author(s):
 
@@ -166,7 +166,7 @@ class SwathBoundary(Boundary):
                              overpass.risetime).microseconds
                             / 1000000.0) / frequency)
 
-        scans_nb = max(scans_nb, 1)
+        scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,

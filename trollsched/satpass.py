@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015 Martin Raspaud
+# Copyright (c) 2014, 2015, 2016 Martin Raspaud
 
 # Author(s):
 
@@ -399,13 +399,13 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
     passes = {}
     orbitals = {}
 
-    if tle_file is None:
+    if tle_file is None and 'TLES' not in os.environ:
         fp_, tle_file = mkstemp(prefix="tle", dir="/tmp")
         os.close(fp_)
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
 
-    if not os.path.exists(tle_file):
+    if not os.path.exists(tle_file) and 'TLES' not in os.environ:
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
 
