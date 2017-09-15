@@ -311,11 +311,11 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
             direction=self.pass_direction().capitalize()[:3])
         return line
 
-HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/aqua/downlink/"
+HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
-
-def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
-    url = urlparse.urlparse(HOST)
+def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb,  sat_name):
+    logger.info("Fetch %s dump info from internet" % sat_name)
+    url = urlparse.urlparse(HOST % sat_name)
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP(url.netloc)
@@ -348,15 +348,13 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
         filenames = glob.glob("/tmp/*.rpt")
 
     dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
-             for filename in filenames]
+             for filename in filter(lambda x: x.startswith("wotis.") and x.endswith(".rpt"),  filenames)]
     filedates = dict(zip(dates, filenames))
 
     dumps = []
 
     for date in sorted(dates):
         lines = []
-        if not filedates[date].endswith(".rpt"):
-            continue
         if not os.path.exists(os.path.join("/tmp", filedates[date])):
             try:
                 f.retrlines(
@@ -381,7 +379,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
             los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
             if los >= start_time and aos <= end_time:
                 uptime = aos + (los - aos) / 2
-                overpass = Pass("aqua", aos, los, satorb, uptime, "modis")
+                overpass = Pass(sat_name, aos, los, satorb, uptime, "modis")
                 overpass.station = station
                 overpass.max_elev = elev
                 dumps.append(overpass)
@@ -390,7 +388,7 @@ def get_aqua_dumps_from_ftp(start_time, end_time, satorb):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_dumps=False):
+def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_terra_dumps=False):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -438,7 +436,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
                         if overpass.seconds() > MIN_PASS * 60:
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
-        elif sat == "aqua" and aqua_dumps:
+        elif sat in ["aqua", "terra"] and aqua_terra_dumps:
 
             wpcoords = (-75.457222, 37.938611, 0)
             passlist_wp = satorb.get_next_passes(utctime - timedelta(minutes=30),
@@ -463,10 +461,10 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
             aqua_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                            for rtime, ftime, uptime in passlist if rtime < ftime]
 
-            dumps = get_aqua_dumps_from_ftp(utctime - timedelta(minutes=30),
+            dumps = get_aqua_terra_dumps_from_ftp(utctime - timedelta(minutes=30),
                                             utctime +
                                             timedelta(hours=forward + 0.5),
-                                            satorb)
+                                            satorb,  sat)
 
             # remove the known dumps
             for dump in dumps:
@@ -524,7 +522,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
                 if pf_pass not in used_pf:
                     dumps.append(pf_pass)
 
-            passes["aqua"] = []
+            passes[sat] = []
             for overpass in aqua_passes:
                 add = True
                 for dump_pass in dumps:
@@ -547,7 +545,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_du
                             add = False
                             logger.debug("skipping " + str(overpass))
                 if add and overpass.seconds() > MIN_PASS * 60:
-                    passes["aqua"].append(overpass)
+                    passes[sat].append(overpass)
 
         else:
             passes[sat] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
