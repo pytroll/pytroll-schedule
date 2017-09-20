@@ -2,6 +2,15 @@ Changelog
 =========
 
 
+v0.3.3 (2017-09-20)
+-------------------
+- Update changelog. [Martin Raspaud]
+- Bump version: 0.3.2 → 0.3.3. [Martin Raspaud]
+- Remove support for 2.6. [Martin Raspaud]
+- Add/change function to load/include info about TERRA dumps, in
+  addition to AQUA dumps. [alexmaul]
+
+
 v0.3.2 (2017-08-18)
 -------------------
 
