@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015, 2016 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015, 2016, 2017 Martin Raspaud
 
 # Author(s):
 
@@ -30,8 +30,8 @@ import os
 from datetime import datetime, timedelta
 from pprint import pformat
 import numpy as np
-from pyresample import utils
 from pyorbital import astronomy
+from trollsched import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
@@ -394,45 +394,6 @@ def parse_datetime(strtime):
     """
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
 
-
-def read_config(filename):
-    """Read the config file *filename* and replace the values in global
-    variables.
-    """
-    station_list = []
-    cfg = ConfigParser()
-    cfg.read(filename)
-
-    stations = cfg.get("default", "station").split(",")
-    forward = cfg.getint("default", "forward")
-    start = cfg.getfloat("default", "start")
-
-    pattern = {}
-    for k, v in cfg.items("pattern"):
-        pattern[k] = v
-
-    for station in stations:
-        station_name = cfg.get(station, "name")
-        station_lon = cfg.getfloat(station, "longitude")
-        station_lat = cfg.getfloat(station, "latitude")
-        station_alt = cfg.getfloat(station, "altitude")
-
-        area = utils.parse_area_file(cfg.get(station, "area_file"), 
-                                                        cfg.get(station, "area"))[0]
-
-        satellites = cfg.get(station, "satellites").split(",")
-
-        sat_scores = {}
-        for sat in satellites:
-            sat_scores[sat] = (cfg.getfloat(sat, "night"),
-                               cfg.getfloat(sat, "day"))
-
-        station_list.append(((station_lon, station_lat, station_alt),
-                station_name, area, sat_scores))
-
-    return (station_list, forward, start, pattern)
-
-
 def save_passes(allpasses, poly, output_dir):
     for passage in allpasses:
         passage.save_fig(poly, directory=output_dir)
@@ -751,7 +712,7 @@ def run():
     if opts.config:
         # read_config() returns:
         #     [(coords, station, area, scores)], forward, start, {pattern}
-        station_list, forward, start, pattern = read_config(opts.config)
+        station_list, forward, start, pattern = utils.read_config(opts.config)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
