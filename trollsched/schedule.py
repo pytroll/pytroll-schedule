@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015, 2016 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015, 2016, 2017 Martin Raspaud
 
 # Author(s):
 
@@ -591,6 +591,29 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
 
     logger.info("Generating coordinated schedules ...")
 
+    def collect_labels(newpasses, stats):
+        """Collect labels, each with one pass per station."""
+        # TODO: is there a simpler way?
+        clabels = []
+        from sys import version_info
+        if version_info < (2, 7):
+            npasses = dict((s, set()) for s in stats)
+        else:
+            npasses = {s:set() for s in stats}
+        for npass in newpasses:
+            cl = []
+            for i, s in zip(range(len(stats)), stats):
+                if npass[i][0] is None:
+                    cl.append("---")
+                else:
+                    npasses[s].add(npass[i][0])
+                    if npass[i][0].rec:
+                        cl.append("+ " + str(npass[i][0]))
+                    else:
+                        cl.append("  " + str(npass[i][0]))
+            clabels.append("\\n".join(cl))
+        return clabels
+
     pattern_args = {
             "output_dir":opts.output_dir,
             "date":start_time.strftime("%Y%m%d"),
@@ -634,26 +657,8 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         # save graph as npz file.
         pattern_args["station"] = "comb"
         newgraph.save(build_filename("file_graph", pattern, pattern_args))
-
-        # collect labels, each with one pass per station.
-        # TODO: is there a simpler way?
-        clabels = []
-        if sys.version_info < (2, 7):
-            npasses = dict((s, set()) for s in stats)
-        else:
-            npasses = {s:set() for s in stats}
-        for npass in newpasses:
-            cl = []
-            for i, s in zip(range(len(stats)), stats):
-                if npass[i][0] is None:
-                    cl.append("---")
-                else:
-                    npasses[s].add(npass[i][0])
-                    if npass[i][0].rec:
-                        cl.append("+ " + str(npass[i][0]))
-                    else:
-                        cl.append("  " + str(npass[i][0]))
-            clabels.append("\\n".join(cl))
+        # Collect labels, each with one pass per station.
+        clabels = collect_labels(newpasses, stats)
         # save graph as gv file for "dot"-plot
         newgraph.export(labels=[str(label) for label in clabels],
                      filename=build_filename("file_graph", pattern, pattern_args) + ".gv")
