@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015 Martin Raspaud
+# Copyright (c) 2014, 2015, 2017 Martin Raspaud
 
 # Author(s):
 
@@ -26,10 +26,11 @@
 
 import logging
 import logging.handlers
-from trollsched.spherical import SphPolygon
-import numpy as np
-from pyorbital import geoloc, geoloc_instrument_definitions
 
+import numpy as np
+
+from pyorbital import geoloc, geoloc_instrument_definitions
+from trollsched.spherical import SphPolygon
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class AreaBoundary(Boundary):
         """
         for i in range(len(self.sides_lons)):
             l = len(self.sides_lons[i])
-            start = (l % ratio) / 2
+            start = int((l % ratio) / 2)
             points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
             if points[1] == 0:
                 points = points[1:]
@@ -165,7 +166,7 @@ class SwathBoundary(Boundary):
                              overpass.risetime).microseconds
                             / 1000000.0) / frequency)
 
-        scans_nb = max(scans_nb, 1)
+        scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
