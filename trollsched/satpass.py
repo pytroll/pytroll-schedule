@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015, 2016 Martin Raspaud
-
+# Copyright (c) 2014, 2015, 2016, 2017 Martin Raspaud
 # Author(s):
-
 #   Martin Raspaud <martin.raspaud@smhi.se>
 #   Alexander Maul <alexander.maul@dwd.de>
 
@@ -311,7 +309,8 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
-def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb,  sat_name):
+
+def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
     logger.info("Fetch %s dump info from internet" % sat_name)
     url = urlparse.urlparse(HOST % sat_name)
     logger.debug("Connect to ftp server")
@@ -345,8 +344,9 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb,  sat_name):
         logger.info("Can't access ftp server, using cached data")
         filenames = glob.glob("/tmp/*.rpt")
 
+    filenames = filter(lambda x: x.startswith("wotis.") and x.endswith(".rpt"), filenames)
     dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
-             for filename in filter(lambda x: x.startswith("wotis.") and x.endswith(".rpt"),  filenames)]
+             for filename in filenames]
     filedates = dict(zip(dates, filenames))
 
     dumps = []
@@ -460,9 +460,10 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                            for rtime, ftime, uptime in passlist if rtime < ftime]
 
             dumps = get_aqua_terra_dumps_from_ftp(utctime - timedelta(minutes=30),
-                                            utctime +
-                                            timedelta(hours=forward + 0.5),
-                                            satorb,  sat)
+                                                  utctime +
+                                                  timedelta(
+                                                      hours=forward + 0.5),
+                                                  satorb, sat)
 
             # remove the known dumps
             for dump in dumps:
