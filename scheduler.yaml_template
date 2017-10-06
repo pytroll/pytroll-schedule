@@ -2,9 +2,16 @@ default:
     station:
         - nrk
         - bch
-    # in 2 hours for 7 days
+        
+    # schedule starts in 2 hours and covers 7 days
     forward: 168
     start: 2
+    
+    # minimum observable pass length [minutes]
+    min_pass: 4
+    
+    # URL for Aqua/Terra dump information
+    dump_url: "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 pattern:
     # dir/file pattern, follows rules of str.format()
