@@ -14,7 +14,8 @@ Contents:
    :maxdepth: 2
    
    about
-
+   miscellaneous
+   
 .. toctree::
    :maxdepth: 1
    

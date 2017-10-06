@@ -429,8 +429,8 @@ def read_config(filename):
         station_lat = cfg.getfloat(station, "latitude")
         station_alt = cfg.getfloat(station, "altitude")
 
-        area = utils.parse_area_file(cfg.get(station, "area_file"),
-                                     cfg.get(station, "area"))[0]
+        area = utils.parse_area_file(cfg.get(station, "area_file"), 
+                                                        cfg.get(station, "area"))[0]
 
         satellites = cfg.get(station, "satellites").split(",")
 
@@ -510,7 +510,7 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
 
     logger.info("Computing next satellite passes")
     allpasses = get_next_passes(satellites, start_time,
-                                forward, coords, tle_file, aqua_dumps=opts.no_aqua_dump)
+                                forward, coords, tle_file, aqua_terra_dumps=opts.no_aqua_terra_dump)
     logger.info("Computation of next overpasses done")
 
     logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
