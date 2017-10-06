@@ -27,6 +27,7 @@ import logging
 from collections import Mapping
 from ConfigParser import ConfigParser
 
+import schedule
 import satpass
 from pyresample import utils as resample_utils
 
@@ -135,12 +136,15 @@ def read_config_yaml(filename):
         station_list.append(((station_lon, station_lat, station_alt),
                 station_name, area, sat_scores))
 
-    foo=cfg["default"].get("dump_url")
+    foo = cfg["default"].get("center")
     if foo:
-        satpass.HOST=foo
-    foo=cfg["default"].get("min_pass")
+        schedule.CENTER_ID = foo
+    foo = cfg["default"].get("dump_url")
     if foo:
-        satpass.MIN_PASS=foo
+        satpass.HOST = foo
+    foo = cfg["default"].get("min_pass")
+    if foo:
+        satpass.MIN_PASS = foo
 
     return (station_list, forward, start, pattern)
 

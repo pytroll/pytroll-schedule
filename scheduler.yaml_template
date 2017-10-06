@@ -1,4 +1,6 @@
 default:
+    center: SMHI
+
     station:
         - nrk
         - bch

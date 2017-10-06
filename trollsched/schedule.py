@@ -42,12 +42,8 @@ from ConfigParser import ConfigParser
 
 logger = logging.getLogger(__name__)
 
-# shortest allowed pass in minutes
-MIN_PASS = 4
-
 # name/id for centre/org creating schedules
-# CENTER_ID = "SMHI"
-CENTER_ID = "DWD-OF"
+CENTER_ID = "SMHI"
 
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
@@ -718,7 +714,7 @@ def run():
         # read_config() returns:
         #     [(coords, station, area, scores)], forward, start, {pattern}
         station_list, forward, start, pattern = utils.read_config(opts.config)
-
+        
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
                      "configuration file.")
