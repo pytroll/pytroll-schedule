@@ -51,11 +51,16 @@ class Mapper(object):
     """A class to generate nice plots with basemap.
     """
 
-    def __init__(self):
+    def __init__(self, **proj_info):
         from mpl_toolkits.basemap import Basemap
 
-        self.map = Basemap(projection='nsper', lat_0=58, lon_0=16,
-                           resolution='l', area_thresh=1000.)
+        if not proj_info:
+            proj_info = {'projection': 'nsper',
+                         'lat_0': 58,
+                         'lon_0': 16,
+                         'resolution': 'l', 'area_thresh': 1000.}
+
+        self.map = Basemap(**proj_info)
 
         self.map.drawcoastlines()
         self.map.drawcountries()
@@ -244,14 +249,15 @@ class Pass(SimplePass):
         plt.savefig(filename)
         return filename
 
-    def show(self, poly=None, labels=None, other_poly=None):
+    def show(self, poly=None, labels=None, other_poly=None, proj=None):
         """Show the current pass on screen (matplotlib, basemap).
         """
         import matplotlib.pyplot as plt
         plt.clf()
-        with Mapper() as mapper:
+        proj = proj or {}
+        with Mapper(**proj) as mapper:
             # mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, "+r")
+            self.draw(mapper, "-r")
             if poly is not None:
                 poly.draw(mapper, "+b")
             if other_poly is not None:
