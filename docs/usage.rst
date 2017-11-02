@@ -5,7 +5,7 @@ Usage of the schedule script::
 
 	usage: schedule [-h] [-c CONFIG] [-t TLE] [-l LOG] [-m [MAIL [MAIL ...]]] [-v]
 	                [--lat LAT] [--lon LON] [--alt ALT] [-f FORWARD]
-	                [-s START_TIME] [-d DELAY] [-a AVOID] [--no-aqua-dump]
+	                [-s START_TIME] [-d DELAY] [-a AVOID] [--no-aqua-terra-dump]
 	                [--multiproc] [-o OUTPUT_DIR] [-u OUTPUT_URL] [-x] [-r]
 	                [--scisys] [-p] [-g]
 	
@@ -38,7 +38,7 @@ Usage of the schedule script::
 	
 	  -a AVOID, --avoid AVOID
 	                        xml request file with passes to avoid
-	  --no-aqua-dump        do not consider Aqua-dumps
+	  --no-aqua-terra-dump  do not consider Aqua/Terra-dumps
 	  --multiproc           use multiple parallel processes
 	
 	output:
