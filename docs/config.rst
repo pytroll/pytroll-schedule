@@ -1,7 +1,7 @@
 Configuration
 =============
 
-The configuration file is divided in several section, each titled with a name 
+The configuration file is divided in several section, each titled with a name
 in square brackets. All sections are filled with key=value pairs.
 
 Required sections are ``default`` and ``pattern``, all others are referenced by
@@ -16,6 +16,10 @@ Main section "default"
 	station=nrk,ofb
 	forward=12
 	start=1
+	center_id=DWD-OF
+
+``station``
+    Names of the stations to make a schedule for.
 
 ``forward``
 	The timespan in hours the schedule should cover.
@@ -23,15 +27,18 @@ Main section "default"
 ``start``
 	Time offset between the time of computing and start of the schedule.
 
+``center_id``
+    Name/ID for centre/org creating schedules.
+
 File- and directory pattern
 ---------------------------
-Each of the keys in this section can be referenced from within other lines in 
+Each of the keys in this section can be referenced from within other lines in
 this section.
 
 .. note::
 
    Be carefull not to create loops!
-	
+
 ::
 
 	[pattern]
@@ -43,9 +50,9 @@ this section.
 
 ``time``, ``date``
 	Time+date, when the computation started.
-	
+
 ``station``
-	Replaced with the station name. For co-operating stations "combined 
+	Replaced with the station name. For co-operating stations "combined
 	schedule" the string ".comb" is appended.
 
 ``mode``
@@ -75,7 +82,7 @@ this section.
 Stations
 --------
 ::
-	
+
 	[ofb]
 	name=offenbach
 	longitude=8.747073
@@ -87,27 +94,27 @@ Stations
 
 ``name``
 	Name of the station.
-	
+
 ``longitude``
 	Longitude in degrees east.
 
 ``latitude``
 	Longitude in degrees north.
-	
+
 ``altitude``
 	Altitude above mean sea level, in km.
-	
+
 ``area_file``, ``area``
 	File with area definitions, and the area referenced therein.
 	This area is taken into computation, only satellite passes which swaths
 	are cross-sectioning this area are considered for scheduling.
 
 ``satellites``
-	List of satellites receivable from this station. The listed names refer to 
+	List of satellites receivable from this station. The listed names refer to
 	the satellite sections.
 
 ::
-	
+
 	[nrk]
 	name=norrkoeping
 	longitude=16.148649
@@ -117,29 +124,29 @@ Stations
 	area=euron1
 	satellites=metop-a,metop-b,noaa 19,noaa 18,noaa 15,aqua,terra,suomi npp
 
-While the above section contained values for the station Offenbach/Germany, 
+While the above section contained values for the station Offenbach/Germany,
 this section has values for Norkoepping/Sweden.
 
 Satellites
 ----------
 ::
-	
+
 	[metop-a]
 	night=0.1
 	day=0.6
-	
+
 	[noaa 19]
 	night=0.05
 	day=0.3
-	
+
 	[terra]
 	night=0.2
 	day=0.8
-	
+
 	[suomi npp]
 	night=0.25
 	day=0.9
-	
+
 A few examples for satellite sections.
 
 ``night``
@@ -147,5 +154,3 @@ A few examples for satellite sections.
 
 ``day``
 	Weight value for satellite swath parts on the day-side of the terminator.
-
-	
