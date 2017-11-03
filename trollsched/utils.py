@@ -109,6 +109,13 @@ def read_config_yaml(filename):
     station_list = []
     cfg = read_yaml_file(filename)
 
+    if cfg["default"].get("center_id"):
+        schedule.CENTER_ID = cfg["default"].get("center_id")
+    if cfg["default"].get("dump_url"):
+        satpass.HOST = cfg["default"].get("dump_url")
+    if cfg["default"].get("min_pass"):
+        satpass.MIN_PASS = cfg["default"].get("min_pass")
+
     stations = cfg["default"]["station"]
     forward = cfg["default"]["forward"]
     start = cfg["default"]["start"]
@@ -135,16 +142,6 @@ def read_config_yaml(filename):
 
         station_list.append(((station_lon, station_lat, station_alt),
                 station_name, area, sat_scores))
-
-    foo = cfg["default"].get("center")
-    if foo:
-        schedule.CENTER_ID = foo
-    foo = cfg["default"].get("dump_url")
-    if foo:
-        satpass.HOST = foo
-    foo = cfg["default"].get("min_pass")
-    if foo:
-        satpass.MIN_PASS = foo
 
     return (station_list, forward, start, pattern)
 

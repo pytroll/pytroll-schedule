@@ -1,5 +1,5 @@
 default:
-    center: SMHI
+    center_id: SMHI
 
     station:
         - nrk
