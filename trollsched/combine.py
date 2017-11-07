@@ -62,7 +62,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     n_vertices = 1
     for g in grl:
         n_vertices += g.order
-    n_vertices *= len(statlst)
+    n_vertices *= len(statlst)*2
     newgraph = Graph(n_vertices=n_vertices)
 
     logger.debug("newgraph order: %d", newgraph.order)
