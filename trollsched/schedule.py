@@ -642,6 +642,11 @@ def single_station(opts, pattern, station, coords, min_pass, local_horizon, area
     if opts.meos:
         generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses, coords, start_time + timedelta(hours=start), True) #Ie report mode
 
+    if opts.plot:
+        logger.info("Waiting for images to be saved...")
+        image_saver.join()
+        logger.info("Done!")
+
     if opts.metno_xml:
         generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), allpasses, coords, start_time + timedelta(hours=start), start_time + timedelta(hours=forward), station, center_id, True)
 
@@ -651,10 +656,6 @@ def single_station(opts, pattern, station, coords, min_pass, local_horizon, area
             directory = "/tmp"
         else:
             directory = url.path
-        if opts.report:
-            logger.info("Waiting for images to be saved...")
-            image_saver.join()
-            logger.info("Done!")
         if opts.xml or opts.report:
             """Allways create xml-file in request-mode"""
             pattern_args['mode'] = "request"
@@ -885,7 +886,7 @@ def run():
         parser.error("Coordinates must be provided in the absence of "
                      "configuration file.")
 
-    if not (opts.xml or opts.scisys or opts.report):
+    if not (opts.xml or opts.scisys or opts.report or opts.metno_xml):
         parser.error("No output specified, use '--scisys' or '-x/--xml'")
 
     if opts.output_dir is None:

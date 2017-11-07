@@ -297,7 +297,9 @@ class Pass(SimplePass):
         ovpass.set("satellite-lon-at-aos", "{:.3f}".format(sat_lon))
         ovpass.set("satellite-lat-at-aos", "{:.3f}".format(sat_lat))
         ovpass.set("tle-epoch", self.orb.orbit_elements.epoch.strftime("%Y%m%d%H%M%S.%f"))
-
+        if self.fig:
+            ovpass.set("figure", self.fig)
+            
         return True
 
 
