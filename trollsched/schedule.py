@@ -813,7 +813,7 @@ def run():
         for coords, station, area, scores in station_list:
             graph[station], allpasses[station] = single_station(opts, pattern, station, coords,
                                                                 area, scores, start_time, start,
-                                                                forward, tle_file, center_id)
+                                                                forward, tle_file, CENTER_ID)
 
     else:
         # processing the stations' single schedules with multiprocessing.
@@ -831,7 +831,7 @@ def run():
                 target=single_station,
                 args=(
                     opts, pattern, station, coords,
-                    area, scores, start_time, start, forward, tle_file, center_id,
+                    area, scores, start_time, start, forward, tle_file, CENTER_ID,
                 )
             )
             process_single[station].start()
@@ -853,7 +853,7 @@ def run():
 
     if opts.comb:
         combined_stations(opts, pattern, station_list, graph,
-                          allpasses, start_time, start, forward, center_id)
+                          allpasses, start_time, start, forward, CENTER_ID)
 
 
 if __name__ == '__main__':
