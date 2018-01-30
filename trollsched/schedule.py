@@ -33,6 +33,7 @@ from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
+from pyresample import utils as resample_utils
 from trollsched import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
@@ -40,13 +41,191 @@ from trollsched.satpass import get_next_passes, SimplePass
 from trollsched.boundary import AreaDefBoundary
 from trollsched.combine import get_combined_sched
 from trollsched.graph import Graph
-from trollsched.satpass import SimplePass, get_next_passes
 from trollsched.spherical import get_twilight_poly
 
 logger = logging.getLogger(__name__)
 
 # name/id for centre/org creating schedules
 CENTER_ID = "SMHI"
+
+
+
+class Station(object):
+    """docstring for Station."""
+    def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None):
+        super(Station, self).__init__()
+        self.id = station_id
+        self.name = name
+        self.longitude = longitude
+        self.latitude = latitude
+        self.altitude = altitude
+        self.area = area
+        self.satellites = satellites
+
+        if area_file is not None:
+            try:
+                self.area = resample_utils.parse_area_file(area_file, area)[0]
+            except TypeError:
+                pass
+
+
+    @property
+    def coords(self):
+        return self.longitude, self.latitude, self.altitude
+
+    def single_station(self, sched, start_time, tle_file):
+        """Calculate passes, graph, and schedule for one station."""
+
+
+        logger.debug("station: %s coords: %s area: %s scores: %s",
+                     self.id, self.coords, self.area.area_id, self.satellites)
+
+        opts = sched.opts
+        pattern = sched.patterns
+        pattern_args = {
+            "station": self.id,
+            "output_dir": opts.output_dir,
+            "date": start_time.strftime("%Y%m%d"),
+            "time": start_time.strftime("%H%M%S")
+        }
+        if opts.xml:
+            pattern_args['mode'] = "request"
+        elif opts.report:
+            pattern_args['mode'] = "report"
+
+        logger.info("Computing next satellite passes")
+        allpasses = get_next_passes(self.satellites, start_time,
+                                    sched.forward,
+                                    self.coords, tle_file,
+                                    aqua_terra_dumps=opts.no_aqua_terra_dump)
+        logger.info("Computation of next overpasses done")
+
+        logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
+
+        area_boundary = AreaDefBoundary(self.area, frequency=500)
+        self.area.poly = area_boundary.contour_poly
+
+        if opts.plot:
+            logger.info("Saving plots to %s", build_filename(
+                "dir_plots", pattern, pattern_args))
+            from threading import Thread
+            image_saver = Thread(
+                target=save_passes,
+                args=(allpasses,
+                      self.area.poly,
+                      build_filename(
+                          "dir_plots", pattern, pattern_args)
+                      )
+            )
+            image_saver.start()
+
+        if opts.avoid is not None:
+            avoid_list = get_passes_from_xml_file(opts.avoid)
+        else:
+            avoid_list = None
+
+        logger.info("computing best schedule for area %s" % self.area.area_id)
+        # TODO make combine accept Satellite objects instead of tuples
+        scores = {sat.name: (sat.score.night, sat.score.day) for sat in self.satellites}
+        schedule, (graph, labels) = get_best_sched(allpasses, self.area,
+                                                   scores,
+                                                   timedelta(seconds=opts.delay),
+                                                   avoid_list)
+
+        logger.debug(pformat(schedule))
+        for opass in schedule:
+            opass.rec = True
+        logger.info("generating file")
+
+        if opts.scisys:
+            generate_sch_file(build_filename("file_sci", pattern,
+                                             pattern_args), allpasses, self.coords)
+
+        if opts.xml or opts.report:
+            url = urlparse.urlparse(opts.output_url or opts.output_dir)
+            if url.scheme not in ["file", ""]:
+                directory = "/tmp"
+            else:
+                directory = url.path
+            if opts.plot:
+                logger.info("Waiting for images to be saved...")
+                image_saver.join()
+                logger.info("Done!")
+            if opts.xml or opts.report:
+                """Allways create xml-file in request-mode"""
+                pattern_args['mode'] = "request"
+                xmlfile = generate_xml_file(allpasses,
+                                            start_time + timedelta(hours=sched.start),
+                                            start_time + timedelta(hours=sched.forward),
+                                            build_filename(
+                                                "file_xml", pattern, pattern_args),
+                                            self.id,
+                                            sched.center_id,
+                                            False
+                                            )
+                logger.info("Generated " + str(xmlfile))
+                send_file(url, xmlfile)
+            if opts.report:
+                """'If report-mode was set"""
+                pattern_args['mode'] = "report"
+                xmlfile = generate_xml_file(allpasses,
+                                            start_time + timedelta(hours=sched.start),
+                                            start_time + timedelta(hours=sched.forward),
+                                            build_filename(
+                                                "file_xml", pattern, pattern_args),
+                                            self.id,
+                                            sched.center_id,
+                                            True
+                                            )
+                logger.info("Generated " + str(xmlfile))
+
+        if opts.graph or opts.comb:
+            graph.save(build_filename("file_graph", pattern, pattern_args))
+            graph.export(
+                labels=[str(label) for label in labels],
+                filename=build_filename("file_graph", pattern, pattern_args) + ".gv"
+            )
+        if opts.comb:
+            import pickle
+            ph = open(os.path.join(build_filename("dir_output", pattern,
+                                                  pattern_args), "allpasses.%s.pkl" % self.id), "wb")
+            pickle.dump(allpasses, ph)
+            ph.close()
+
+        return graph, allpasses
+
+
+class SatScore(object):
+    """docstring for SatScore."""
+    def __init__(self, day, night):
+        super(SatScore, self).__init__()
+        self.day = day
+        self.night = night
+
+class Satellite(object):
+    """docstring for Satellite."""
+    def __init__(self, name, day, night,
+                 schedule_name=None, international_designator=None):
+        super(Satellite, self).__init__()
+        self.name = name
+        self.international_designator = international_designator
+        self.score = SatScore(day, night)
+        self.schedule_name = schedule_name or name
+
+class Scheduler(object):
+    """docstring for Scheduler."""
+    def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id):
+        super(Scheduler, self).__init__()
+        self.stations = stations
+        self.min_pass = min_pass
+        self.forward = forward
+        self.start = start
+        self.dump_url = dump_url
+        self.patterns = patterns
+        self.center_id = center_id
+        self.opts = None
+
+
 
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
@@ -160,8 +339,8 @@ def combine(p1, p2, area_of_interest, scores):
             ip1n = ip1.intersection(twi1)
             twi1.invert()
 
-        ns1 = pscore(ip1n, scores[p1.satellite][0] / area)
-        ds1 = pscore(ip1d, scores[p1.satellite][1] / area)
+        ns1 = pscore(ip1n, p1.satellite.score.night / area)
+        ds1 = pscore(ip1d, p1.satellite.score.day / area)
         sip1 = ns1 + ds1
         p1.score[area_of_interest] = (ip1, sip1)
 
@@ -186,8 +365,8 @@ def combine(p1, p2, area_of_interest, scores):
             ip2n = ip2.intersection(twi2)
             twi2.invert()
 
-        ns2 = pscore(ip2n, scores[p2.satellite][0] / area)
-        ds2 = pscore(ip2d, scores[p2.satellite][1] / area)
+        ns2 = pscore(ip2n, p2.satellite.score.night / area)
+        ds2 = pscore(ip2d, p2.satellite.score.day / area)
         sip2 = ns2 + ds2
         p2.score[area_of_interest] = (ip2, sip2)
 
@@ -206,10 +385,10 @@ def combine(p1, p2, area_of_interest, scores):
         ip1p2nb = ip1p2.intersection(twi2)
         twi2.invert()
 
-        ns12a = pscore(ip1p2na, scores[p1.satellite][0] / area)
-        ds12a = pscore(ip1p2da, scores[p1.satellite][1] / area)
-        ns12b = pscore(ip1p2nb, scores[p2.satellite][0] / area)
-        ds12b = pscore(ip1p2db, scores[p2.satellite][1] / area)
+        ns12a = pscore(ip1p2na, p1.satellite.score.night / area)
+        ds12a = pscore(ip1p2da, p1.satellite.score.day / area)
+        ns12b = pscore(ip1p2nb, p2.satellite.score.night / area)
+        ds12b = pscore(ip1p2db, p2.satellite.score.day / area)
 
         sip1p2a = ns12a + ds12a
         sip1p2b = ns12b + ds12b
@@ -322,17 +501,6 @@ def generate_xml_requests(sched, start, end, station_name, center_id, report_mod
     """
     import xml.etree.ElementTree as ET
 
-    sats = {"noaa 15": "noaa15",
-            "noaa 16": "noaa16",
-            "noaa 18": "noaa18",
-            "noaa 19": "noaa19",
-            "metop-a": "metop-a",
-            "metop-b": "metop-b",
-            "terra": "terra",
-            "aqua": "aqua",
-            "suomi npp": "npp",
-            }
-
     reqtime = datetime.utcnow()
     eum_format = "%Y-%m-%d-%H:%M:%S"
 
@@ -358,8 +526,8 @@ def generate_xml_requests(sched, start, end, station_name, center_id, report_mod
     for overpass in sorted(sched):
         if (overpass.rec or report_mode) and overpass.risetime > start:
             ovpass = ET.SubElement(root, "pass")
-            ovpass.set("satellite", sats.get(overpass.satellite,
-                                             overpass.satellite))
+            sat_name = overpass.satellite.schedule_name or overpass.satellite.name
+            ovpass.set("satellite", sat_name)
             ovpass.set("start-time", overpass.risetime.strftime(eum_format))
             ovpass.set("end-time", overpass.falltime.strftime(eum_format))
             if report_mode:
@@ -666,8 +834,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
 
 
 def run():
-    """The schedule command
-    """
+    """The schedule command."""
     import argparse
     global logger
 
@@ -732,7 +899,10 @@ def run():
     if opts.config:
         # read_config() returns:
         #     [(coords, station, area, scores)], forward, start, {pattern}
-        station_list, forward, start, pattern = utils.read_config(opts.config)
+        #station_list, forward, start, pattern = utils.read_config(opts.config)
+        scheduler = utils.read_config(opts.config)
+
+    # TODO make config file compulsory
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
@@ -743,7 +913,7 @@ def run():
 
     if opts.output_dir is None:
         opts.output_dir = os.path.curdir
-    if "dir_output" not in pattern:
+    if "dir_output" not in scheduler.patterns:
         pattern["dir_output"] = opts.output_dir
 
     if opts.log:
@@ -783,22 +953,26 @@ def run():
     else:
         start_time = datetime.utcnow()
 
+
+
+
+
     allpasses = {}
     graph = {}
 
-    logger.debug("start: %s forward: %s" % (start, forward))
+    logger.debug("start: %s forward: %s" % (scheduler.start, scheduler.forward))
 
     pattern_args = {
         "output_dir": opts.output_dir,
         "date": start_time.strftime("%Y%m%d"),
         "time": start_time.strftime("%H%M%S")
     }
-    dir_output = build_filename("dir_output", pattern, pattern_args)
+    dir_output = build_filename("dir_output", scheduler.patterns, pattern_args)
     if not os.path.exists(dir_output):
         logger.debug("Create output dir " + dir_output)
         os.makedirs(dir_output)
 
-    if len(station_list) > 1:
+    if len(scheduler.stations) > 1:
         opts.comb = True
         import pickle
         ph = open(os.path.join(dir_output, "opts.pkl"), "wb")
@@ -807,13 +981,13 @@ def run():
     else:
         opts.comb = False
 
+    scheduler.opts = opts
+
     # single- or multi-processing?
     if not opts.multiproc:
         # sequential processing all stations' single schedule.
-        for coords, station, area, scores in station_list:
-            graph[station], allpasses[station] = single_station(opts, pattern, station, coords,
-                                                                area, scores, start_time, start,
-                                                                forward, tle_file, CENTER_ID)
+        for station in scheduler.stations:
+            graph[station.id], allpasses[station.id] = station.single_station(scheduler, start_time, tle_file)
 
     else:
         # processing the stations' single schedules with multiprocessing.
@@ -828,19 +1002,15 @@ def run():
             statlst_ordered.append(station)
             from multiprocessing import Process
             process_single[station] = Process(
-                target=single_station,
-                args=(
-                    opts, pattern, station, coords,
-                    area, scores, start_time, start, forward, tle_file, CENTER_ID,
-                )
-            )
+                target=station.single_station,
+                args=(scheduler, start_time, tle_file))
             process_single[station].start()
 
         # second round through the stations, collecting the sub-processes and
         # their results.
         for station in statlst_ordered:
             process_single[station].join()
-            pattern_args["station"] = station
+            pattern_args["station"] = station.id
             # load graph for station
             graph[station] = Graph()
             graph[station].load(build_filename(

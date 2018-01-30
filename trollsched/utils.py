@@ -100,7 +100,39 @@ def read_config_cfg(filename):
 
     return (station_list, forward, start, pattern)
 
+
 def read_config_yaml(filename):
+    """Read the yaml file *filename* and create a scheduler."""
+    cfg = read_yaml_file(filename)
+
+    satellites = {sat_name: schedule.Satellite(sat_name, **sat_params)
+                  for (sat_name, sat_params) in cfg["satellites"].items()}
+
+    stations = {}
+    for station_id, station in cfg["stations"].items():
+        sat_list = [satellites[sat_name] for sat_name in station['satellites']]
+        new_station = schedule.Station(station_id, **station)
+        new_station.satellites = sat_list
+        stations[station_id] = new_station
+
+    pattern = {}
+    for k, v in cfg["pattern"].items():
+        pattern[k] = v
+
+    sched_params = cfg['default']
+    scheduler = schedule.Scheduler(stations=[stations[st_id]
+                                             for st_id in sched_params['station']],
+                                             min_pass=sched_params.get('min_pass', 4),
+                                             forward=sched_params['forward'],
+                                             start=sched_params['start'],
+                                             dump_url=sched_params.get('dump_url'),
+                                             patterns=pattern,
+                                             center_id=sched_params.get('center_id', 'unknown'))
+
+    return scheduler
+
+
+def read_config_yaml_old(filename):
     """Read the yaml file *filename* and replace the values in global
     variables.
     """
@@ -142,4 +174,3 @@ def read_config_yaml(filename):
                 station_name, area, sat_scores))
 
     return (station_list, forward, start, pattern)
-
