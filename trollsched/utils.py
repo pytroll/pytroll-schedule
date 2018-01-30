@@ -39,10 +39,8 @@ def read_yaml_file(file_name):
         file_name = [file_name]
     conf_dict = {}
     for file_obj in file_name:
-        if (isinstance(file_obj, str) and os.path.isfile(file_obj)):
-            # filename
-            file_obj = open(file_obj)
-        tmp_dict = yaml.load(file_obj)
+        with open(file_obj) as fp:
+            tmp_dict = yaml.load(fp)
         conf_dict = recursive_dict_update(conf_dict, tmp_dict)
     return conf_dict
 
