@@ -59,10 +59,10 @@ class Boundary(object):
                 np.deg2rad(np.vstack(self.contour()).T))
         return self._contour_poly
 
-    def draw(self, mapper, options):
+    def draw(self, mapper, options, **more_options):
         """Draw the current boundary on the *mapper*
         """
-        self.contour_poly.draw(mapper, options)
+        self.contour_poly.draw(mapper, options, **more_options)
 
 
 class AreaBoundary(Boundary):
