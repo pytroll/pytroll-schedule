@@ -937,7 +937,7 @@ def run():
 
     if opts.mail:
         mhandler = logging.handlers.SMTPHandler("localhost",
-                                                "martin.raspaud@smhi.se",
+                                                "pytroll-schedule@pytroll.org",
                                                 opts.mail,
                                                 "Scheduler")
         mhandler.setLevel(logging.WARNING)
