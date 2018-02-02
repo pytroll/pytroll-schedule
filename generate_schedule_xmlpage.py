@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 Adam.Dybbroe
+# Copyright (c) 2016, 2018 Adam.Dybbroe
 
 # Author(s):
 
@@ -68,6 +68,7 @@ sat_dict = {'npp': 'Suomi NPP',
             'terra': 'Terra',
             'metop-b': 'Metop-B',
             'metop-a': 'Metop-A',
+            'noaa20': 'NOAA-20',
             }
 
 
@@ -79,12 +80,17 @@ def process_xmlrequest(filename, plotdir, output_file):
     for child in root:
         if child.tag == 'pass':
             print child.attrib
-            overpass = Pass(sat_dict.get(child.attrib['satellite'],
-                                         child.attrib['satellite']),
-                            datetime.strptime(child.attrib['start-time'],
-                                              '%Y-%m-%d-%H:%M:%S'),
-                            datetime.strptime(child.attrib['end-time'],
-                                              '%Y-%m-%d-%H:%M:%S'))
+            try:
+                overpass = Pass(sat_dict.get(child.attrib['satellite'],
+                                             child.attrib['satellite']),
+                                datetime.strptime(child.attrib['start-time'],
+                                                  '%Y-%m-%d-%H:%M:%S'),
+                                datetime.strptime(child.attrib['end-time'],
+                                                  '%Y-%m-%d-%H:%M:%S'))
+            except KeyError as err:
+                LOG.warning('Failed on satellite %s: %s', sat_dict.get(child.attrib['satellite']),
+                            str(err))
+                continue
 
             overpass.save_fig(directory=plotdir)
             child.set('img', overpass.fig)
