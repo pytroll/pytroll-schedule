@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015, 2016, 2017 Martin Raspaud
+# Copyright (c) 2014, 2015, 2016, 2017, 2018 Martin Raspaud
 # Author(s):
 #   Martin Raspaud <martin.raspaud@smhi.se>
 #   Alexander Maul <alexander.maul@dwd.de>
@@ -42,6 +42,9 @@ logger = logging.getLogger(__name__)
 
 # shortest allowed pass in minutes
 MIN_PASS = 4
+
+# DRL still use the name JPSS-1 in the TLEs:
+NOAA20_NAME = {'NOAA 20': 'JPSS-1'}
 
 
 class Mapper(object):
@@ -152,7 +155,16 @@ class Pass(SimplePass):
         SimplePass.__init__(self, satellite, risetime, falltime)
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
-        self.orb = orb or orbital.Orbital(satellite, line1=tle1, line2=tle2)
+        if orb:
+            self.orb = orb
+        else:
+            try:
+                self.orb = orbital.Orbital(satellite, line1=tle1, line2=tle2)
+            except KeyError, err:
+                logger.debug('Failed in PyOrbital: %s', str(err))
+                self.orb = orbital.Orbital(NOAA20_NAME.get(satellite, satellite), line1=tle1, line2=tle2)
+                logger.info('Using satellite name %s instead', str(NOAA20_NAME.get(satellite, satellite)))
+
         self._boundary = None
 
     @property

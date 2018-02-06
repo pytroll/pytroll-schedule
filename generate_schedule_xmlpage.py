@@ -68,7 +68,7 @@ sat_dict = {'npp': 'Suomi NPP',
             'terra': 'Terra',
             'metop-b': 'Metop-B',
             'metop-a': 'Metop-A',
-            'noaa20': 'NOAA-20',
+            'noaa20': 'NOAA 20',
             }
 
 
@@ -79,7 +79,7 @@ def process_xmlrequest(filename, plotdir, output_file):
 
     for child in root:
         if child.tag == 'pass':
-            print child.attrib
+            LOG.debug("Pass: %s", str(child.attrib))
             try:
                 overpass = Pass(sat_dict.get(child.attrib['satellite'],
                                              child.attrib['satellite']),
