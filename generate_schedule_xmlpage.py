@@ -114,7 +114,7 @@ def start_plotting(jobreg, message, **kwargs):
     and generate the output xml file for web publication
 
     """
-    excluded_satellites = kwargs.get(excluded_satellites, [])
+    excluded_satellites = kwargs.get('excluded_satellites', [])
 
     LOG.info("")
     LOG.info("job-registry dict: " + str(jobreg))
