@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 MIN_PASS = 4
 
 # DRL still use the name JPSS-1 in the TLEs:
-NOAA20_NAME = {'NOAA 20': 'JPSS-1'}
+NOAA20_NAME = {'NOAA-20': 'JPSS-1'}
 
 
 class Mapper(object):
