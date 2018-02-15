@@ -66,9 +66,10 @@ sat_dict = {'npp': 'Suomi NPP',
             'noaa15': 'NOAA 15',
             'aqua': 'Aqua',
             'terra': 'Terra',
-            'metop-b': 'Metop-B',
-            'metop-a': 'Metop-A',
-            'noaa20': 'NOAA 20',
+            'metopc': 'Metop-C',
+            'metopb': 'Metop-B',
+            'metopa': 'Metop-A',
+            'noaa20': 'NOAA-20',
             }
 
 
@@ -80,18 +81,17 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
     for child in root:
         if child.tag == 'pass':
             LOG.debug("Pass: %s", str(child.attrib))
-            if child.attrib['satellite'] in excluded_satellites:
+            platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
+            if platform_name in excluded_satellites:
                 continue
             try:
-                overpass = Pass(sat_dict.get(child.attrib['satellite'],
-                                             child.attrib['satellite']),
+                overpass = Pass(platform_name,
                                 datetime.strptime(child.attrib['start-time'],
                                                   '%Y-%m-%d-%H:%M:%S'),
                                 datetime.strptime(child.attrib['end-time'],
                                                   '%Y-%m-%d-%H:%M:%S'))
             except KeyError as err:
-                LOG.warning('Failed on satellite %s: %s', sat_dict.get(child.attrib['satellite']),
-                            str(err))
+                LOG.warning('Failed on satellite %s: %s', platform_name, str(err))
                 continue
 
             overpass.save_fig(directory=plotdir)
