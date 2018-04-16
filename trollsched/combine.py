@@ -48,7 +48,7 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     for s, g in graphs.items():
         logger.debug("station: %s, order: %d", s, g.order)
 
-    # Graphs and allpasses are hashmaps of sets, or similar, but we need 
+    # Graphs and allpasses are hashmaps of sets, or similar, but we need
     # lists of lists, forthat they are copied.
     grl = []
     pl = []
@@ -197,8 +197,8 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         try:
             gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
         except:
-            print "len(passes_list)", len(passes_list), "   len(graph_set)", len(graph_set), "   statnr", statnr, "   p", p
-            print "passes_list", passes_list
+            print("len(passes_list)", len(passes_list), "   len(graph_set)", len(graph_set), "   statnr", statnr, "   p", p)
+            print("passes_list", passes_list)
             raise
 
         if gn[0] > len(passes_list[statnr]):
@@ -276,13 +276,13 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             bufflist.append(cc)
 
                         else:
-                            print "uh-oh, something curious happened ..."
+                            print("uh-oh, something curious happened ...")
 
                 except:
-                    print "\nCATCH\ngn:", gn, "-> n", n, " col:", col, "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1
-                    print "len(passes_list -n -cx)", len(passes_list[statnr]), len(passes_list[statnr + 1])
+                    print("\nCATCH\ngn:", gn, "-> n", n, " col:", col, "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1)
+                    print("len(passes_list -n -cx)", len(passes_list[statnr]), len(passes_list[statnr + 1]))
                     for s in range(statnr, len(passes_list)):
-                        print "passes_list[", s, "] =>", passes_list[s]
+                        print("passes_list[", s, "] =>", passes_list[s])
                     raise
 
     return bufflist
@@ -320,10 +320,10 @@ def print_matrix(m, ly=-1, lx=-1):
     the last lx columns from the last ly rows.
     """
     for i, l in zip(range(ly), m[0:ly]):
-        print i, ":", l[:lx], "..."
-    print "[..., ...]"
+        print(i, ":", l[:lx], "...")
+    print("[..., ...]")
     for i, l in zip(range(len(m) - ly - 1, len(m) - 1), m[-ly:]):
-        print i, ": ...", l[-lx:]
+        print(i, ": ...", l[-lx:])
 
 
 def test_folding(g):
@@ -335,7 +335,7 @@ def test_folding(g):
     for u in range(g.order):
         for n in g.neighbours(u):
             if n < u:
-                print n, "<", u
+                print(n, "<", u)
                 r = True
     return r
 
@@ -398,7 +398,7 @@ if __name__ == '__main__':
                         }
         dir_output = build_filename("dir_output", pattern, pattern_args)
         if not os.path.exists(dir_output):
-            print dir_output, "does not exist!"
+            print(dir_output, "does not exist!")
             sys.exit(1)
         ph = open(os.path.join(dir_output, "opts.pkl"), "rb")
         opts = pickle.load(ph)
@@ -428,14 +428,14 @@ if __name__ == '__main__':
         from trollsched.schedule import conflicting_passes
         totpas = []
         for s, sp in allpasses.items():
-            print "len(sp)", s, len(sp)
+            print("len(sp)", s, len(sp))
             totpas.extend(list(sp))
         passes = sorted(totpas, key=lambda x: x.risetime)
         cpg = conflicting_passes(passes, timedelta(seconds=600))
-        print "ALLPASSES", len(allpasses) # ,allpasses
-        print "PASSES", len(passes) # ,passes
-        print "CONFLGRPS", len(cpg) # ,cpg
-        print "MAX", max([len(g) for g in cpg])
+        print("ALLPASSES", len(allpasses)) # ,allpasses
+        print("PASSES", len(passes)) # ,passes
+        print("CONFLGRPS", len(cpg)) # ,cpg
+        print("MAX", max([len(g) for g in cpg]))
 
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
 

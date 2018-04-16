@@ -25,10 +25,10 @@ import os
 import yaml
 import logging
 from collections import Mapping
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 
-import schedule
-import satpass
+from trollsched import schedule
+from trollsched import satpass
 from pyresample import utils as resample_utils
 
 logger = logging.getLogger("trollsched")

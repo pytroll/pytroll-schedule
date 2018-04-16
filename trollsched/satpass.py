@@ -29,7 +29,7 @@ import logging.handlers
 import operator
 import os
 import socket
-import urlparse
+import urllib
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 
@@ -322,11 +322,11 @@ HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat):
     logger.info("Fetch %s dump info from internet" % sat.name)
-    url = urlparse.urlparse(HOST % sat.name)
+    url = urllib.urlparse(HOST % sat.name)
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP(url.netloc)
-    except (socket.error, socket.gaierror), e:
+    except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
 
@@ -343,7 +343,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat):
         data = []
         try:
             f.dir(url.path, data.append)
-        except socket.error, e:
+        except socket.error as e:
             logger.error("Can't get any data: " + str(e))
             f.quit()
             f = None
