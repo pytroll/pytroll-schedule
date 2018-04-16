@@ -83,7 +83,11 @@ class SimplePass(object):
     buffer = timedelta(minutes=2)
 
     def __init__(self, satellite, risetime, falltime):
-        self.satellite = satellite
+        if not hasattr('name', satellite):
+            from trollsched.schedule import Satellite
+            self.satellite = Satellite(satellite, 0, 0)
+        else:
+            self.satellite = satellite
         self.risetime = risetime
         self.falltime = falltime
         self.score = {}
