@@ -26,7 +26,7 @@
 import logging
 import logging.handlers
 import os
-import urllib
+from urlparse import urlparse
 from six.moves.configparser import ConfigParser
 from datetime import datetime, timedelta
 from pprint import pformat
@@ -49,9 +49,9 @@ logger = logging.getLogger(__name__)
 CENTER_ID = "SMHI"
 
 
-
 class Station(object):
     """docstring for Station."""
+
     def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None):
         super(Station, self).__init__()
         self.id = station_id
@@ -68,14 +68,12 @@ class Station(object):
             except TypeError:
                 pass
 
-
     @property
     def coords(self):
         return self.longitude, self.latitude, self.altitude
 
     def single_station(self, sched, start_time, tle_file):
         """Calculate passes, graph, and schedule for one station."""
-
 
         logger.debug("station: %s coords: %s area: %s scores: %s",
                      self.id, self.coords, self.area.area_id, self.satellites)
@@ -142,7 +140,7 @@ class Station(object):
                                              pattern_args), allpasses, self.coords)
 
         if opts.xml or opts.report:
-            url = urllib.urlparse(opts.output_url or opts.output_dir)
+            url = urlparse(opts.output_url or opts.output_dir)
             if url.scheme not in ["file", ""]:
                 directory = "/tmp"
             else:
@@ -197,13 +195,16 @@ class Station(object):
 
 class SatScore(object):
     """docstring for SatScore."""
+
     def __init__(self, day, night):
         super(SatScore, self).__init__()
         self.day = day
         self.night = night
 
+
 class Satellite(object):
     """docstring for Satellite."""
+
     def __init__(self, name, day, night,
                  schedule_name=None, international_designator=None):
         super(Satellite, self).__init__()
@@ -212,8 +213,10 @@ class Satellite(object):
         self.score = SatScore(day, night)
         self.schedule_name = schedule_name or name
 
+
 class Scheduler(object):
     """docstring for Scheduler."""
+
     def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id):
         super(Scheduler, self).__init__()
         self.stations = stations
@@ -224,7 +227,6 @@ class Scheduler(object):
         self.patterns = patterns
         self.center_id = center_id
         self.opts = None
-
 
 
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
@@ -292,6 +294,7 @@ def fermib(t):
     a = 0.25
     b = a / 4
     return 1 / (np.exp((t - a) / b) + 1)
+
 
 combination = {}
 
@@ -482,7 +485,7 @@ def generate_sch_file(output_file, overpasses, coords):
         satellites = set()
 
         for overpass in overpasses:
-            epoch = "!{0:<16} {1}".format(overpass.satellite.upper(),
+            epoch = "!{0:<16} {1}".format(overpass.satellite.name.upper(),
                                           overpass.orb.tle.epoch.strftime("%Y%m%d %H%M%S"))
             satellites |= set([epoch])
         sats = "\n".join(satellites) + "\n"
@@ -674,7 +677,7 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
                                          pattern_args), allpasses, coords)
 
     if opts.xml or opts.report:
-        url = urllib.urlparse(opts.output_url or opts.output_dir)
+        url = urlparse(opts.output_url or opts.output_dir)
         if url.scheme not in ["file", ""]:
             directory = "/tmp"
         else:
@@ -727,7 +730,8 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
     return graph, allpasses
 
 
-def combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward, center_id):
+def combined_stations(scheduler, start_time, graph, allpasses):
+    # opts, pattern, station_list, graph, allpasses, start_time, start, forward, center_id):
     """The works around the combination of schedules for two or more stations."""
 
     logger.info("Generating coordinated schedules ...")
@@ -756,13 +760,13 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         return clabels
 
     pattern_args = {
-        "output_dir": opts.output_dir,
+        "output_dir": scheduler.opts.output_dir,
         "date": start_time.strftime("%Y%m%d"),
         "time": start_time.strftime("%H%M%S")
     }
-    if opts.xml:
+    if scheduler.opts.xml:
         pattern_args['mode'] = "request"
-    elif opts.report:
+    elif scheduler.opts.report:
         pattern_args['mode'] = "report"
 
     passes = {}
@@ -779,11 +783,6 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
         print("p", p)
         raise
 
-    station_meta = {}
-    for coords, station, area, scores in station_list:
-        station_meta[station] = {'coords': coords,
-                                 'area': area, 'scores': scores}
-
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
 #     logger.debug(pformat(schedule))
 
@@ -795,39 +794,47 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
 
     logger.info("generating files")
 
-    if opts.graph:
+    if scheduler.opts.graph:
         # save graph as npz file.
         pattern_args["station"] = "comb"
-        newgraph.save(build_filename("file_graph", pattern, pattern_args))
+        newgraph.save(build_filename("file_graph", scheduler.patterns, pattern_args))
         # Collect labels, each with one pass per station.
         clabels = collect_labels(newpasses, stats)
         # save graph as gv file for "dot"-plot
         newgraph.export(labels=[str(label) for label in clabels],
-                        filename=build_filename("file_graph", pattern, pattern_args) + ".gv")
+                        filename=build_filename("file_graph", scheduler.patterns, pattern_args) + ".gv")
 
-    for station in passes.keys():
-        pattern_args["station"] = station + "-comb"
-        logger.info("Create schedule file(s) for %s", station)
-        if opts.scisys:
-            generate_sch_file(build_filename("file_sci", pattern, pattern_args), passes[station],
-                              station_meta[station]['coords'])
-        if opts.xml or opts.report:
+    for station_id in passes.keys():
+        pattern_args["station"] = station_id + "-comb"
+        logger.info("Create schedule file(s) for %s", station_id)
+        if scheduler.opts.scisys:
+            generate_sch_file(build_filename("file_sci", scheduler.patterns, pattern_args),
+                              passes[station_id],
+                              [s.coords for s in scheduler.stations if s.id == station_id][0])
+        if scheduler.opts.xml or scheduler.opts.report:
             pattern_args['mode'] = "request"
-            xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
-                                        start_time + timedelta(hours=forward),
+            xmlfile = generate_xml_file(passes[station_id],
+                                        start_time + timedelta(hours=scheduler.start),
+                                        start_time + timedelta(hours=scheduler.forward),
                                         build_filename(
-                                            "file_xml", pattern, pattern_args),
-                                        station, center_id, False)
+                                            "file_xml", scheduler.patterns, pattern_args),
+                                        station_id,
+                                        scheduler.center_id,
+                                        False)
             logger.info("Generated " + str(xmlfile))
-            url = urllib.urlparse(opts.output_url or opts.output_dir)
+            url = urlparse(scheduler.opts.output_url or scheduler.opts.output_dir)
             send_file(url, xmlfile)
-        if opts.report:
+        if scheduler.opts.report:
             pattern_args['mode'] = "report"
-            xmlfile = generate_xml_file(passes[station], start_time + timedelta(hours=start),
-                                        start_time + timedelta(hours=forward),
+            xmlfile = generate_xml_file(passes[station_id],
+                                        start_time + timedelta(hours=scheduler.start),
+                                        start_time + timedelta(hours=scheduler.forward),
                                         build_filename(
-                                            "file_xml", pattern, pattern_args),
-                                        station, center_id, True)
+                                            "file_xml", scheduler.patterns, pattern_args),
+                                        # scheduler.stations[station_id].name,
+                                        station_id,
+                                        scheduler.center_id,
+                                        True)
             logger.info("Generated " + str(xmlfile))
 
     logger.info("Finished coordinated schedules.")
@@ -953,10 +960,6 @@ def run():
     else:
         start_time = datetime.utcnow()
 
-
-
-
-
     allpasses = {}
     graph = {}
 
@@ -988,42 +991,37 @@ def run():
         # sequential processing all stations' single schedule.
         for station in scheduler.stations:
             graph[station.id], allpasses[station.id] = station.single_station(scheduler, start_time, tle_file)
-
     else:
         # processing the stations' single schedules with multiprocessing.
-
         process_single = {}
         statlst_ordered = []
-
         # first round through the stations, forking sub-processes to do the
         # "single station calculations" in parallel.
         # the pickling of passes and graphs is done inside single_station().
-        for coords, station, area, scores in station_list:
-            statlst_ordered.append(station)
+        for station in scheduler.stations:
+            statlst_ordered.append(station.id)
             from multiprocessing import Process
-            process_single[station] = Process(
+            process_single[station.id] = Process(
                 target=station.single_station,
                 args=(scheduler, start_time, tle_file))
-            process_single[station].start()
-
+            process_single[station.id].start()
         # second round through the stations, collecting the sub-processes and
         # their results.
-        for station in statlst_ordered:
-            process_single[station].join()
-            pattern_args["station"] = station.id
+        for station_id in statlst_ordered:
+            process_single[station_id].join()
+            pattern_args["station"] = station_id
             # load graph for station
-            graph[station] = Graph()
-            graph[station].load(build_filename(
-                "file_graph", pattern, pattern_args) + ".npz")
+            graph[station_id] = Graph()
+            graph[station_id].load(build_filename(
+                "file_graph", scheduler.patterns, pattern_args) + ".npz")
             # load pickled passes for station
             ph = open(os.path.join(
-                dir_output, "allpasses.%s.pkl" % station), "rb")
-            allpasses[station] = pickle.load(ph)
+                dir_output, "allpasses.%s.pkl" % station_id), "rb")
+            allpasses[station_id] = pickle.load(ph)
             ph.close()
 
     if opts.comb:
-        combined_stations(opts, pattern, station_list, graph,
-                          allpasses, start_time, start, forward, CENTER_ID)
+        combined_stations(scheduler, start_time, graph, allpasses)
 
 
 if __name__ == '__main__':
