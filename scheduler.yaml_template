@@ -60,14 +60,18 @@ stations:
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
         satellites: 
-            - metop-a 
-            - metop-b 
-            - noaa 19 
-            - noaa 18 
-            - noaa 15 
-            - aqua 
-            - terra 
-            - suomi npp
+            metop-a :
+        		night: 0.1
+        		day: 0.6
+            metop-b :
+        		night: 0.1
+		        day: 0.6
+            noaa 19 :
+            noaa 18 :
+            noaa 15 :
+            aqua :
+            terra :
+            suomi npp :
     
     bch:
         name: bch
