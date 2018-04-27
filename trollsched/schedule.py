@@ -777,10 +777,8 @@ def combined_stations(scheduler, start_time, graph, allpasses):
             for p in passes[s]:
                 p.rec = False
     except:
-        print("s", s)
-        print("ap", ap)
-        print("passes[s]", passes[s])
-        print("p", p)
+        logger.exception("Failed to reset 'rec' for s:%s  ap:%s  passes[s]:%s  p:%s", 
+                         a, ap, passes[s], p)
         raise
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
