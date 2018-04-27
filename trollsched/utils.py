@@ -110,7 +110,15 @@ def read_config_yaml(filename):
 
     stations = {}
     for station_id, station in cfg["stations"].items():
-        sat_list = [satellites[sat_name] for sat_name in station['satellites']]
+        if isinstance(station['satellites'], dict):
+            sat_list=[]
+            for (sat_name, sat_params) in station["satellites"].items():
+                if sat_params is None:
+                    sat_list.append(satellites[sat_name])
+                else:
+                    sat_list.append(schedule.Satellite(sat_name, **sat_params))
+        else:
+            sat_list = [satellites[sat_name] for sat_name in station['satellites']]
         new_station = schedule.Station(station_id, **station)
         new_station.satellites = sat_list
         stations[station_id] = new_station
