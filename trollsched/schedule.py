@@ -126,10 +126,8 @@ class Station(object):
             avoid_list = None
 
         logger.info("computing best schedule for area %s" % self.area.area_id)
-        # TODO make combine accept Satellite objects instead of tuples
-        scores = {sat.name: (sat.score.night, sat.score.day) for sat in self.satellites}
-        schedule, (graph, labels) = get_best_sched(allpasses, self.area,
-                                                   scores,
+        schedule, (graph, labels) = get_best_sched(allpasses,
+                                                   self.area,
                                                    timedelta(seconds=opts.delay),
                                                    avoid_list)
 
@@ -302,7 +300,7 @@ def fermib(t):
 combination = {}
 
 
-def combine(p1, p2, area_of_interest, scores):
+def combine(p1, p2, area_of_interest):
     """Combine passes together.
     """
 
@@ -411,7 +409,7 @@ def combine(p1, p2, area_of_interest, scores):
     return res
 
 
-def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None):
+def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
     """Get the best schedule based on *area_of_interest*.
     """
     avoid_list = avoid_list or []
@@ -431,7 +429,7 @@ def get_best_sched(overpasses, area_of_interest, scores, delay, avoid_list=None)
             w = 0
             logger.debug("...0 because in the avoid_list!")
         else:
-            w = combine(p1, p2, area_of_interest, scores)
+            w = combine(p1, p2, area_of_interest)
         logger.debug("...with weight " + str(w))
 
 #         with open("/tmp/schedule.gv", "a") as fp_:
@@ -614,125 +612,6 @@ def send_file(url, file):
                      str(url.scheme), str(file))
 
 
-def single_station(opts, pattern, station, coords, area, scores, start_time, start, forward, tle_file, center_id):
-    """Calculate passes, graph, and schedule for one station."""
-
-    logger.debug("station: %s coords: %s area: %s scores: %s",
-                 station, coords, area.area_id, scores)
-
-    pattern_args = {
-        "station": station,
-        "output_dir": opts.output_dir,
-        "date": start_time.strftime("%Y%m%d"),
-        "time": start_time.strftime("%H%M%S")
-    }
-    if opts.xml:
-        pattern_args['mode'] = "request"
-    elif opts.report:
-        pattern_args['mode'] = "report"
-
-    satellites = scores.keys()
-
-    if opts.lon and opts.lat and opts.alt:
-        coords = (opts.lon, opts.lat, opts.alt)
-
-    logger.info("Computing next satellite passes")
-    allpasses = get_next_passes(satellites, start_time,
-                                forward, coords, tle_file, aqua_terra_dumps=opts.no_aqua_terra_dump)
-    logger.info("Computation of next overpasses done")
-
-    logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
-
-    area_boundary = AreaDefBoundary(area, frequency=500)
-    area.poly = area_boundary.contour_poly
-
-    if opts.plot:
-        logger.info("Saving plots to %s", build_filename(
-            "dir_plots", pattern, pattern_args))
-        from threading import Thread
-        image_saver = Thread(
-            target=save_passes,
-            args=(allpasses,
-                  area.poly,
-                  build_filename(
-                      "dir_plots", pattern, pattern_args)
-                  )
-        )
-        image_saver.start()
-
-    if opts.avoid is not None:
-        avoid_list = get_passes_from_xml_file(opts.avoid)
-    else:
-        avoid_list = None
-
-    logger.info("computing best schedule for area %s" % area.area_id)
-    schedule, (graph, labels) = get_best_sched(allpasses, area, scores,
-                                               timedelta(seconds=opts.delay),
-                                               avoid_list)
-
-    logger.debug(pformat(schedule))
-    for opass in schedule:
-        opass.rec = True
-    logger.info("generating file")
-
-    if opts.scisys:
-        generate_sch_file(build_filename("file_sci", pattern,
-                                         pattern_args), allpasses, coords)
-
-    if opts.xml or opts.report:
-        url = urlparse(opts.output_url or opts.output_dir)
-        if url.scheme not in ["file", ""]:
-            directory = "/tmp"
-        else:
-            directory = url.path
-        if opts.report:
-            logger.info("Waiting for images to be saved...")
-            image_saver.join()
-            logger.info("Done!")
-        if opts.xml or opts.report:
-            """Allways create xml-file in request-mode"""
-            pattern_args['mode'] = "request"
-            xmlfile = generate_xml_file(allpasses,
-                                        start_time + timedelta(hours=start),
-                                        start_time + timedelta(hours=forward),
-                                        build_filename(
-                                            "file_xml", pattern, pattern_args),
-                                        station,
-                                        center_id,
-                                        False
-                                        )
-            logger.info("Generated " + str(xmlfile))
-            send_file(url, xmlfile)
-        if opts.report:
-            """'If report-mode was set"""
-            pattern_args['mode'] = "report"
-            xmlfile = generate_xml_file(allpasses,
-                                        start_time + timedelta(hours=start),
-                                        start_time + timedelta(hours=forward),
-                                        build_filename(
-                                            "file_xml", pattern, pattern_args),
-                                        station,
-                                        center_id,
-                                        True
-                                        )
-            logger.info("Generated " + str(xmlfile))
-
-    if opts.graph or opts.comb:
-        graph.save(build_filename("file_graph", pattern, pattern_args))
-        graph.export(
-            labels=[str(label) for label in labels],
-            filename=build_filename("file_graph", pattern, pattern_args) + ".gv"
-        )
-    if opts.comb:
-        import pickle
-        ph = open(os.path.join(build_filename("dir_output", pattern,
-                                              pattern_args), "allpasses.%s.pkl" % station), "wb")
-        pickle.dump(allpasses, ph)
-        ph.close()
-
-    return graph, allpasses
-
-
 def combined_stations(scheduler, start_time, graph, allpasses):
     # opts, pattern, station_list, graph, allpasses, start_time, start, forward, center_id):
     """The works around the combination of schedules for two or more stations."""
@@ -780,7 +659,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
             for p in passes[s]:
                 p.rec = False
     except:
-        logger.exception("Failed to reset 'rec' for s:%s  ap:%s  passes[s]:%s  p:%s", 
+        logger.exception("Failed to reset 'rec' for s:%s  ap:%s  passes[s]:%s  p:%s",
                          a, ap, passes[s], p)
         raise
 
