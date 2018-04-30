@@ -28,8 +28,9 @@ import logging
 import logging.handlers
 import operator
 import os
+import six
 import socket
-import urllib
+from urlparse import urlparse
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 
@@ -320,9 +321,12 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 
-def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat):
+def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat, dump_url=None):
     logger.info("Fetch %s dump info from internet" % sat.name)
-    url = urllib.urlparse(HOST % sat.name)
+    if isinstance(dump_url, six.text_type):
+        url = urlparse(dump_url % sat.name)
+    else:
+        url = urlparse(HOST % sat.name)
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP(url.netloc)
@@ -396,7 +400,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_terra_dumps=False):
+def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_terra_dumps=None):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -473,7 +477,9 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                                                   utctime +
                                                   timedelta(
                                                       hours=forward + 0.5),
-                                                  satorb, sat)
+                                                  satorb,
+                                                  sat,
+                                                  aqua_terra_dumps)
 
             # remove the known dumps
             for dump in dumps:

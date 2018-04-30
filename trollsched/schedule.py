@@ -95,7 +95,10 @@ class Station(object):
         allpasses = get_next_passes(self.satellites, start_time,
                                     sched.forward,
                                     self.coords, tle_file,
-                                    aqua_terra_dumps=opts.no_aqua_terra_dump)
+                                    aqua_terra_dumps=(sched.dump_url
+                                                      if opts.no_aqua_terra_dump
+                                                      else None)
+                                    )
         logger.info("Computation of next overpasses done")
 
         logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
