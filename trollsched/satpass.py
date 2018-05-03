@@ -30,7 +30,11 @@ import operator
 import os
 import six
 import socket
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+from functools import reduce
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 
@@ -97,11 +101,20 @@ class SimplePass(object):
         self.rec = False
         self.fig = None
 
+    def __hash__(self):
+        return super.__hash__(self)
+
     def overlaps(self, other, delay=timedelta(seconds=0)):
         """Check if two passes overlap in time.
         """
         return ((self.risetime < other.falltime + delay) and
                 (self.falltime + delay > other.risetime))
+
+    def __lt__(self,other):
+        return self.uptime < other.uptime
+
+    def __gt__(self,other):
+        return self.uptime > other.uptime
 
     def __cmp__(self, other):
         if self.uptime < other.uptime:
@@ -358,7 +371,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat, dump_url=No
         logger.info("Can't access ftp server, using cached data")
         filenames = glob.glob("/tmp/*.rpt")
 
-    filenames = filter(lambda x: x.startswith("wotis.") and x.endswith(".rpt"), filenames)
+    filenames = [x for x in filenames if x.startswith("wotis.") and x.endswith(".rpt")]
     dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
              for filename in filenames]
     filedates = dict(zip(dates, filenames))
@@ -567,7 +580,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                            for rtime, ftime, uptime in passlist
                            if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
-    return set(reduce(operator.concat, passes.values()))
+    return set(reduce(operator.concat, list(passes.values())))
 
 if __name__ == '__main__':
     from trollsched.satpass import get_next_passes

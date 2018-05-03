@@ -27,7 +27,8 @@ schedule request xml files and then triggers the png and xml output generation.
 """
 
 import os
-from ConfigParser import RawConfigParser
+#from ConfigParser import RawConfigParser
+from six.moves.configparser import RawConfigParser
 import logging
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +52,10 @@ _DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 _DEFAULT_LOG_FORMAT = '[%(levelname)s: %(asctime)s : %(name)s] %(message)s'
 
 import sys
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 import posttroll.subscriber
 from posttroll.publisher import Publish
 import xml.etree.ElementTree as ET

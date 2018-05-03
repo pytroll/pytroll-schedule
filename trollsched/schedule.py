@@ -26,7 +26,10 @@
 import logging
 import logging.handlers
 import os
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 from six.moves.configparser import ConfigParser
 from datetime import datetime, timedelta
 from pprint import pformat
@@ -555,7 +558,7 @@ def generate_xml_file(sched, start, end, xml_file, station, center_id, report_mo
         if report_mode:
             fp_.write("<?xml version='1.0' encoding='utf-8'?>"
                       "<?xml-stylesheet type='text/xsl' href='reqreader.xsl'?>")
-        fp_.write(ET.tostring(tree))
+        fp_.write(str(ET.tostring(tree)))
     os.rename(tmp_filename, filename)
     return filename
 
