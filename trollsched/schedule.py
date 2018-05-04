@@ -98,7 +98,7 @@ class Station(object):
         allpasses = get_next_passes(self.satellites, start_time,
                                     sched.forward,
                                     self.coords, tle_file,
-                                    aqua_terra_dumps=(sched.dump_url
+                                    aqua_terra_dumps=(sched.dump_url or True
                                                       if opts.no_aqua_terra_dump
                                                       else None)
                                     )
@@ -870,7 +870,7 @@ def run():
     scheduler.opts = opts
 
     # single- or multi-processing?
-    if not opts.multiproc:
+    if not opts.multiproc or len(scheduler.stations) == 1:
         # sequential processing all stations' single schedule.
         for station in scheduler.stations:
             graph[station.id], allpasses[station.id] = station.single_station(scheduler, start_time, tle_file)
