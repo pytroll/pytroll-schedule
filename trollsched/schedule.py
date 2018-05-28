@@ -26,14 +26,23 @@
 import logging
 import logging.handlers
 import os
-import urlparse
-from ConfigParser import ConfigParser
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    from urlparse import urlparse
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
 from datetime import datetime, timedelta
 from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
-from trollsched import utils
+try:
+    from trollsched import utils
+except ImportError:
+    import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
@@ -47,6 +56,7 @@ logger = logging.getLogger(__name__)
 
 # name/id for centre/org creating schedules
 CENTER_ID = "SMHI"
+
 
 def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     """Get the passes in groups of conflicting passes.
@@ -506,7 +516,7 @@ def single_station(opts, pattern, station, coords, area, scores, start_time, sta
                                          pattern_args), allpasses, coords)
 
     if opts.xml or opts.report:
-        url = urlparse.urlparse(opts.output_url or opts.output_dir)
+        url = urlparse(opts.output_url or opts.output_dir)
         if url.scheme not in ["file", ""]:
             directory = "/tmp"
         else:
@@ -605,10 +615,10 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
             for p in passes[s]:
                 p.rec = False
     except:
-        print "s", s
-        print "ap", ap
-        print "passes[s]", passes[s]
-        print "p", p
+        print("s", s)
+        print("ap", ap)
+        print("passes[s]", passes[s])
+        print("p", p)
         raise
 
     station_meta = {}
@@ -651,7 +661,7 @@ def combined_stations(opts, pattern, station_list, graph, allpasses, start_time,
                                             "file_xml", pattern, pattern_args),
                                         station, center_id, False)
             logger.info("Generated " + str(xmlfile))
-            url = urlparse.urlparse(opts.output_url or opts.output_dir)
+            url = urlparse(opts.output_url or opts.output_dir)
             send_file(url, xmlfile)
         if opts.report:
             pattern_args['mode'] = "report"

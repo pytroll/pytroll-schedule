@@ -29,7 +29,10 @@ import logging.handlers
 import operator
 import os
 import socket
-import urlparse
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    from urlparse import urlparse
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 
@@ -160,7 +163,7 @@ class Pass(SimplePass):
         else:
             try:
                 self.orb = orbital.Orbital(satellite, line1=tle1, line2=tle2)
-            except KeyError, err:
+            except KeyError as err:
                 logger.debug('Failed in PyOrbital: %s', str(err))
                 self.orb = orbital.Orbital(NOAA20_NAME.get(satellite, satellite), line1=tle1, line2=tle2)
                 logger.info('Using satellite name %s instead', str(NOAA20_NAME.get(satellite, satellite)))
@@ -330,11 +333,11 @@ HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
     logger.info("Fetch %s dump info from internet" % sat_name)
-    url = urlparse.urlparse(HOST % sat_name)
+    url = urlparse(HOST % sat_name)
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP(url.netloc)
-    except (socket.error, socket.gaierror), e:
+    except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
 
@@ -351,7 +354,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
         data = []
         try:
             f.dir(url.path, data.append)
-        except socket.error, e:
+        except socket.error as e:
             logger.error("Can't get any data: " + str(e))
             f.quit()
             f = None
