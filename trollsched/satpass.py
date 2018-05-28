@@ -30,7 +30,7 @@ import operator
 import os
 import socket
 try:
-    import urllib.parse as urlparse
+    from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 from datetime import datetime, timedelta

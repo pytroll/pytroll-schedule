@@ -27,7 +27,7 @@ import logging
 import logging.handlers
 import os
 try:
-    import urllib.parse as urlparse
+    from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 try:
