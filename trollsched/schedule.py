@@ -28,7 +28,7 @@ import logging.handlers
 import os
 from six.moves.configparser import ConfigParser
 try:
-    import urllib.parse as urlparse
+    from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 from datetime import datetime, timedelta

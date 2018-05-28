@@ -32,7 +32,7 @@ import six
 import socket
 from functools import reduce
 try:
-    import urllib.parse as urlparse
+    from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 from datetime import datetime, timedelta
