@@ -30,6 +30,7 @@ import operator
 import os
 import six
 import socket
+from functools import reduce
 try:
     from urllib.parse import urlparse
 except ImportError:
