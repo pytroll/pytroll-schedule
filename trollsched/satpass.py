@@ -30,11 +30,11 @@ import operator
 import os
 import six
 import socket
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
 from functools import reduce
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    from urlparse import urlparse
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 
@@ -113,10 +113,10 @@ class SimplePass(object):
         return ((self.risetime < other.falltime + delay) and
                 (self.falltime + delay > other.risetime))
 
-    def __lt__(self,other):
+    def __lt__(self, other):
         return self.uptime < other.uptime
 
-    def __gt__(self,other):
+    def __gt__(self, other):
         return self.uptime > other.uptime
 
     def __cmp__(self, other):
@@ -178,7 +178,7 @@ class Pass(SimplePass):
         else:
             try:
                 self.orb = orbital.Orbital(satellite, line1=tle1, line2=tle2)
-            except KeyError, err:
+            except KeyError as err:
                 logger.debug('Failed in PyOrbital: %s', str(err))
                 self.orb = orbital.Orbital(NOAA20_NAME.get(satellite, satellite), line1=tle1, line2=tle2)
                 logger.info('Using satellite name %s instead', str(NOAA20_NAME.get(satellite, satellite)))
@@ -589,8 +589,8 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
 
         else:
             passes[sat.name] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                           for rtime, ftime, uptime in passlist
-                           if ftime - rtime > timedelta(minutes=MIN_PASS)]
+                                for rtime, ftime, uptime in passlist
+                                if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
     return set(reduce(operator.concat, list(passes.values())))
 

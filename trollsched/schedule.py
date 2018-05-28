@@ -26,18 +26,21 @@
 import logging
 import logging.handlers
 import os
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
 from six.moves.configparser import ConfigParser
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    from urlparse import urlparse
 from datetime import datetime, timedelta
 from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
 from pyresample import utils as resample_utils
-from trollsched import utils
+try:
+    from trollsched import utils
+except ImportError:
+    import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
@@ -53,6 +56,7 @@ CENTER_ID = "SMHI"
 
 
 class Station(object):
+
     """docstring for Station."""
 
     def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None):
@@ -198,6 +202,7 @@ class Station(object):
 
 
 class SatScore(object):
+
     """docstring for SatScore."""
 
     def __init__(self, day, night):
@@ -207,6 +212,7 @@ class SatScore(object):
 
 
 class Satellite(object):
+
     """docstring for Satellite."""
 
     def __init__(self, name, day, night,
@@ -219,6 +225,7 @@ class Satellite(object):
 
 
 class Scheduler(object):
+
     """docstring for Scheduler."""
 
     def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id):
@@ -789,7 +796,7 @@ def run():
     if opts.config:
         # read_config() returns:
         #     [(coords, station, area, scores)], forward, start, {pattern}
-        #station_list, forward, start, pattern = utils.read_config(opts.config)
+        # station_list, forward, start, pattern = utils.read_config(opts.config)
         scheduler = utils.read_config(opts.config)
 
     # TODO make config file compulsory
