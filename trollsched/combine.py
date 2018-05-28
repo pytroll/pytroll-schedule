@@ -348,10 +348,6 @@ if __name__ == '__main__':
 
     import logging
     import logging.handlers
-    try:
-        import urllib.parse as urlparse
-    except ImportError:
-        from urlparse import urlparse
     import os
     import pickle
     from pprint import pformat
