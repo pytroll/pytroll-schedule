@@ -31,9 +31,9 @@ import os
 import six
 import socket
 try:
-    from urlparse import urlparse
-except ImportError:
     from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 from functools import reduce
 from datetime import datetime, timedelta
 from tempfile import mkstemp
