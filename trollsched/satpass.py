@@ -28,8 +28,13 @@ import logging
 import logging.handlers
 import operator
 import os
+import six
 import socket
-import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+from functools import reduce
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 
@@ -86,7 +91,11 @@ class SimplePass(object):
     buffer = timedelta(minutes=2)
 
     def __init__(self, satellite, risetime, falltime):
-        self.satellite = satellite
+        if not hasattr(satellite, 'name'):
+            from trollsched.schedule import Satellite
+            self.satellite = Satellite(satellite, 0, 0)
+        else:
+            self.satellite = satellite
         self.risetime = risetime
         self.falltime = falltime
         self.score = {}
@@ -95,11 +104,20 @@ class SimplePass(object):
         self.rec = False
         self.fig = None
 
+    def __hash__(self):
+        return super.__hash__(self)
+
     def overlaps(self, other, delay=timedelta(seconds=0)):
         """Check if two passes overlap in time.
         """
         return ((self.risetime < other.falltime + delay) and
                 (self.falltime + delay > other.risetime))
+
+    def __lt__(self,other):
+        return self.uptime < other.uptime
+
+    def __gt__(self,other):
+        return self.uptime > other.uptime
 
     def __cmp__(self, other):
         if self.uptime < other.uptime:
@@ -116,7 +134,7 @@ class SimplePass(object):
         # or if the later is not available
         # b) the time difference between rise- and fall-times.
         if other is not None and isinstance(self, Pass) and isinstance(other, Pass):
-            return (self.satellite == other.satellite and
+            return (self.satellite.name == other.satellite.name and
                     self.orb.get_orbit_number(self.risetime) == other.orb.get_orbit_number(other.risetime))
         tol = timedelta(seconds=1)
         return (other is not None and
@@ -125,7 +143,7 @@ class SimplePass(object):
                 self.satellite == other.satellite)
 
     def __str__(self):
-        return (self.satellite + " "
+        return (self.satellite.name + " "
                 + self.risetime.isoformat() + " " + self.falltime.isoformat())
 
     def __repr__(self):
@@ -236,7 +254,7 @@ class Pass(SimplePass):
             logger.debug("Create plot dir " + directory)
             os.makedirs(directory)
         filename = os.path.join(directory,
-                                (rise + self.satellite.replace(" ", "_") + fall + extension))
+                                (rise + self.satellite.name.replace(" ", "_") + fall + extension))
 
         self.fig = filename
         if not overwrite and os.path.exists(filename):
@@ -275,10 +293,10 @@ class Pass(SimplePass):
             plt.figtext(*label[0], **label[1])
         plt.show()
 
-    def draw(self, mapper, options):
+    def draw(self, mapper, options, **more_options):
         """Draw the pass to the *mapper* object (basemap).
         """
-        self.boundary.contour_poly.draw(mapper, options)
+        self.boundary.contour_poly.draw(mapper, options, **more_options)
 
     def print_vcs(self, coords):
         """Should look like this::
@@ -314,7 +332,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
                      "{duration:>4.1f}",
                      ]
         line = " ".join(line_list).format(
-            satellite=self.satellite.upper(),
+            satellite=self.satellite.name.upper(),
             orbit=self.orb.get_orbit_number(self.risetime),
             risetime=self.risetime.strftime("%Y%m%d %H%M%S"),
             falltime=self.falltime.strftime("%Y%m%d %H%M%S"),
@@ -328,13 +346,16 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 
-def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
-    logger.info("Fetch %s dump info from internet" % sat_name)
-    url = urlparse.urlparse(HOST % sat_name)
+def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat, dump_url=None):
+    logger.info("Fetch %s dump info from internet" % sat.name)
+    if isinstance(dump_url, six.text_type):
+        url = urlparse(dump_url % sat.name)
+    else:
+        url = urlparse(HOST % sat.name)
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP(url.netloc)
-    except (socket.error, socket.gaierror), e:
+    except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
 
@@ -351,7 +372,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
         data = []
         try:
             f.dir(url.path, data.append)
-        except socket.error, e:
+        except socket.error as e:
             logger.error("Can't get any data: " + str(e))
             f.quit()
             f = None
@@ -362,7 +383,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
         logger.info("Can't access ftp server, using cached data")
         filenames = glob.glob("/tmp/*.rpt")
 
-    filenames = filter(lambda x: x.startswith("wotis.") and x.endswith(".rpt"), filenames)
+    filenames = [x for x in filenames if x.startswith("wotis.") and x.endswith(".rpt")]
     dates = [datetime.strptime("".join(filename.split(".")[2:4]), "%Y%j%H%M%S")
              for filename in filenames]
     filedates = dict(zip(dates, filenames))
@@ -395,7 +416,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
             los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
             if los >= start_time and aos <= end_time:
                 uptime = aos + (los - aos) / 2
-                overpass = Pass(sat_name, aos, los, satorb, uptime, "modis")
+                overpass = Pass(sat, aos, los, satorb, uptime, "modis")
                 overpass.station = station
                 overpass.max_elev = elev
                 dumps.append(overpass)
@@ -404,7 +425,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat_name):
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_terra_dumps=False):
+def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_terra_dumps=None):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -424,21 +445,21 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
         tlefile.fetch(tle_file)
 
     for sat in satellites:
-        satorb = orbital.Orbital(sat, tle_file=tle_file)
-        orbitals[sat] = satorb
+        satorb = orbital.Orbital(sat.name, tle_file=tle_file)
+        orbitals[sat.name] = satorb
         passlist = satorb.get_next_passes(utctime,
                                           forward,
                                           *coords)
-        if sat.lower().startswith("metop") or sat.lower().startswith("noaa"):
+        if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
             instrument = "avhrr"
-        elif sat in ["aqua", "terra"]:
+        elif sat.name in ["aqua", "terra"]:
             instrument = "modis"
-        elif sat.endswith("npp"):
+        elif sat.name.endswith("npp") or sat.name.startswith("jpss"):
             instrument = "viirs"
         else:
             instrument = "unknown"
         # take care of metop-a
-        if sat == "metop-a":
+        if sat.name == "metop-a":
             metop_passes = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                             for rtime, ftime, uptime in passlist if rtime < ftime]
 
@@ -452,7 +473,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                         if overpass.seconds() > MIN_PASS * 60:
                             passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
-        elif sat in ["aqua", "terra"] and aqua_terra_dumps:
+        elif sat.name in ["aqua", "terra"] and aqua_terra_dumps:
 
             wpcoords = (-75.457222, 37.938611, 0)
             passlist_wp = satorb.get_next_passes(utctime - timedelta(minutes=30),
@@ -481,7 +502,9 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                                                   utctime +
                                                   timedelta(
                                                       hours=forward + 0.5),
-                                                  satorb, sat)
+                                                  satorb,
+                                                  sat,
+                                                  aqua_terra_dumps)
 
             # remove the known dumps
             for dump in dumps:
@@ -539,7 +562,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                 if pf_pass not in used_pf:
                     dumps.append(pf_pass)
 
-            passes[sat] = []
+            passes[sat.name] = []
             for overpass in aqua_passes:
                 add = True
                 for dump_pass in dumps:
@@ -562,14 +585,14 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                             add = False
                             logger.debug("skipping " + str(overpass))
                 if add and overpass.seconds() > MIN_PASS * 60:
-                    passes[sat].append(overpass)
+                    passes[sat.name].append(overpass)
 
         else:
-            passes[sat] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
+            passes[sat.name] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
                            for rtime, ftime, uptime in passlist
                            if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
-    return set(reduce(operator.concat, passes.values()))
+    return set(reduce(operator.concat, list(passes.values())))
 
 if __name__ == '__main__':
     from trollsched.satpass import get_next_passes

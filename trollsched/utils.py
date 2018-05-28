@@ -25,13 +25,13 @@ import os
 import yaml
 import logging
 from collections import Mapping
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 
-import schedule
-import satpass
+from trollsched import satpass
 from pyresample import utils as resample_utils
 
 logger = logging.getLogger("trollsched")
+
 
 def read_yaml_file(file_name):
     """Read one or more files in to a single dict object."""
@@ -39,12 +39,11 @@ def read_yaml_file(file_name):
         file_name = [file_name]
     conf_dict = {}
     for file_obj in file_name:
-        if (isinstance(file_obj, str) and os.path.isfile(file_obj)):
-            # filename
-            file_obj = open(file_obj)
-        tmp_dict = yaml.load(file_obj)
+        with open(file_obj) as fp:
+            tmp_dict = yaml.load(fp)
         conf_dict = recursive_dict_update(conf_dict, tmp_dict)
     return conf_dict
+
 
 def recursive_dict_update(d, u):
     """Recursive dictionary update.
@@ -59,89 +58,98 @@ def recursive_dict_update(d, u):
             d[k] = u[k]
     return d
 
+
 def read_config(filename):
     try:
         return read_config_yaml(filename)
     except yaml.parser.ParserError as e:
         return read_config_cfg(filename)
 
+
 def read_config_cfg(filename):
     """Read the config file *filename* and replace the values in global
     variables.
     """
-    station_list = []
+    from trollsched import schedule
     cfg = ConfigParser()
     cfg.read(filename)
 
-    stations = cfg.get("default", "station").split(",")
-    forward = cfg.getint("default", "forward")
-    start = cfg.getfloat("default", "start")
+    def read_cfg_opts(section):
+        """Read the option:value pairs in one section,
+        converting value to int/float if applicable.
+        """
+        kv_dict = {}
+        for k, v in cfg.items(section):
+            try:
+                kv_dict[k] = int(v)
+            except:
+                try:
+                    kv_dict[k] = float(v)
+                except:
+                    kv_dict[k] = v
+        return kv_dict
 
+    default_params = read_cfg_opts("default")
     pattern = {}
     for k, v in cfg.items("pattern"):
         pattern[k] = v
+    station_list = []
+    for station_id in default_params["station"].split(","):
+        station_params = read_cfg_opts(station_id)
+        satellites = cfg.get(station_id, "satellites").split(",")
+        sat_list = []
+        for sat_name in satellites:
+            sat_list.append(schedule.Satellite(sat_name,
+                                               **read_cfg_opts(sat_name)
+                                               ))
+        new_station = schedule.Station(station_id, **station_params)
+        new_station.satellites = sat_list
+        station_list.append(new_station)
+    scheduler = schedule.Scheduler(stations=station_list,
+                                   min_pass=default_params.get("min_pass", 4),
+                                   forward=default_params.get("forward"),
+                                   start=default_params.get("start"),
+                                   dump_url=default_params.get("dump_url", None),
+                                   patterns=pattern,
+                                   center_id=default_params.get("center_id", "unknown"))
+    return scheduler
 
-    for station in stations:
-        station_name = cfg.get(station, "name")
-        station_lon = cfg.getfloat(station, "longitude")
-        station_lat = cfg.getfloat(station, "latitude")
-        station_alt = cfg.getfloat(station, "altitude")
-
-        area = resample_utils.parse_area_file(cfg.get(station, "area_file"),
-                                                        cfg.get(station, "area"))[0]
-
-        satellites = cfg.get(station, "satellites").split(",")
-
-        sat_scores = {}
-        for sat in satellites:
-            sat_scores[sat] = (cfg.getfloat(sat, "night"),
-                               cfg.getfloat(sat, "day"))
-
-        station_list.append(((station_lon, station_lat, station_alt),
-                station_name, area, sat_scores))
-
-    return (station_list, forward, start, pattern)
 
 def read_config_yaml(filename):
-    """Read the yaml file *filename* and replace the values in global
-    variables.
-    """
-    station_list = []
+    """Read the yaml file *filename* and create a scheduler."""
+    from trollsched import schedule
+
     cfg = read_yaml_file(filename)
+    satellites = {sat_name: schedule.Satellite(sat_name, **sat_params)
+                  for (sat_name, sat_params) in cfg["satellites"].items()}
 
-    if cfg["default"].get("center_id"):
-        schedule.CENTER_ID = cfg["default"].get("center_id")
-    if cfg["default"].get("dump_url"):
-        satpass.HOST = cfg["default"].get("dump_url")
-    if cfg["default"].get("min_pass"):
-        satpass.MIN_PASS = cfg["default"].get("min_pass")
-
-    stations = cfg["default"]["station"]
-    forward = cfg["default"]["forward"]
-    start = cfg["default"]["start"]
+    stations = {}
+    for station_id, station in cfg["stations"].items():
+        if isinstance(station['satellites'], dict):
+            sat_list = []
+            for (sat_name, sat_params) in station["satellites"].items():
+                if sat_params is None:
+                    sat_list.append(satellites[sat_name])
+                else:
+                    sat_list.append(schedule.Satellite(sat_name, **sat_params))
+        else:
+            sat_list = [satellites[sat_name] for sat_name in station['satellites']]
+        new_station = schedule.Station(station_id, **station)
+        new_station.satellites = sat_list
+        stations[station_id] = new_station
 
     pattern = {}
     for k, v in cfg["pattern"].items():
         pattern[k] = v
 
-    for station in stations:
-        station_name = cfg["stations"][station]["name"]
-        station_lon = cfg["stations"][station]["longitude"]
-        station_lat = cfg["stations"][station]["latitude"]
-        station_alt = cfg["stations"][station]["altitude"]
+    sched_params = cfg['default']
+    scheduler = schedule.Scheduler(stations=[stations[st_id]
+                                             for st_id in sched_params['station']],
+                                   min_pass=sched_params.get('min_pass', 4),
+                                   forward=sched_params['forward'],
+                                   start=sched_params['start'],
+                                   dump_url=sched_params.get('dump_url'),
+                                   patterns=pattern,
+                                   center_id=sched_params.get('center_id', 'unknown'))
 
-        area = resample_utils.parse_area_file(cfg["stations"][station]["area_file"],
-                                              cfg["stations"][station]["area"])[0]
-
-        satellites = cfg["stations"][station]["satellites"]
-
-        sat_scores = {}
-        for sat in satellites:
-            sat_scores[sat] = (cfg["satellites"][sat]["night"],
-                                             cfg["satellites"][sat]["day"])
-
-        station_list.append(((station_lon, station_lat, station_alt),
-                station_name, area, sat_scores))
-
-    return (station_list, forward, start, pattern)
-
+    return scheduler
