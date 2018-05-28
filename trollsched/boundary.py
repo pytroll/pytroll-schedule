@@ -59,10 +59,10 @@ class Boundary(object):
                 np.deg2rad(np.vstack(self.contour()).T))
         return self._contour_poly
 
-    def draw(self, mapper, options):
+    def draw(self, mapper, options, **more_options):
         """Draw the current boundary on the *mapper*
         """
-        self.contour_poly.draw(mapper, options)
+        self.contour_poly.draw(mapper, options, **more_options)
 
 
 class AreaBoundary(Boundary):
@@ -130,16 +130,25 @@ class SwathBoundary(Boundary):
         scan_angle = 55.37
         if instrument == "modis":
             scan_angle = 55.0
+            instrument = "avhrr"
         elif instrument == "viirs":
             scan_angle = 55.84
+            instrument = "avhrr"
         elif instrument == "iasi":
             scan_angle = 48.3
+            instrument = "avhrr"
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
-        instrument = "avhrr"
+            instrument = "avhrr"
+
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
-        sgeom = instrument_fun(scans_nb, scanpoints,
-                               scan_angle=scan_angle, frequency=frequency)
+
+        if instrument == "olci":
+            sgeom = instrument_fun(scans_nb, scanpoints)
+        else:
+            sgeom = instrument_fun(scans_nb, scanpoints,
+                                   scan_angle=scan_angle, frequency=frequency)
+
         times = sgeom.times(utctime)
 
         pixel_pos = geoloc.compute_pixels((self.orb.tle._line1,

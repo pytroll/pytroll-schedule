@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 Adam.Dybbroe
+# Copyright (c) 2016, 2018 Adam.Dybbroe
 
 # Author(s):
 
@@ -27,7 +27,8 @@ schedule request xml files and then triggers the png and xml output generation.
 """
 
 import os
-from ConfigParser import RawConfigParser
+#from ConfigParser import RawConfigParser
+from six.moves.configparser import RawConfigParser
 import logging
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +52,10 @@ _DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 _DEFAULT_LOG_FORMAT = '[%(levelname)s: %(asctime)s : %(name)s] %(message)s'
 
 import sys
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 import posttroll.subscriber
 from posttroll.publisher import Publish
 import xml.etree.ElementTree as ET
@@ -66,25 +70,33 @@ sat_dict = {'npp': 'Suomi NPP',
             'noaa15': 'NOAA 15',
             'aqua': 'Aqua',
             'terra': 'Terra',
-            'metop-b': 'Metop-B',
-            'metop-a': 'Metop-A',
+            'metopc': 'Metop-C',
+            'metopb': 'Metop-B',
+            'metopa': 'Metop-A',
+            'noaa20': 'NOAA-20',
             }
 
 
-def process_xmlrequest(filename, plotdir, output_file):
+def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
 
     tree = ET.parse(filename)
     root = tree.getroot()
 
     for child in root:
         if child.tag == 'pass':
-            print child.attrib
-            overpass = Pass(sat_dict.get(child.attrib['satellite'],
-                                         child.attrib['satellite']),
-                            datetime.strptime(child.attrib['start-time'],
-                                              '%Y-%m-%d-%H:%M:%S'),
-                            datetime.strptime(child.attrib['end-time'],
-                                              '%Y-%m-%d-%H:%M:%S'))
+            LOG.debug("Pass: %s", str(child.attrib))
+            platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
+            if platform_name in excluded_satellites:
+                continue
+            try:
+                overpass = Pass(platform_name,
+                                datetime.strptime(child.attrib['start-time'],
+                                                  '%Y-%m-%d-%H:%M:%S'),
+                                datetime.strptime(child.attrib['end-time'],
+                                                  '%Y-%m-%d-%H:%M:%S'))
+            except KeyError as err:
+                LOG.warning('Failed on satellite %s: %s', platform_name, str(err))
+                continue
 
             overpass.save_fig(directory=plotdir)
             child.set('img', overpass.fig)
@@ -106,6 +118,8 @@ def start_plotting(jobreg, message, **kwargs):
     and generate the output xml file for web publication
 
     """
+    excluded_satellites = kwargs.get('excluded_satellites', [])
+
     LOG.info("")
     LOG.info("job-registry dict: " + str(jobreg))
     LOG.info("\tMessage:")
@@ -114,12 +128,13 @@ def start_plotting(jobreg, message, **kwargs):
     # path, fname = os.path.split(urlobj.path)
 
     process_xmlrequest(urlobj.path,
-                       OPTIONS['path_plots'], OPTIONS['xmlfilepath'])
+                       OPTIONS['path_plots'], OPTIONS['xmlfilepath'],
+                       excluded_satellites)
 
     return jobreg
 
 
-def schedule_page_generator():
+def schedule_page_generator(excluded_satellite_list=None):
     """Listens and triggers processing"""
 
     LOG.info(
@@ -130,7 +145,7 @@ def schedule_page_generator():
             job_registry = {}
             for msg in subscr.recv():
                 job_registry = start_plotting(
-                    job_registry, msg, publisher=publisher)
+                    job_registry, msg, publisher=publisher, excluded_satellites=excluded_satellite_list)
                 # Cleanup in registry (keep only the last 5):
                 keys = job_registry.keys()
                 if len(keys) > 5:
@@ -138,6 +153,16 @@ def schedule_page_generator():
                     job_registry.pop(keys[0])
 
 if __name__ == "__main__":
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-x", "--excluded_satellites", nargs='*',
+                        help="List of platform names to exclude",
+                        default=[])
+    opts = parser.parse_args()
+
+    no_sats = opts.excluded_satellites
 
     handler = logging.StreamHandler(sys.stderr)
 
@@ -150,5 +175,6 @@ if __name__ == "__main__":
     logging.getLogger('posttroll').setLevel(logging.INFO)
 
     LOG = logging.getLogger('schedule_page_generator')
+    LOG.info("Exclude the following satellite platforms: %s", str(no_sats))
 
-    schedule_page_generator()
+    schedule_page_generator(no_sats)
