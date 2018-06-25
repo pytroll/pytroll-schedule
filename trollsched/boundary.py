@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015, 2017 Martin Raspaud
+# Copyright (c) 2014-2018 PyTroll community
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -145,6 +146,8 @@ class SwathBoundary(Boundary):
 
         if instrument == "olci":
             sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument == 'ascat':
+            sgeom = instrument_fun(scans_nb)
         else:
             sgeom = instrument_fun(scans_nb, scanpoints,
                                    scan_angle=scan_angle, frequency=frequency)

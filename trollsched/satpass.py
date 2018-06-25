@@ -113,10 +113,10 @@ class SimplePass(object):
         return ((self.risetime < other.falltime + delay) and
                 (self.falltime + delay > other.risetime))
 
-    def __lt__(self,other):
+    def __lt__(self, other):
         return self.uptime < other.uptime
 
-    def __gt__(self,other):
+    def __gt__(self, other):
         return self.uptime > other.uptime
 
     def __cmp__(self, other):
@@ -169,10 +169,11 @@ class Pass(SimplePass):
     """
 
     def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
-                 instrument=None, tle1=None, tle2=None):
+                 instrument=None, tle1=None, tle2=None, frequency=100):
         SimplePass.__init__(self, satellite, risetime, falltime)
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
+        self.frequency = frequency
         if orb:
             self.orb = orb
         else:
@@ -188,12 +189,12 @@ class Pass(SimplePass):
     @property
     def boundary(self):
         if not self._boundary:
-            self._boundary = SwathBoundary(self)
+            self._boundary = SwathBoundary(self, frequency=self.frequency)
         return self._boundary
 
     @boundary.setter
     def boundary(self, value):
-        self._boundary = SwathBoundary(self)
+        self._boundary = SwathBoundary(self, frequency=self.frequency)
 
     def pass_direction(self):
         """Get the direction of the pass in (ascending, descending).
@@ -589,8 +590,8 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
 
         else:
             passes[sat.name] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                           for rtime, ftime, uptime in passlist
-                           if ftime - rtime > timedelta(minutes=MIN_PASS)]
+                                for rtime, ftime, uptime in passlist
+                                if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
     return set(reduce(operator.concat, list(passes.values())))
 
