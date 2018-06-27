@@ -51,6 +51,10 @@ MIN_PASS = 4
 # DRL still use the name JPSS-1 in the TLEs:
 NOAA20_NAME = {'NOAA-20': 'JPSS-1'}
 
+NUMBER_OF_FOVS = {'avhrr': 2048,
+                  'ascat': 42,
+                  'viirs': 3200}
+
 
 class Mapper(object):
 
@@ -168,9 +172,17 @@ class Pass(SimplePass):
     """A pass: satellite, risetime, falltime, (orbital)
     """
 
-    def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
-                 instrument=None, tle1=None, tle2=None, frequency=100):
+    def __init__(self, satellite, risetime, falltime, **kwargs):
         SimplePass.__init__(self, satellite, risetime, falltime)
+
+        orb = kwargs.get('orb', None)
+        uptime = kwargs.get('uptime', None)
+        instrument = kwargs.get('instrument', None)
+        tle1 = kwargs.get('tle1', None)
+        tle2 = kwargs.get('tle2', None)
+        self.number_of_fovs = kwargs.get('number_of_fovs', NUMBER_OF_FOVS.get(instrument, 2048))
+        frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
+
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
         self.frequency = frequency
@@ -237,7 +249,7 @@ class Pass(SimplePass):
             area_boundary = area_of_interest.poly
         except AttributeError:
             area_boundary = AreaDefBoundary(area_of_interest,
-                                            frequency=500)
+                                            frequency=100)
             area_boundary = area_boundary.contour_poly
         inter = self.boundary.contour_poly.intersection(area_boundary)
         if inter is None:

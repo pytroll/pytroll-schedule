@@ -147,7 +147,7 @@ class SwathBoundary(Boundary):
         if instrument == "olci":
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'ascat':
-            sgeom = instrument_fun(scans_nb)
+            sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             sgeom = instrument_fun(scans_nb, scanpoints,
                                    scan_angle=scan_angle, frequency=frequency)
@@ -183,8 +183,8 @@ class SwathBoundary(Boundary):
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
-                                                            np.array(
-                                                                [0, 2047]),
+                                                            #np.array([0, 2047]),
+                                                            np.array([0, -1]),
                                                             frequency=frequency)
 
         self.left_lons = sides_lons[::-1, 0]
@@ -193,9 +193,7 @@ class SwathBoundary(Boundary):
         self.right_lats = sides_lats[:, 1]
 
         # compute bottom
-
-        # avhrr
-        maxval = 2048
+        maxval = self.overpass.number_of_fovs
         rest = maxval % frequency
         reduced = np.hstack(
             [0, np.arange(rest / 2, maxval, frequency), maxval - 1])
