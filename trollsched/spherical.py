@@ -246,7 +246,7 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Gives the two intersections of the greats circles defined by the 
+        """Gives the two intersections of the greats circles defined by the
        current arc and *other_arc*.
        From http://williams.best.vwh.net/intersect.htm
         """
@@ -548,13 +548,13 @@ class SphPolygon(object):
                 return sarc.angle(earc) < 0
         return other.area() > (2 * np.pi * other.radius ** 2)
 
-    def draw(self, mapper, options):
+    def draw(self, mapper, options, **more_options):
         lons = np.rad2deg(self.lon.take(np.arange(len(self.lon) + 1),
                                         mode="wrap"))
         lats = np.rad2deg(self.lat.take(np.arange(len(self.lat) + 1),
                                         mode="wrap"))
         rx, ry = mapper(lons, lats)
-        mapper.plot(rx, ry, options)
+        mapper.plot(rx, ry, options, **more_options)
 
     def __str__(self):
         return str(np.rad2deg(self.vertices))

@@ -84,7 +84,7 @@ class TestCCoordinate(unittest.TestCase):
     def test_normalize(self):
         """Normalize a cartesian vector
         """
-        d = CCoordinate((2, 0, 0))
+        d = CCoordinate((2., 0., 0.))
         self.assertTrue(np.allclose(d.normalize().cart, [1, 0, 0]))
 
     def test_cross(self):
@@ -227,9 +227,11 @@ class TestArc(unittest.TestCase):
 
         self.assertEqual(np.rad2deg(arc1.angle(arc2)), -44.996385007218926)
 
-        arc1 = Arc(SCoordinate(np.deg2rad(112.5), np.deg2rad(89.234600944314138)),
+        arc1 = Arc(SCoordinate(np.deg2rad(112.5),
+                               np.deg2rad(89.234600944314138)),
                    SCoordinate(np.deg2rad(90), np.deg2rad(89)))
-        arc2 = Arc(SCoordinate(np.deg2rad(112.5), np.deg2rad(89.234600944314138)),
+        arc2 = Arc(SCoordinate(np.deg2rad(112.5),
+                               np.deg2rad(89.234600944314138)),
                    SCoordinate(np.deg2rad(45), np.deg2rad(89)))
 
         self.assertEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883)

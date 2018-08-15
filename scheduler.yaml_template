@@ -1,0 +1,131 @@
+default:
+    center_id: SMHI
+
+    station:
+        - nrk
+        - bch
+        
+    # schedule starts in 2 hours and covers 7 days
+    forward: 168
+    start: 2
+    
+    # minimum observable pass length [minutes]
+    min_pass: 4
+    
+    # URL for Aqua/Terra dump information
+    dump_url: "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
+
+pattern:
+    # dir/file pattern, follows rules of str.format()
+    # pre-set names:
+    #   {date}, {time} : date+time 
+    #   {station} : as in station->name, for combined schedules ".comb" is appended, 
+    #   {mode} : request|report,
+    #   {output_dir} : as in cmd-param --output-dir
+    dir_output: "{output_dir}/{date}-{time}"
+    dir_plots:  "{dir_output}/plots.{station}"
+    file_xml:   "{dir_output}/aquisition-schedule-{mode}_{station}.xml"
+    file_sci:   "{dir_output}/scisys-schedule-{station}.txt"
+    file_graph: "{dir_output}/graph"
+    
+stations:    
+    nrk:
+        name: nrk
+        # degrees east
+        longitude: 16.148649
+        # degrees north
+        latitude: 58.581844
+        # km
+        altitude: 0.052765
+        area_file: /home/amaul/PyTROLL/etc/areas.def
+        area: euron1
+        satellites: 
+            - metop-a 
+            - metop-b 
+            - noaa 19 
+            - noaa 18 
+            - noaa 15 
+            - aqua 
+            - terra 
+            - suomi npp
+    
+    nrk-test:
+        name: nrk
+        # degrees east
+        longitude: 16.148649
+        # degrees north
+        latitude: 58.581844
+        # km
+        altitude: 0.052765
+        area_file: /home/amaul/PyTROLL/etc/areas.def
+        area: euron1
+        satellites: 
+            metop-a :
+        		night: 0.1
+        		day: 0.6
+            metop-b :
+        		night: 0.1
+		        day: 0.6
+            noaa 19 :
+            noaa 18 :
+            noaa 15 :
+            aqua :
+            terra :
+            suomi npp :
+    
+    bch:
+        name: bch
+        # degrees east
+        longitude: 7.314910
+        # degrees north
+        latitude: 51.505070
+        # km
+        altitude: 0.14
+        area_file: /home/amaul/PyTROLL/etc/areas.def
+        area: euron1
+        satellites: 
+            - metop-a
+            - metop-b 
+            - noaa 19 
+            - noaa 18 
+            - noaa 15 
+            - aqua 
+            - terra 
+            - suomi npp
+
+satellites:
+    metop-a:
+        night: 0.1
+        day: 0.6
+        
+    metop-b:
+        night: 0.1
+        day: 0.6
+        
+    noaa 19:
+        night: 0.05
+        day: 0.3
+        
+    noaa 18:
+        night: 0.1
+        day: 0.6
+        
+    noaa 16:
+        night: 0.1
+        day: 0.6
+        
+    noaa 15:
+        night: 0.05
+        day: 0.3
+        
+    aqua:
+        night: 0.2
+        day: 0.8
+        
+    terra:
+        night: 0.2
+        day: 0.8
+        
+    suomi npp:
+        night: 0.25
+        day: 0.9
