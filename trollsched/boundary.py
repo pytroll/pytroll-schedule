@@ -140,6 +140,9 @@ class SwathBoundary(Boundary):
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
             instrument = "avhrr"
+        elif instrument == "mersi":
+            scan_angle = 55.4
+            instrument = "avhrr"
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
