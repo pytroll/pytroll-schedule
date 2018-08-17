@@ -55,7 +55,7 @@ CENTER_ID = "SMHI"
 class Station(object):
     """docstring for Station."""
 
-    def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None):
+    def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None, min_pass=None, local_horizon=0):
         super(Station, self).__init__()
         self.id = station_id
         self.name = name
@@ -70,6 +70,8 @@ class Station(object):
                 self.area = resample_utils.parse_area_file(area_file, area)[0]
             except TypeError:
                 pass
+        self.min_pass = min_pass
+        self.local_horizon = local_horizon
 
     @property
     def coords(self):
@@ -100,7 +102,9 @@ class Station(object):
                                     self.coords, tle_file,
                                     aqua_terra_dumps=(sched.dump_url or True
                                                       if opts.no_aqua_terra_dump
-                                                      else None)
+                                                      else None),
+                                    min_pass=self.min_pass,
+                                    local_horizon=self.local_horizon
                                     )
         logger.info("Computation of next overpasses done")
 
@@ -118,7 +122,9 @@ class Station(object):
                 args=(allpasses,
                       self.area.poly,
                       build_filename(
-                          "dir_plots", pattern, pattern_args)
+                          "dir_plots", pattern, pattern_args),
+                      sched.plot_parameters,
+                      sched.plot_title
                       )
             )
             image_saver.start()
@@ -143,16 +149,23 @@ class Station(object):
             generate_sch_file(build_filename("file_sci", pattern,
                                              pattern_args), allpasses, self.coords)
 
+        if opts.meos:
+            generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses, self.coords, start_time + timedelta(hours=sched.start), True) #Ie report mode
+
+        if opts.plot:
+            logger.info("Waiting for images to be saved...")
+            image_saver.join()
+            logger.info("Done!")
+
+        if opts.metno_xml:
+            generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), allpasses, self.coords, start_time + timedelta(hours=sched.start), start_time + timedelta(hours=sched.forward), self.id, sched.center_id, True)
+
         if opts.xml or opts.report:
             url = urlparse(opts.output_url or opts.output_dir)
             if url.scheme not in ["file", ""]:
                 directory = "/tmp"
             else:
                 directory = url.path
-            if opts.plot:
-                logger.info("Waiting for images to be saved...")
-                image_saver.join()
-                logger.info("Done!")
             if opts.xml or opts.report:
                 """Allways create xml-file in request-mode"""
                 pattern_args['mode'] = "request"
@@ -193,7 +206,7 @@ class Station(object):
                                                   pattern_args), "allpasses.%s.pkl" % self.id), "wb")
             pickle.dump(allpasses, ph)
             ph.close()
-
+            
         return graph, allpasses
 
 
@@ -221,7 +234,7 @@ class Satellite(object):
 class Scheduler(object):
     """docstring for Scheduler."""
 
-    def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id):
+    def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id, plot_parameters, plot_title):
         super(Scheduler, self).__init__()
         self.stations = stations
         self.min_pass = min_pass
@@ -230,6 +243,8 @@ class Scheduler(object):
         self.dump_url = dump_url
         self.patterns = patterns
         self.center_id = center_id
+        self.plot_parameters = plot_parameters
+        self.plot_title = plot_title
         self.opts = None
 
 
@@ -632,9 +647,9 @@ def parse_datetime(strtime):
     """
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
 
-def save_passes(allpasses, poly, output_dir, plot_parameters):
+def save_passes(allpasses, poly, output_dir, plot_parameters, plot_title):
     for passage in allpasses:
-        passage.save_fig(poly, directory=output_dir, plot_parameters=plot_parameters)
+        passage.save_fig(poly, directory=output_dir, plot_parameters=plot_parameters, plot_title=plot_title)
 
 
 def get_passes_from_xml_file(filename):
@@ -702,7 +717,9 @@ def single_station(opts, pattern, station, coords, min_pass, local_horizon, area
 
     logger.info("Computing next satellite passes")
     allpasses = get_next_passes(satellites, start_time,
-                                forward, coords, min_pass, local_horizon, tle_file, aqua_dumps=opts.no_aqua_dump)
+                                forward, coords, tle_file, aqua_dumps=opts.no_aqua_dump,
+                                min_pass=min_pass,
+                                local_horizon=local_horizon )
 
     logger.info("Computation of next overpasses done")
 
@@ -850,9 +867,10 @@ def combined_stations(scheduler, start_time, graph, allpasses):
                          a, ap, passes[s], p)
         raise
 
-    station_meta = {}
-    for coords, station, min_pass, local_horizon, area, scores in station_list:
-        station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
+#    station_meta = {}
+#    print "scheduler",scheduler.stations
+#    for coords, station, min_pass, local_horizon, area, scores in station_list:
+#        station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
 #     logger.debug(pformat(schedule))
@@ -907,20 +925,23 @@ def combined_stations(scheduler, start_time, graph, allpasses):
                                         scheduler.center_id,
                                         True)
             logger.info("Generated " + str(xmlfile))
-        if opts.meos:
-            meosfile = generate_meos_file(build_filename("file_meos", pattern, pattern_args),
-                                          passes[station],
-                                          station_meta[station]['coords'],
+
+        if scheduler.opts.meos:
+            meosfile = generate_meos_file(build_filename("file_meos", scheduler.patterns, pattern_args),
+                                          passes[station_id],
+                                          #station_meta[station]['coords'],
+                                          [s.coords for s in scheduler.stations if s.id == station_id][0],
                                           start_time + timedelta(hours=start),
                                           False) #Ie only print schedule passes
             logger.info("Generated " + str(meosfile))
-        if opts.metno_xml:
-            metno_xmlfile = generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args),
-                                                    passes[station],
-                                                    station_meta[station]['coords'],
-                                                    start_time + timedelta(hours=start),
-                                                    start_time + timedelta(hours=forward),
-                                                    station, center_id, False)
+        if scheduler.opts.metno_xml:
+            metno_xmlfile = generate_metno_xml_file(build_filename("file_metno_xml", scheduler.patterns, pattern_args),
+                                                    passes[station_id],
+                                                    #station_meta[station]['coords'],
+                                                    [s.coords for s in scheduler.stations if s.id == station_id][0],
+                                                    start_time + timedelta(hours=scheduler.start),
+                                                    start_time + timedelta(hours=scheduler.forward),
+                                                    station_id, scheduler.center_id, False)
             logger.info("Generated " + str(metno_xmlfile))
             
 
