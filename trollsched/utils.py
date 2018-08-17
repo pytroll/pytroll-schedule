@@ -143,6 +143,9 @@ def read_config_yaml(filename):
         pattern[k] = v
 
     sched_params = cfg['default']
+    plot_parameters = sched_params['plot_parameters'] or {}
+    plot_title = sched_params['plot_title'] or None
+        
     scheduler = schedule.Scheduler(stations=[stations[st_id]
                                              for st_id in sched_params['station']],
                                    min_pass=sched_params.get('min_pass', 4),
@@ -150,6 +153,8 @@ def read_config_yaml(filename):
                                    start=sched_params['start'],
                                    dump_url=sched_params.get('dump_url'),
                                    patterns=pattern,
-                                   center_id=sched_params.get('center_id', 'unknown'))
+                                   center_id=sched_params.get('center_id', 'unknown'),
+                                   plot_parameters=plot_parameters,
+                                   plot_title=plot_title)
 
     return scheduler
