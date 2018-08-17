@@ -245,7 +245,7 @@ class Pass(SimplePass):
         return inter.area() / area_boundary.area()
 
     def save_fig(self, poly=None, directory="/tmp/plots",
-                 overwrite=False, labels=None, extension=".png", plot_parameters={}):
+                 overwrite=False, labels=None, extension=".png", plot_parameters=None, plot_title=None):
         """Save the pass as a figure. Filename is automatically generated.
         """
         logger.debug("Save fig " + str(self))
@@ -265,16 +265,18 @@ class Pass(SimplePass):
         mpl.use('Agg')
         import matplotlib.pyplot as plt
         plt.clf()
-        with Mapper(plot_parameters) as mapper:
+        plot_parameters = plot_parameters or {}
+        with Mapper(**plot_parameters) as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, "-r")
             if poly is not None:
                 poly.draw(mapper, "-b")
         
-        plot_title = {'satellite_name': self.satellite.upper(),
+        _plot_title = {'satellite_name': self.satellite.name.upper(),
                       'risetime': self.risetime,
                       'falltime': self.falltime}
-        plt.title(str(compose(plot_parameters.get('plot_title',str(self)),plot_title)))
+        pt = plot_title or plot_parameters.get('plot_title',str(self))
+        plt.title(str(compose(pt, _plot_title)))
         for label in labels or []:
             plt.figtext(*label[0], **label[1])
         plt.savefig(filename)
@@ -315,7 +317,7 @@ class Pass(SimplePass):
         sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
         
         ovpass = ET.SubElement(root, "pass")
-        ovpass.set("satellite", self.satellite)
+        ovpass.set("satellite", self.satellite.name)
         ovpass.set("aos", self.risetime.strftime("%Y%m%d%H%M%S"))
         ovpass.set("los", self.falltime.strftime("%Y%m%d%H%M%S"))
         ovpass.set("orbit", "{:d}".format(orbit))
@@ -325,7 +327,7 @@ class Pass(SimplePass):
         ovpass.set("pass-direction", pass_direction)
         ovpass.set("satellite-lon-at-aos", "{:.3f}".format(sat_lon))
         ovpass.set("satellite-lat-at-aos", "{:.3f}".format(sat_lat))
-        ovpass.set("tle-epoch", self.orb.orbit_elements.epoch.strftime("%Y%m%d%H%M%S.%f"))
+        ovpass.set("tle-epoch", self.orb.orbit_elements.epoch.astype(datetime).strftime("%Y%m%d%H%M%S.%f"))
         if self.fig:
             ovpass.set("figure", self.fig)
             
@@ -528,7 +530,7 @@ def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat, dump_url=No
     return dumps
 
 
-def get_next_passes(satellites, utctime, forward, coords, min_pass=MIN_PASS, local_horizon=0, tle_file=None, aqua_dumps=False):
+def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_terra_dumps=False, min_pass=MIN_PASS, local_horizon=0):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -555,13 +557,13 @@ def get_next_passes(satellites, utctime, forward, coords, min_pass=MIN_PASS, loc
                                           horizon=local_horizon,
                                           *coords
                                           )
-        if sat.lower().startswith("metop") or sat.lower().startswith("noaa"):
+        if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
             instrument = "avhrr"
         elif sat.name in ["aqua", "terra"]:
             instrument = "modis"
         elif sat.name.endswith("npp") or sat.name.startswith("jpss"):
             instrument = "viirs"
-        elif sat.lower in ["fengyun 3a", "fengyun 3b", "fengyun 3c"]:
+        elif sat.name.lower() in ["fengyun 3a", "fengyun 3b", "fengyun 3c", "fengyun 3d"]:
             instrument = "mersi"
         else:
             instrument = "unknown"
