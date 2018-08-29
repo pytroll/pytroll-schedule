@@ -99,9 +99,10 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
             platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
             instrument = INSTRUMENT.get(platform_name)
             if not instrument:
-                raise AttributeError('Instrument unknown! Platform = %s', platform_name)
+                raise AttributeError('Instrument unknown! Platform = %s' % platform_name)
 
             if platform_name in excluded_satellites:
+                LOG.debug('Platform name excluded: %s', platform_name)
                 continue
             try:
                 overpass = Pass(platform_name,
@@ -117,6 +118,7 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
             overpass.save_fig(directory=plotdir)
             child.set('img', overpass.fig)
             child.set('rec', 'True')
+            LOG.debug("Plot saved - plotdir = %s, platform_name = %s", plotdir, platform_name)
 
     tree.write(output_file, encoding='utf-8', xml_declaration=True)
 
