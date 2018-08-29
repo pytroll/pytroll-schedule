@@ -52,6 +52,8 @@ MIN_PASS = 4
 NOAA20_NAME = {'NOAA-20': 'JPSS-1'}
 
 NUMBER_OF_FOVS = {'avhrr': 2048,
+                  'mhs': 90,
+                  'amsua': 30,
                   'ascat': 42,
                   'viirs': 3200}
 
@@ -191,7 +193,7 @@ class Pass(SimplePass):
         else:
             try:
                 self.orb = orbital.Orbital(satellite, line1=tle1, line2=tle2)
-            except KeyError, err:
+            except KeyError as err:
                 logger.debug('Failed in PyOrbital: %s', str(err))
                 self.orb = orbital.Orbital(NOAA20_NAME.get(satellite, satellite), line1=tle1, line2=tle2)
                 logger.info('Using satellite name %s instead', str(NOAA20_NAME.get(satellite, satellite)))
@@ -257,7 +259,8 @@ class Pass(SimplePass):
         return inter.area() / area_boundary.area()
 
     def save_fig(self, poly=None, directory="/tmp/plots",
-                 overwrite=False, labels=None, extension=".png"):
+                 overwrite=False, labels=None, extension=".png",
+                 outline='-r'):
         """Save the pass as a figure. Filename is automatically generated.
         """
         logger.debug("Save fig " + str(self))
@@ -279,7 +282,8 @@ class Pass(SimplePass):
         plt.clf()
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, "-r")
+            # self.draw(mapper, "-r")
+            self.draw(mapper, outline)
             if poly is not None:
                 poly.draw(mapper, "-b")
         plt.title(str(self))
@@ -355,6 +359,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
             rec=rec,
             direction=self.pass_direction().capitalize()[:3])
         return line
+
 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
@@ -606,6 +611,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                                 if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
     return set(reduce(operator.concat, list(passes.values())))
+
 
 if __name__ == '__main__':
     from trollsched.satpass import get_next_passes
