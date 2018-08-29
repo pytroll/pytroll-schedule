@@ -76,6 +76,16 @@ sat_dict = {'npp': 'Suomi NPP',
             'noaa20': 'NOAA-20',
             }
 
+INSTRUMENT = {'NOAA-20': 'viirs',
+              'Aqua': 'modis',
+              'Terra': 'modis',
+              'NOAA 19': 'avhrr',
+              'NOAA 18': 'avhrr',
+              'NOAA 15': 'avhrr',
+              'Metop-A': 'avhrr',
+              'Metop-B': 'avhrr',
+              'Metop-C': 'avhrr'}
+
 
 def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
 
@@ -86,6 +96,8 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
         if child.tag == 'pass':
             LOG.debug("Pass: %s", str(child.attrib))
             platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
+            instrument = INSTRUMENT.get(platform_name)
+
             if platform_name in excluded_satellites:
                 continue
             try:
@@ -93,7 +105,8 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
                                 datetime.strptime(child.attrib['start-time'],
                                                   '%Y-%m-%d-%H:%M:%S'),
                                 datetime.strptime(child.attrib['end-time'],
-                                                  '%Y-%m-%d-%H:%M:%S'))
+                                                  '%Y-%m-%d-%H:%M:%S'),
+                                instrument=instrument)
             except KeyError as err:
                 LOG.warning('Failed on satellite %s: %s', platform_name, str(err))
                 continue
@@ -151,6 +164,7 @@ def schedule_page_generator(excluded_satellite_list=None):
                 if len(keys) > 5:
                     keys.sort()
                     job_registry.pop(keys[0])
+
 
 if __name__ == "__main__":
 
