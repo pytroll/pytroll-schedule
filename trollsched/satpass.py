@@ -276,6 +276,7 @@ class Pass(SimplePass):
         if not overwrite and os.path.exists(filename):
             return filename
 
+        logger.debug("Filename = <%s>", filename)
         import matplotlib as mpl
         mpl.use('Agg')
         import matplotlib.pyplot as plt
@@ -283,13 +284,17 @@ class Pass(SimplePass):
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             # self.draw(mapper, "-r")
+            logger.debug("Draw: outline = <%s>", outline)
             self.draw(mapper, outline)
             if poly is not None:
                 poly.draw(mapper, "-b")
+        logger.debug("Title = %s", str(self))
         plt.title(str(self))
         for label in labels or []:
             plt.figtext(*label[0], **label[1])
+        logger.debug("Save plot...")
         plt.savefig(filename)
+        logger.debug("Return...")
         return filename
 
     def show(self, poly=None, labels=None, other_poly=None, proj=None):
