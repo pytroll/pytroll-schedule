@@ -183,7 +183,10 @@ class Pass(SimplePass):
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
-        self.number_of_fovs = kwargs.get('number_of_fovs', NUMBER_OF_FOVS.get(instrument, 2048))
+        logger.info("instrument: %s", str(instrument))
+        default = NUMBER_OF_FOVS.get(instrument, 2048)
+        logger.info("default: %s", str(default))
+        self.number_of_fovs = kwargs.get('number_of_fovs', default)
         frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
 
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
