@@ -177,15 +177,18 @@ class Pass(SimplePass):
     def __init__(self, satellite, risetime, falltime, **kwargs):
         SimplePass.__init__(self, satellite, risetime, falltime)
 
-        logger.info("kwargs: %s", str(kwargs))
+        logger.debug("kwargs: %s", str(kwargs))
         orb = kwargs.get('orb', None)
         uptime = kwargs.get('uptime', None)
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
         logger.info("instrument: %s", str(instrument))
+        if instrument is list:
+            logger.warning("Instrument is a list! Assume avhrr...")
+            instrument = 'avhrr'
+
         default = NUMBER_OF_FOVS.get(instrument, 2048)
-        logger.info("default: %s", str(default))
         self.number_of_fovs = kwargs.get('number_of_fovs', default)
         frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
 
