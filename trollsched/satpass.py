@@ -177,6 +177,7 @@ class Pass(SimplePass):
     def __init__(self, satellite, risetime, falltime, **kwargs):
         SimplePass.__init__(self, satellite, risetime, falltime)
 
+        logger.info("kwargs: %s", str(kwargs))
         orb = kwargs.get('orb', None)
         uptime = kwargs.get('uptime', None)
         instrument = kwargs.get('instrument', None)
