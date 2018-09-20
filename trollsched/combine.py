@@ -28,6 +28,7 @@ from trollsched.graph import Graph
 
 logger = logging.getLogger("trollsched")
 
+
 def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
     """Add all graphs to one combined graph. """
     statlst = graphs.keys()
@@ -114,7 +115,8 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                         else:
                             wl.append(n[1] or grl[s].weight(pl[s].index(p[0]) + 1, pl[s].index(n[0]) + 1))
                     except:
-                        logger.error("Collecting weights: stat %d - parnode %s %s - newnode %s %s", s, parnode, p, newnode, n, exc_info=1)
+                        logger.error(
+                            "Collecting weights: stat %d - parnode %s %s - newnode %s %s", s, parnode, p, newnode, n, exc_info=1)
                         raise
                 # Apply vertix-count to the sum of collected weights.
                 # vertix-count: number of vertices with reference to same
@@ -197,7 +199,8 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         try:
             gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
         except:
-            print("len(passes_list)", len(passes_list), "   len(graph_set)", len(graph_set), "   statnr", statnr, "   p", p)
+            print("len(passes_list)", len(passes_list), "   len(graph_set)",
+                  len(graph_set), "   statnr", statnr, "   p", p)
             print("passes_list", passes_list)
             raise
 
@@ -205,7 +208,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
             # But if there weren't any neighbours, set an empty list.
             gn = [None]
 
-    if  statnr + 1 == len(parnode):
+    if statnr + 1 == len(parnode):
         # It's the 'rightmost' of the list parnode,
         # and the deepest point of the recursion.
 
@@ -245,8 +248,8 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             # Two passes overlapping, no special handling required.
                             cc = cx[:]
                             cc.insert(0, (
-                                          (passes_list[statnr][n - 1], None)
-                                          ))
+                                (passes_list[statnr][n - 1], None)
+                            ))
                             bufflist.append(cc)
 
                         elif overlap > 0:
@@ -255,9 +258,9 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             # the current parent node gets "simulated".
                             cc = cx[:]
                             cc.insert(0, (
-                                          passes_list[statnr][n - 1],
+                                passes_list[statnr][n - 1],
                                           g.weight(passes_list[statnr].index(p[0]) + 1, n)
-                                          ))
+                            ))
                             bufflist.append(cc)
 
                         elif overlap < 0:
@@ -265,13 +268,13 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             # but BEFORE the pass from the recursion-return-list
                             # the recursion-list-node gets "simulated".
                             cc = [
-                                  (c[0], graph_set[s].weight(
-                                            passes_list[s].index(parnode[s][0]) + 1,
-                                            passes_list[s].index(c[0]) + 1
-                                            )
-                                  ) if c != (None, None) else (None, None)
+                                (c[0], graph_set[s].weight(
+                                 passes_list[s].index(parnode[s][0]) + 1,
+                                 passes_list[s].index(c[0]) + 1
+                                 )
+                                 ) if c != (None, None) else (None, None)
                                   for s, c in zip(range(statnr + 1, len(parnode)), cx)
-                                ]
+                            ]
                             cc.insert(0, (passes_list[statnr][n - 1], None))
                             bufflist.append(cc)
 
@@ -279,7 +282,8 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             print("uh-oh, something curious happened ...")
 
                 except:
-                    print("\nCATCH\ngn:", gn, "-> n", n, " col:", col, "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1)
+                    print("\nCATCH\ngn:", gn, "-> n", n, " col:", col,
+                          "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1)
                     print("len(passes_list -n -cx)", len(passes_list[statnr]), len(passes_list[statnr + 1]))
                     for s in range(statnr, len(passes_list)):
                         print("passes_list[", s, "] =>", passes_list[s])
@@ -295,11 +299,11 @@ def get_combined_sched(allgraphs, allpasses, delay_sec=60):
     statlst, newgraph, newpasses = add_graphs(allgraphs, allpasses, delay)
 
     # >>> DEV: test if the graphs could be "folded" to use use less RAM.
-    #for s, g in allgraphs.items():
+    # for s, g in allgraphs.items():
     #    print "test folding", s
     #    test_folding(g)
-    #print "test folding newgraph"
-    #if test_folding(newgraph):
+    # print "test folding newgraph"
+    # if test_folding(newgraph):
     #    print_matrix(newgraph.adj_matrix, 25, 36)
     # <<<
 
@@ -340,11 +344,9 @@ def test_folding(g):
     return r
 
 
-if __name__ == '__main__':
-
+def main():
     import logging
     import logging.handlers
-    import urlparse
     import os
     import pickle
     from pprint import pformat
@@ -369,12 +371,12 @@ if __name__ == '__main__':
         parser.add_argument("-o", "--output-dir", default=None,
                             help="where to put generated files")
         parser.add_argument("-x", "--xml", action="store_true",
-                           help="generate an xml request file (schedule)"
-                           )
+                            help="generate an xml request file (schedule)"
+                            )
         parser.add_argument("-r", "--report", action="store_true",
-                           help="generate an xml report file (schedule)")
+                            help="generate an xml report file (schedule)")
         parser.add_argument("--scisys", action="store_true",
-                           help="generate a SCISYS schedule file")
+                            help="generate a SCISYS schedule file")
         parser.add_argument("-p", "--plot", action="store_true",
                             help="generate plot images")
         parser.add_argument("-g", "--graph", action="store_true",
@@ -392,10 +394,10 @@ if __name__ == '__main__':
         station_list, forward, start, pattern = read_config(opts.config)
 
         pattern_args = {
-                        "output_dir":opts.output_dir,
-                        "date":start_time.strftime("%Y%m%d"),
-                        "time":start_time.strftime("%H%M%S")
-                        }
+            "output_dir": opts.output_dir,
+                        "date": start_time.strftime("%Y%m%d"),
+                        "time": start_time.strftime("%H%M%S")
+        }
         dir_output = build_filename("dir_output", pattern, pattern_args)
         if not os.path.exists(dir_output):
             print(dir_output, "does not exist!")
@@ -421,7 +423,8 @@ if __name__ == '__main__':
 #             for v in graph[station].neighbours(1):
 #                 print v, " : ", allpasses[station][v].risetime, "->", graph[station].weight(1, v)
 
-            ph = open(os.path.join(build_filename("dir_output", pattern, pattern_args), "allpasses.%s.pkl" % station), "rb")
+            ph = open(
+                os.path.join(build_filename("dir_output", pattern, pattern_args), "allpasses.%s.pkl" % station), "rb")
             allpasses[station] = pickle.load(ph)
             ph.close()
 
@@ -432,9 +435,9 @@ if __name__ == '__main__':
             totpas.extend(list(sp))
         passes = sorted(totpas, key=lambda x: x.risetime)
         cpg = conflicting_passes(passes, timedelta(seconds=600))
-        print("ALLPASSES", len(allpasses)) # ,allpasses
-        print("PASSES", len(passes)) # ,passes
-        print("CONFLGRPS", len(cpg)) # ,cpg
+        print("ALLPASSES", len(allpasses))  # ,allpasses
+        print("PASSES", len(passes))  # ,passes
+        print("CONFLGRPS", len(cpg))  # ,cpg
         print("MAX", max([len(g) for g in cpg]))
 
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
@@ -442,3 +445,7 @@ if __name__ == '__main__':
     except:
         logger.exception("Something wrong happened!")
         raise
+
+
+if __name__ == '__main__':
+    main()
