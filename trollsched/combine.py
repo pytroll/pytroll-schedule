@@ -344,8 +344,7 @@ def test_folding(g):
     return r
 
 
-if __name__ == '__main__':
-
+def main():
     import logging
     import logging.handlers
     import os
@@ -446,3 +445,7 @@ if __name__ == '__main__':
     except:
         logger.exception("Something wrong happened!")
         raise
+
+
+if __name__ == '__main__':
+    main()

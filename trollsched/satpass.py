@@ -619,9 +619,13 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
     return set(reduce(operator.concat, list(passes.values())))
 
 
-if __name__ == '__main__':
+def main():
     from trollsched.satpass import get_next_passes
     passes = get_next_passes(
         ["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))
     for p in passes:
         p.save_fig(directory="/tmp/plots/")
+
+
+if __name__ == '__main__':
+    main()
