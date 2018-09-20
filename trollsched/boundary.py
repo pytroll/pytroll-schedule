@@ -123,7 +123,7 @@ class SwathBoundary(Boundary):
     """
 
     def get_instrument_points(self, overpass, utctime,
-                              scans_nb, scanpoints, frequency=1):
+                              scans_nb, scanpoints, scan_step=1):
         """Get the boundary points for a given overpass.
         """
         instrument = overpass.instrument
@@ -153,10 +153,10 @@ class SwathBoundary(Boundary):
         elif instrument == 'ascat':
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
-            sgeom = instrument_fun(scans_nb, scanpoints)
+            sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
         else:
             sgeom = instrument_fun(scans_nb, scanpoints,
-                                   scan_angle=scan_angle, frequency=frequency)
+                                   scan_angle=scan_angle, scan_step=scan_step)
 
         times = sgeom.times(utctime)
 
@@ -169,7 +169,7 @@ class SwathBoundary(Boundary):
         return (lons.reshape(-1, len(scanpoints)),
                 lats.reshape(-1, len(scanpoints)))
 
-    def __init__(self, overpass, frequency=100.0):
+    def __init__(self, overpass, scan_step=20, frequency=100):
         # compute area covered by pass
 
         Boundary.__init__(self)
@@ -179,18 +179,23 @@ class SwathBoundary(Boundary):
 
         # compute sides
 
-        scans_nb = np.ceil(((overpass.falltime - overpass.risetime).seconds +
-                            (overpass.falltime -
-                             overpass.risetime).microseconds
-                            / 1000000.0) / frequency)
+        scanlength_seconds = ((overpass.falltime - overpass.risetime).seconds +
+                              (overpass.falltime - overpass.risetime).microseconds / 1000000.0)
 
+        if self.overpass.instrument == 'viirs':
+            sec_scan_duration = 1.779166667
+
+        # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
+        scans_nb = scanlength_seconds/sec_scan_duration
+        # Devide by the scan step to a reduced number of scans:
+        scans_nb = np.ceil(scans_nb/scan_step)
         scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
                                                             np.array([0, self.overpass.number_of_fovs-1]),
-                                                            frequency=frequency)
+                                                            scan_step=scan_step)
 
         self.left_lons = sides_lons[::-1, 0]
         self.left_lats = sides_lats[::-1, 0]
@@ -212,7 +217,6 @@ class SwathBoundary(Boundary):
         self.bottom_lats = lats[0][::-1]
 
         # compute top
-
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.risetime,
                                                 1,
