@@ -31,10 +31,7 @@ try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
-<<<<<<< HEAD
 from six.moves.configparser import ConfigParser
-=======
->>>>>>> 4f8164fc31f2fb4029e7689de73225c0422f59e7
 from datetime import datetime, timedelta
 from pprint import pformat
 
