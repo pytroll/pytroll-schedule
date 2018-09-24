@@ -182,6 +182,7 @@ class SwathBoundary(Boundary):
         scanlength_seconds = ((overpass.falltime - overpass.risetime).seconds +
                               (overpass.falltime - overpass.risetime).microseconds / 1000000.0)
 
+        logger.debug("Instrument = %s", self.overpass.instrument)
         if self.overpass.instrument == 'viirs':
             sec_scan_duration = 1.779166667
         if self.overpass.instrument == 'avhrr':
@@ -191,7 +192,7 @@ class SwathBoundary(Boundary):
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
-            logger.warning(logmsg + "%s", str(instrument))
+            logger.warning(logmsg + "%s", str(self.overpass.instrument))
             sec_scan_duration = 1./6.
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
