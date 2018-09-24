@@ -148,15 +148,13 @@ class SwathBoundary(Boundary):
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
-        if instrument == "olci":
-            sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument == 'ascat':
+        if instrument in ["olci", "avhrr", "ascat", "avhrr/3", "avhrr/2"]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
         else:
-            sgeom = instrument_fun(scans_nb, scanpoints,
-                                   scan_angle=scan_angle, scan_step=scan_step)
+            logger.warning("Instrument not tested: %s", instrument)
+            sgeom = instrument_fun(scans_nb)
 
         times = sgeom.times(utctime)
 
