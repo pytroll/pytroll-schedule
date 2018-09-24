@@ -127,7 +127,7 @@ class SwathBoundary(Boundary):
         """Get the boundary points for a given overpass.
         """
         instrument = overpass.instrument
-        logger.info("Instrument: %s", str(instrument))
+        logger.debug("Instrument: %s", str(instrument))
         # cheating at the moment.
         scan_angle = 55.37
         if instrument == "modis":
@@ -183,9 +183,9 @@ class SwathBoundary(Boundary):
         logger.debug("Instrument = %s", self.overpass.instrument)
         if self.overpass.instrument == 'viirs':
             sec_scan_duration = 1.779166667
-        if self.overpass.instrument == 'avhrr':
+        elif self.overpass.instrument in ['avhrr', 'avhrr/3', 'avhrr/2']:
             sec_scan_duration = 1./6.
-        if self.overpass.instrument == 'ascat':
+        elif self.overpass.instrument == 'ascat':
             sec_scan_duration = 3.74747474747
         else:
             # Assume AVHRR!
