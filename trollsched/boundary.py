@@ -123,10 +123,11 @@ class SwathBoundary(Boundary):
     """
 
     def get_instrument_points(self, overpass, utctime,
-                              scans_nb, scanpoints, frequency=1):
+                              scans_nb, scanpoints, scan_step=1):
         """Get the boundary points for a given overpass.
         """
         instrument = overpass.instrument
+        logger.debug("Instrument: %s", str(instrument))
         # cheating at the moment.
         scan_angle = 55.37
         if instrument == "modis":
@@ -141,18 +142,19 @@ class SwathBoundary(Boundary):
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
             instrument = "avhrr"
+        else:
+            scan_angle = 55.25
+            instrument = "avhrr"
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
-        if instrument == "olci":
-            sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument == 'ascat':
+        if instrument in ["olci", "avhrr", "ascat", "avhrr/3", "avhrr/2"]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
-            sgeom = instrument_fun(scans_nb, scanpoints)
+            sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
         else:
-            sgeom = instrument_fun(scans_nb, scanpoints,
-                                   scan_angle=scan_angle, frequency=frequency)
+            logger.warning("Instrument not tested: %s", instrument)
+            sgeom = instrument_fun(scans_nb)
 
         times = sgeom.times(utctime)
 
@@ -165,7 +167,7 @@ class SwathBoundary(Boundary):
         return (lons.reshape(-1, len(scanpoints)),
                 lats.reshape(-1, len(scanpoints)))
 
-    def __init__(self, overpass, frequency=100.0):
+    def __init__(self, overpass, scan_step=20, frequency=100):
         # compute area covered by pass
 
         Boundary.__init__(self)
@@ -175,18 +177,33 @@ class SwathBoundary(Boundary):
 
         # compute sides
 
-        scans_nb = np.ceil(((overpass.falltime - overpass.risetime).seconds +
-                            (overpass.falltime -
-                             overpass.risetime).microseconds
-                            / 1000000.0) / frequency)
+        scanlength_seconds = ((overpass.falltime - overpass.risetime).seconds +
+                              (overpass.falltime - overpass.risetime).microseconds / 1000000.0)
 
+        logger.debug("Instrument = %s", self.overpass.instrument)
+        if self.overpass.instrument == 'viirs':
+            sec_scan_duration = 1.779166667
+        elif self.overpass.instrument in ['avhrr', 'avhrr/3', 'avhrr/2']:
+            sec_scan_duration = 1./6.
+        elif self.overpass.instrument == 'ascat':
+            sec_scan_duration = 3.74747474747
+        else:
+            # Assume AVHRR!
+            logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
+            logger.warning(logmsg + "%s", str(self.overpass.instrument))
+            sec_scan_duration = 1./6.
+
+        # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
+        scans_nb = scanlength_seconds/sec_scan_duration
+        # Devide by the scan step to a reduced number of scans:
+        scans_nb = np.ceil(scans_nb/scan_step)
         scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
                                                             np.array([0, self.overpass.number_of_fovs-1]),
-                                                            frequency=frequency)
+                                                            scan_step=scan_step)
 
         self.left_lons = sides_lons[::-1, 0]
         self.left_lats = sides_lats[::-1, 0]
@@ -208,7 +225,6 @@ class SwathBoundary(Boundary):
         self.bottom_lats = lats[0][::-1]
 
         # compute top
-
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.risetime,
                                                 1,

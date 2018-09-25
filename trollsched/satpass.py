@@ -56,7 +56,7 @@ NUMBER_OF_FOVS = {'avhrr': 2048,
                   'mhs': 90,
                   'amsua': 30,
                   'ascat': 42,
-                  'viirs': 3200}
+                  'viirs': 6400}
 
 
 class Mapper(object):
@@ -178,13 +178,22 @@ class Pass(SimplePass):
     def __init__(self, satellite, risetime, falltime, **kwargs):
         SimplePass.__init__(self, satellite, risetime, falltime)
 
+        logger.debug("kwargs: %s", str(kwargs))
         orb = kwargs.get('orb', None)
         uptime = kwargs.get('uptime', None)
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
-        self.number_of_fovs = kwargs.get('number_of_fovs', NUMBER_OF_FOVS.get(instrument, 2048))
-        frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
+        logger.info("instrument: %s", str(instrument))
+        if isinstance(instrument, list):
+            logger.warning("Instrument is a list! Assume avhrr...")
+            instrument = 'avhrr'
+
+        default = NUMBER_OF_FOVS.get(instrument, 2048)
+        self.number_of_fovs = kwargs.get('number_of_fovs', default)
+        # The frequency shouldn't actualy depend on the number of FOVS along a scanline should it!?
+        #frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
+        frequency = kwargs.get('frequency', 100)
 
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
