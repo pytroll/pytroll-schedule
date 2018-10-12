@@ -184,7 +184,7 @@ class Pass(SimplePass):
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
-        logger.info("instrument: %s", str(instrument))
+        # logger.info("instrument: %s", str(instrument))
         if isinstance(instrument, list):
             logger.warning("Instrument is a list! Assume avhrr...")
             instrument = 'avhrr'
