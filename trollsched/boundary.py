@@ -205,16 +205,28 @@ class SwathBoundary(Boundary):
                                                             np.array([0, self.overpass.number_of_fovs-1]),
                                                             scan_step=scan_step)
 
-        self.left_lons = sides_lons[::-1, 0]
-        self.left_lats = sides_lats[::-1, 0]
-        self.right_lons = sides_lons[:, 1]
-        self.right_lats = sides_lats[:, 1]
+        side_shape = sides_lons[::-1, 0].shape[0]
+        nmod = 1
+        if side_shape != scans_nb:
+            nmod = side_shape / scans_nb
+            logger.debug('Number of scan lines (%d) does not match number of scans (%d)',
+                         side_shape, scans_nb)
+            logger.info('Take every %d th element on the sides...', nmod)
+
+        self.left_lons = sides_lons[::-1, 0][::nmod]
+        self.left_lats = sides_lats[::-1, 0][::nmod]
+        self.right_lons = sides_lons[:, 1][::nmod]
+        self.right_lats = sides_lats[:, 1][::nmod]
 
         # compute bottom
         maxval = self.overpass.number_of_fovs
         rest = maxval % frequency
-        reduced = np.hstack(
-            [0, np.arange(rest / 2, maxval, frequency), maxval - 1])
+        mid_range = np.arange(rest / 2, maxval, frequency)
+        if mid_range[0] == 0:
+            start_idx = 1
+        else:
+            start_idx = 0
+        reduced = np.hstack([0, mid_range[start_idx::], maxval - 1])
 
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.falltime,

@@ -260,9 +260,9 @@ class Pass(SimplePass):
         try:
             area_boundary = area_of_interest.poly
         except AttributeError:
-            area_boundary = AreaDefBoundary(area_of_interest,
-                                            frequency=100)
+            area_boundary = AreaDefBoundary(area_of_interest, frequency=100)
             area_boundary = area_boundary.contour_poly
+
         inter = self.boundary.contour_poly.intersection(area_boundary)
         if inter is None:
             return 0
@@ -307,7 +307,8 @@ class Pass(SimplePass):
         logger.debug("Return...")
         return filename
 
-    def show(self, poly=None, labels=None, other_poly=None, proj=None):
+    def show(self, poly=None, labels=None, other_poly=None, proj=None,
+             outline='-r'):
         """Show the current pass on screen (matplotlib, basemap).
         """
         import matplotlib.pyplot as plt
@@ -315,7 +316,7 @@ class Pass(SimplePass):
         proj = proj or {}
         with Mapper(**proj) as mapper:
             # mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, "-r")
+            self.draw(mapper, outline)
             if poly is not None:
                 poly.draw(mapper, "+b")
             if other_poly is not None:
