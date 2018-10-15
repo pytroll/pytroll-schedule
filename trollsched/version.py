@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014, 2018 Martin Raspaud
 
 # Author(s):
 
@@ -23,4 +23,4 @@
 """Version file.
 """
 
-__version__ = "v0.3.3"
+__version__ = "0.3.3"
