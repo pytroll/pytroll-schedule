@@ -226,6 +226,7 @@ class SwathBoundary(Boundary):
             start_idx = 1
         else:
             start_idx = 0
+
         reduced = np.hstack([0, mid_range[start_idx::], maxval - 1])
 
         lons, lats = self.get_instrument_points(self.overpass,

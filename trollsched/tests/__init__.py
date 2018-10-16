@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014 - 2018 PyTroll Community
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +24,7 @@
 """Tests for scheduler.
 """
 
-from trollsched.tests import test_schedule, test_spherical
+from trollsched.tests import (test_schedule, test_spherical, test_satpass)
 
 import unittest
 
@@ -34,5 +35,6 @@ def suite():
     mysuite = unittest.TestSuite()
     mysuite.addTests(test_schedule.suite())
     mysuite.addTests(test_spherical.suite())
+    mysuite.addTests(test_satpass.suite())
 
     return mysuite
