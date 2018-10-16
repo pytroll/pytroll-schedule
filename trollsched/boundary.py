@@ -30,9 +30,8 @@ import logging.handlers
 
 import numpy as np
 
-from pyresample.boundary import Boundary, AreaBoundary, AreaDefBoundary
+from pyresample.boundary import Boundary
 from pyorbital import geoloc, geoloc_instrument_definitions
-from trollsched.spherical import SphPolygon
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +127,7 @@ class SwathBoundary(Boundary):
         side_shape = sides_lons[::-1, 0].shape[0]
         nmod = 1
         if side_shape != scans_nb:
-            nmod = side_shape / scans_nb
+            nmod = side_shape // scans_nb
             logger.debug('Number of scan lines (%d) does not match number of scans (%d)',
                          side_shape, scans_nb)
             logger.info('Take every %d th element on the sides...', nmod)
