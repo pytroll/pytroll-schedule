@@ -42,7 +42,8 @@ from tempfile import mkstemp
 import numpy as np
 
 from pyorbital import orbital, tlefile
-from pyresample.boundary import AreaDefBoundary, SwathBoundary
+from pyresample.boundary import AreaDefBoundary
+from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
 
