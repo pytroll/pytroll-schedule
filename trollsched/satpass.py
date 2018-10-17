@@ -65,6 +65,10 @@ try:
     BASEMAP_NOT_CARTOPY = True
 except ImportError:
     logger.warning("Failed loading Basemap, will try Cartopy instead")
+    import matplotlib.pyplot as plt
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    from trollsched.helper_functions import fill_dark_side
 
 
 class MapperBasemap(object):
@@ -103,8 +107,6 @@ class MapperCartopy(object):
     """
 
     def __init__(self, **proj_info):
-        import cartopy
-        import cartopy.feature as cpf
 
         if not proj_info:
             proj_info = {'central_latitude': 58,
@@ -114,11 +116,30 @@ class MapperCartopy(object):
                          'false_northing': 0,
                          'globe': None}
 
+        fig = plt.figure()
+
+        self._ax = fig.add_subplot(1, 1, 1, projection=ccrs.NearsidePerspective(**proj_info))
+
+        self._ax.add_feature(cfeature.OCEAN, zorder=0)
+        self._ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
+
+        self._ax.set_global()
+        self._ax.gridlines()
+
+    def plot(self, *args, **kwargs):
+        kwargs['transform'] = ccrs.Geodetic()
+        return plt.plot(*args, **kwargs)
+
+    def nightshade(self, utctime, **kwargs):
+        color = kwargs.get('color', 'black')
+        alpha = kwargs.get('alpha', 0.4)
+        fill_dark_side(self._ax, time=utctime, color=color, alpha=alpha)
+
     def __call__(self, *args):
         return args
 
     def __enter__(self):
-        return self.map
+        return self
 
     def __exit__(self, etype, value, tb):
         pass
@@ -329,15 +350,15 @@ class Pass(SimplePass):
         logger.debug("Filename = <%s>", filename)
         import matplotlib as mpl
         mpl.use('Agg')
-        import matplotlib.pyplot as plt
-        plt.clf()
+
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             # self.draw(mapper, "-r")
             logger.debug("Draw: outline = <%s>", outline)
             self.draw(mapper, outline)
             if poly is not None:
-                poly.draw(mapper, "-b")
+                draw(poly, mapper, "-b")
+
         logger.debug("Title = %s", str(self))
         plt.title(str(self))
         for label in labels or []:
@@ -351,16 +372,16 @@ class Pass(SimplePass):
              outline='-r'):
         """Show the current pass on screen (matplotlib, basemap).
         """
-        import matplotlib.pyplot as plt
-        plt.clf()
+        #import matplotlib.pyplot as plt
+        # plt.clf()
         proj = proj or {}
         with Mapper(**proj) as mapper:
-            # mapper.nightshade(self.uptime, alpha=0.2)
+            mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, outline)
             if poly is not None:
-                poly.draw(mapper, "+b")
+                draw(poly, mapper, "+b")
             if other_poly is not None:
-                other_poly.draw(mapper, "-g")
+                draw(other_poly, mapper, "-g")
         plt.title(str(self))
         for label in (labels or []):
             plt.figtext(*label[0], **label[1])
@@ -369,7 +390,7 @@ class Pass(SimplePass):
     def draw(self, mapper, options, **more_options):
         """Draw the pass to the *mapper* object (basemap).
         """
-        self.boundary.contour_poly.draw(mapper, options, **more_options)
+        draw(self.boundary.contour_poly, mapper, options, **more_options)
 
     def print_vcs(self, coords):
         """Should look like this::
@@ -418,6 +439,15 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
 
 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
+
+
+def draw(poly, mapper, options, **more_options):
+    lons = np.rad2deg(poly.lon.take(np.arange(len(poly.lon) + 1),
+                                    mode="wrap"))
+    lats = np.rad2deg(poly.lat.take(np.arange(len(poly.lat) + 1),
+                                    mode="wrap"))
+    rx, ry = mapper(lons, lats)
+    mapper.plot(rx, ry, options, **more_options)
 
 
 def get_aqua_terra_dumps_from_ftp(start_time, end_time, satorb, sat, dump_url=None):
