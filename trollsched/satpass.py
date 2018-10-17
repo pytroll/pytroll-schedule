@@ -58,14 +58,20 @@ NUMBER_OF_FOVS = {'avhrr': 2048,
                   'ascat': 42,
                   'viirs': 6400}
 
+BASEMAP_NOT_CARTOPY = False
+try:
+    from mpl_toolkits.basemap import BasemapXXX
+    BASEMAP_NOT_CARTOPY = True
+except ImportError:
+    logger.warning("Failed loading Basemap, will try Cartopy instead")
 
-class Mapper(object):
+
+class MapperBasemap(object):
 
     """A class to generate nice plots with basemap.
     """
 
     def __init__(self, **proj_info):
-        from mpl_toolkits.basemap import Basemap
 
         if not proj_info:
             proj_info = {'projection': 'nsper',
@@ -88,6 +94,39 @@ class Mapper(object):
 
     def __exit__(self, etype, value, tb):
         pass
+
+
+class MapperCartopy(object):
+
+    """A class to generate nice plots with Cartopy.
+    """
+
+    def __init__(self, **proj_info):
+        import cartopy
+        import cartopy.feature as cpf
+
+        if not proj_info:
+            proj_info = {'central_latitude': 58,
+                         'central_longitude': 16,
+                         'satellite_height': 35785831,
+                         'false_easting': 0,
+                         'false_northing': 0,
+                         'globe': None}
+
+    def __call__(self, *args):
+        return args
+
+    def __enter__(self):
+        return self.map
+
+    def __exit__(self, etype, value, tb):
+        pass
+
+
+if BASEMAP_NOT_CARTOPY:
+    Mapper = MapperBasemap
+else:
+    Mapper = MapperCartopy
 
 
 class SimplePass(object):
@@ -184,7 +223,7 @@ class Pass(SimplePass):
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
-        logger.info("instrument: %s", str(instrument))
+        #logger.info("instrument: %s", str(instrument))
         if isinstance(instrument, list):
             logger.warning("Instrument is a list! Assume avhrr...")
             instrument = 'avhrr'
