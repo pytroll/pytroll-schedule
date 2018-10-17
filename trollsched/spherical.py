@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015, 2018 Martin Raspaud
 
 # Author(s):
 
@@ -27,6 +27,7 @@ base type is a numpy array of size (n, 2) (2 for lon and lats)
 """
 
 import numpy as np
+import pyresample.spherical
 import logging
 
 logger = logging.getLogger(__name__)
@@ -172,6 +173,7 @@ class CCoordinate(object):
     def to_spherical(self):
         return SCoordinate(np.arctan2(self.cart[1], self.cart[0]),
                            np.arcsin(self.cart[2]))
+
 
 EPSILON = 0.0000001
 
@@ -336,217 +338,7 @@ class Arc(object):
         return None, None
 
 
-class SphPolygon(object):
-
-    """Spherical polygon.
-
-    Vertices as a 2-column array of (col 1) lons and (col 2) lats is given in
-    radians.
-    """
-
-    def __init__(self, vertices, radius=1):
-        self.vertices = vertices
-        self.lon = self.vertices[:, 0]
-        self.lat = self.vertices[:, 1]
-        self.radius = radius
-        self.cvertices = np.array([np.cos(self.lat) * np.cos(self.lon),
-                                   np.cos(self.lat) * np.sin(self.lon),
-                                   np.sin(self.lat)]).T * radius
-        self.x__ = self.cvertices[:, 0]
-        self.y__ = self.cvertices[:, 1]
-        self.z__ = self.cvertices[:, 2]
-
-    def invert(self):
-        """Invert the polygon.
-        """
-        self.vertices = np.flipud(self.vertices)
-        self.cvertices = np.flipud(self.cvertices)
-        self.lon = self.vertices[:, 0]
-        self.lat = self.vertices[:, 1]
-        self.x__ = self.cvertices[:, 0]
-        self.y__ = self.cvertices[:, 1]
-        self.z__ = self.cvertices[:, 2]
-
-    def inverse(self):
-        """Return an invesre of the polygon.
-        """
-        return SphPolygon(np.flipud(self.vertices))
-
-    def aedges(self):
-        """Iterator over the edges, in arcs of Coordinates.
-        """
-        for i in range(len(self.lon) - 1):
-            yield Arc(SCoordinate(self.lon[i],
-                                  self.lat[i]),
-                      SCoordinate(self.lon[i + 1],
-                                  self.lat[i + 1]))
-        yield Arc(SCoordinate(self.lon[i + 1],
-                              self.lat[i + 1]),
-                  SCoordinate(self.lon[0],
-                              self.lat[0]))
-
-    def edges(self):
-        """Iterator over the edges, in geographical coordinates.
-        """
-
-        for i in range(len(self.lon) - 1):
-            yield (self.lon[i], self.lat[i]), (self.lon[i + 1], self.lat[i + 1])
-        yield (self.lon[i + 1], self.lat[i + 1]), (self.lon[0], self.lat[0])
-
-    def area(self):
-        """Find the area of a polygon. The inside of the polygon is defined by
-        having the vertices enumerated clockwise around it.
-
-        Uses the algorithm described in [bev1987]_.
-
-        .. [bev1987] , Michael Bevis and Greg Cambareri, "Computing the area of a spherical polygon of arbitrary shape", in *Mathematical Geology*, May 1987, Volume 19, Issue 4, pp 335-346.
-
-        Note: The article mixes up longitudes and latitudes in equation 3! Look
-        at the fortran code appendix for the correct version.
-        """
-
-        phi_a = self.lat
-        phi_p = self.lat.take(np.arange(len(self.lat)) + 1, mode="wrap")
-        phi_b = self.lat.take(np.arange(len(self.lat)) + 2, mode="wrap")
-        lam_a = self.lon
-        lam_p = self.lon.take(np.arange(len(self.lon)) + 1, mode="wrap")
-        lam_b = self.lon.take(np.arange(len(self.lon)) + 2, mode="wrap")
-
-        new_lons_a = np.arctan2(np.sin(lam_a - lam_p) * np.cos(phi_a),
-                                np.sin(phi_a) * np.cos(phi_p)
-                                - np.cos(phi_a) * np.sin(phi_p)
-                                * np.cos(lam_a - lam_p))
-
-        new_lons_b = np.arctan2(np.sin(lam_b - lam_p) * np.cos(phi_b),
-                                np.sin(phi_b) * np.cos(phi_p)
-                                - np.cos(phi_b) * np.sin(phi_p)
-                                * np.cos(lam_b - lam_p))
-
-        alpha = new_lons_a - new_lons_b
-        alpha[alpha < 0] += 2 * np.pi
-
-        return (sum(alpha) - (len(self.lon) - 2) * np.pi) * self.radius ** 2
-
-    def _bool_oper(self, other, sign=1):
-        """(Union by default)
-        """
-
-        # The algorithm works this way: find an intersection between the two
-        # polygons. If none can be found, then the two polygons are either not
-        # overlapping, or one is entirely included in the other. Otherwise,
-        # follow the edges of a polygon until another intersection is
-        # encountered, at which point you start following the edges of the other
-        # polygon, and so on until you come back to the first intersection. In
-        # which direction to follow the edges of the polygons depends if you are
-        # interested in the union or the intersection of the two polygons.
-
-        def rotate_arcs(start_arc, arcs):
-            idx = arcs.index(start_arc)
-            return arcs[idx:] + arcs[:idx]
-
-        arcs1 = [edge for edge in self.aedges()]
-        arcs2 = [edge for edge in other.aedges()]
-
-        nodes = []
-
-        # find the first intersection, to start from.
-        for edge1 in arcs1:
-            inter, edge2 = edge1.get_next_intersection(arcs2)
-            if inter is not None and inter != edge1.end and inter != edge2.end:
-                break
-
-        # if no intersection is found, find out if the one poly is included in
-        # the other.
-        if inter is None:
-            polys = [0, self, other]
-            if self._is_inside(other):
-                return polys[-sign]
-            if other._is_inside(self):
-                return polys[sign]
-
-            return None
-
-        # starting from the intersection, follow the edges of one of the
-        # polygons.
-
-        while True:
-            arcs1 = rotate_arcs(edge1, arcs1)
-            arcs2 = rotate_arcs(edge2, arcs2)
-
-            narcs1 = arcs1 + [edge1]
-            narcs2 = arcs2 + [edge2]
-
-            arc1 = Arc(inter, edge1.end)
-            arc2 = Arc(inter, edge2.end)
-
-            if np.sign(arc1.angle(arc2)) != sign:
-                arcs1, arcs2 = arcs2, arcs1
-                narcs1, narcs2 = narcs2, narcs1
-
-            nodes.append(inter)
-
-            for edge1 in narcs1:
-                inter, edge2 = edge1.get_next_intersection(narcs2, inter)
-                if inter is not None:
-                    break
-                elif len(nodes) > 0 and edge1.end not in [nodes[-1], nodes[0]]:
-                    nodes.append(edge1.end)
-
-            if inter is None and len(nodes) > 2 and nodes[-1] == nodes[0]:
-                nodes = nodes[:-1]
-                break
-            if inter == nodes[0]:
-                break
-
-        return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]))
-
-    def union(self, other):
-        return self._bool_oper(other, 1)
-
-    def intersection(self, other):
-        return self._bool_oper(other, -1)
-
-    def _is_inside(self, other):
-        """Checks if the polygon is entirely inside the other. Should be use
-        with :meth:`inter` first to check if the is a known intersection.
-        """
-        # This one has no intersections
-        # arc = Arc(SCoordinate(self.lon[0],
-        #                       self.lat[0]),
-        #           SCoordinate(self.lon[1],
-        #                       self.lat[1]))
-
-        anti_lon_0 = self.lon[0] + np.pi
-        if anti_lon_0 > np.pi:
-            anti_lon_0 -= np.pi * 2
-
-        anti_lon_1 = self.lon[1] + np.pi
-        if anti_lon_1 > np.pi:
-            anti_lon_1 -= np.pi * 2
-
-        arc1 = Arc(SCoordinate(self.lon[1],
-                               self.lat[1]),
-                   SCoordinate(anti_lon_0,
-                               -self.lat[0]))
-
-        arc2 = Arc(SCoordinate(anti_lon_0,
-                               -self.lat[0]),
-                   SCoordinate(anti_lon_1,
-                               -self.lat[1]))
-
-        arc3 = Arc(SCoordinate(anti_lon_1,
-                               -self.lat[1]),
-                   SCoordinate(self.lon[0],
-                               self.lat[0]))
-
-        other_arcs = [edge for edge in other.aedges()]
-        for arc in [arc1, arc2, arc3]:
-            inter, other_arc = arc.get_next_intersection(other_arcs)
-            if inter is not None:
-                sarc = Arc(arc.start, inter)
-                earc = Arc(inter, other_arc.end)
-                return sarc.angle(earc) < 0
-        return other.area() > (2 * np.pi * other.radius ** 2)
+class SphPolygon(pyresample.spherical.SphPolygon):
 
     def draw(self, mapper, options, **more_options):
         lons = np.rad2deg(self.lon.take(np.arange(len(self.lon) + 1),
@@ -555,9 +347,6 @@ class SphPolygon(object):
                                         mode="wrap"))
         rx, ry = mapper(lons, lats)
         mapper.plot(rx, ry, options, **more_options)
-
-    def __str__(self):
-        return str(np.rad2deg(self.vertices))
 
 
 def get_twilight_poly(utctime):
