@@ -42,7 +42,8 @@ from tempfile import mkstemp
 import numpy as np
 
 from pyorbital import orbital, tlefile
-from trollsched.boundary import AreaDefBoundary, SwathBoundary
+from pyresample.boundary import AreaDefBoundary
+from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +224,7 @@ class Pass(SimplePass):
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
-        #logger.info("instrument: %s", str(instrument))
+        # logger.info("instrument: %s", str(instrument))
         if isinstance(instrument, list):
             logger.warning("Instrument is a list! Assume avhrr...")
             instrument = 'avhrr'
@@ -299,9 +300,9 @@ class Pass(SimplePass):
         try:
             area_boundary = area_of_interest.poly
         except AttributeError:
-            area_boundary = AreaDefBoundary(area_of_interest,
-                                            frequency=100)
+            area_boundary = AreaDefBoundary(area_of_interest, frequency=100)
             area_boundary = area_boundary.contour_poly
+
         inter = self.boundary.contour_poly.intersection(area_boundary)
         if inter is None:
             return 0
@@ -346,7 +347,8 @@ class Pass(SimplePass):
         logger.debug("Return...")
         return filename
 
-    def show(self, poly=None, labels=None, other_poly=None, proj=None):
+    def show(self, poly=None, labels=None, other_poly=None, proj=None,
+             outline='-r'):
         """Show the current pass on screen (matplotlib, basemap).
         """
         import matplotlib.pyplot as plt
@@ -354,7 +356,7 @@ class Pass(SimplePass):
         proj = proj or {}
         with Mapper(**proj) as mapper:
             # mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, "-r")
+            self.draw(mapper, outline)
             if poly is not None:
                 poly.draw(mapper, "+b")
             if other_poly is not None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015, 2016, 2017 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015, 2016, 2017, 2018 Martin Raspaud
 
 # Author(s):
 
@@ -45,7 +45,7 @@ except ImportError:
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
-from trollsched.boundary import AreaDefBoundary
+from pyresample.boundary import AreaDefBoundary
 from trollsched.combine import get_combined_sched
 from trollsched.graph import Graph
 from trollsched.spherical import get_twilight_poly

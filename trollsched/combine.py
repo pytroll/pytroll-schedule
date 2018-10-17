@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016 Martin Raspaud
+# Copyright (c) 2016, 2018 Martin Raspaud
 #
 # Author(s):
 #
@@ -259,7 +259,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             cc = cx[:]
                             cc.insert(0, (
                                 passes_list[statnr][n - 1],
-                                          g.weight(passes_list[statnr].index(p[0]) + 1, n)
+                                g.weight(passes_list[statnr].index(p[0]) + 1, n)
                             ))
                             bufflist.append(cc)
 
@@ -273,7 +273,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                                  passes_list[s].index(c[0]) + 1
                                  )
                                  ) if c != (None, None) else (None, None)
-                                  for s, c in zip(range(statnr + 1, len(parnode)), cx)
+                                for s, c in zip(range(statnr + 1, len(parnode)), cx)
                             ]
                             cc.insert(0, (passes_list[statnr][n - 1], None))
                             bufflist.append(cc)
@@ -355,7 +355,7 @@ def main():
     from pyorbital import astronomy
     from trollsched.spherical import get_twilight_poly
     from trollsched.satpass import get_next_passes, SimplePass
-    from trollsched.boundary import AreaDefBoundary
+    from pyresample.boundary import AreaDefBoundary
     from trollsched.schedule import get_passes_from_xml_file, generate_sch_file, generate_xml_file, parse_datetime
     from trollsched.schedule import combined_stations, build_filename
 
@@ -395,8 +395,8 @@ def main():
 
         pattern_args = {
             "output_dir": opts.output_dir,
-                        "date": start_time.strftime("%Y%m%d"),
-                        "time": start_time.strftime("%H%M%S")
+            "date": start_time.strftime("%Y%m%d"),
+            "time": start_time.strftime("%H%M%S")
         }
         dir_output = build_filename("dir_output", pattern, pattern_args)
         if not os.path.exists(dir_output):

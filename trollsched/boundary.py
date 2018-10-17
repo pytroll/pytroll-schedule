@@ -30,91 +30,10 @@ import logging.handlers
 
 import numpy as np
 
+from pyresample.boundary import Boundary
 from pyorbital import geoloc, geoloc_instrument_definitions
-from trollsched.spherical import SphPolygon
 
 logger = logging.getLogger(__name__)
-
-
-class Boundary(object):
-
-    """Boundary objects.
-    """
-
-    def __init__(self, lons=None, lats=None, frequency=1):
-        self._contour_poly = None
-        if lons is not None:
-            self.lons = lons[::frequency]
-        if lats is not None:
-            self.lats = lats[::frequency]
-
-    def contour(self):
-        return self.lons, self.lats
-
-    @property
-    def contour_poly(self):
-        """Get the Spherical polygon corresponding to the Boundary
-        """
-        if self._contour_poly is None:
-            self._contour_poly = SphPolygon(
-                np.deg2rad(np.vstack(self.contour()).T))
-        return self._contour_poly
-
-    def draw(self, mapper, options, **more_options):
-        """Draw the current boundary on the *mapper*
-        """
-        self.contour_poly.draw(mapper, options, **more_options)
-
-
-class AreaBoundary(Boundary):
-
-    """Area boundary objects.
-    """
-
-    def __init__(self, *sides):
-        Boundary.__init__(self)
-        self.sides_lons, self.sides_lats = zip(*sides)
-        self.sides_lons = list(self.sides_lons)
-        self.sides_lats = list(self.sides_lats)
-
-    def decimate(self, ratio):
-        """Remove some points in the boundaries, but never the corners.
-        """
-        for i in range(len(self.sides_lons)):
-            l = len(self.sides_lons[i])
-            start = int((l % ratio) / 2)
-            points = np.concatenate(([0], np.arange(start, l, ratio), [l - 1]))
-            if points[1] == 0:
-                points = points[1:]
-            if points[-2] == (l - 1):
-                points = points[:-1]
-            self.sides_lons[i] = self.sides_lons[i][points]
-            self.sides_lats[i] = self.sides_lats[i][points]
-
-    def contour(self):
-        """Get the (lons, lats) tuple of the boundary object.
-        """
-        lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
-        lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
-
-        return lons, lats
-
-
-class AreaDefBoundary(AreaBoundary):
-
-    """Boundaries for area definitions (pyresample)
-    """
-
-    def __init__(self, area, frequency=1):
-        lons, lats = area.get_boundary_lonlats()
-        AreaBoundary.__init__(self,
-                              (lons.side1, lats.side1),
-                              (lons.side2, lats.side2),
-                              (lons.side3, lats.side3),
-                              (lons.side4, lats.side4))
-
-        if frequency != 1:
-            self.decimate(frequency)
 
 
 class SwathBoundary(Boundary):
@@ -205,16 +124,29 @@ class SwathBoundary(Boundary):
                                                             np.array([0, self.overpass.number_of_fovs-1]),
                                                             scan_step=scan_step)
 
-        self.left_lons = sides_lons[::-1, 0]
-        self.left_lats = sides_lats[::-1, 0]
-        self.right_lons = sides_lons[:, 1]
-        self.right_lats = sides_lats[:, 1]
+        side_shape = sides_lons[::-1, 0].shape[0]
+        nmod = 1
+        if side_shape != scans_nb:
+            nmod = side_shape // scans_nb
+            logger.debug('Number of scan lines (%d) does not match number of scans (%d)',
+                         side_shape, scans_nb)
+            logger.info('Take every %d th element on the sides...', nmod)
+
+        self.left_lons = sides_lons[::-1, 0][::nmod]
+        self.left_lats = sides_lats[::-1, 0][::nmod]
+        self.right_lons = sides_lons[:, 1][::nmod]
+        self.right_lats = sides_lats[:, 1][::nmod]
 
         # compute bottom
         maxval = self.overpass.number_of_fovs
         rest = maxval % frequency
-        reduced = np.hstack(
-            [0, np.arange(rest / 2, maxval, frequency), maxval - 1])
+        mid_range = np.arange(rest / 2, maxval, frequency)
+        if mid_range[0] == 0:
+            start_idx = 1
+        else:
+            start_idx = 0
+
+        reduced = np.hstack([0, mid_range[start_idx::], maxval - 1])
 
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.falltime,
