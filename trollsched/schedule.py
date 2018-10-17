@@ -47,8 +47,7 @@ from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
 from pyresample.boundary import AreaDefBoundary
 from trollsched.combine import get_combined_sched
-from trollsched.graph import Graph
-from trollsched.spherical import get_twilight_poly
+
 
 logger = logging.getLogger(__name__)
 

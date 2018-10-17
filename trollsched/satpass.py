@@ -44,6 +44,10 @@ from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
 
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -54,10 +58,6 @@ except ImportError:
     from mpl_toolkits.basemap import Basemap
     logger.warning("Failed loading Cartopy, will try Basemap instead")
     BASEMAP_NOT_CARTOPY = True
-
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
 
 
 # shortest allowed pass in minutes
@@ -259,7 +259,7 @@ class Pass(SimplePass):
         default = NUMBER_OF_FOVS.get(instrument, 2048)
         self.number_of_fovs = kwargs.get('number_of_fovs', default)
         # The frequency shouldn't actualy depend on the number of FOVS along a scanline should it!?
-        #frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
+        # frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
         frequency = kwargs.get('frequency', 100)
 
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)

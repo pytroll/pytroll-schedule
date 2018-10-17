@@ -48,21 +48,21 @@ class SwathBoundary(Boundary):
         instrument = overpass.instrument
         logger.debug("Instrument: %s", str(instrument))
         # cheating at the moment.
-        scan_angle = 55.37
+        # scan_angle = 55.37
         if instrument == "modis":
-            scan_angle = 55.0
+            # scan_angle = 55.0
             instrument = "avhrr"
         elif instrument == "viirs":
-            scan_angle = 55.84
+            # scan_angle = 55.84
             instrument = "viirs"
         elif instrument == "iasi":
-            scan_angle = 48.3
+            # scan_angle = 48.3
             instrument = "avhrr"
         elif overpass.satellite == "noaa 16":
-            scan_angle = 55.25
+            # scan_angle = 55.25
             instrument = "avhrr"
         else:
-            scan_angle = 55.25
+            # scan_angle = 55.25
             instrument = "avhrr"
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
