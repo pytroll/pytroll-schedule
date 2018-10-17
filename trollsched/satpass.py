@@ -30,15 +30,14 @@ import operator
 import os
 import six
 import socket
-from functools import reduce
+from functools import reduce as fctools_reduce
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
-from functools import reduce
+
 from datetime import datetime, timedelta
 from tempfile import mkstemp
-
 import numpy as np
 
 from pyorbital import orbital, tlefile
@@ -46,6 +45,20 @@ from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
+
+try:
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    BASEMAP_NOT_CARTOPY = False
+except ImportError:
+    from mpl_toolkits.basemap import Basemap
+    logger.warning("Failed loading Cartopy, will try Basemap instead")
+    BASEMAP_NOT_CARTOPY = True
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 
 # shortest allowed pass in minutes
 MIN_PASS = 4
@@ -58,17 +71,6 @@ NUMBER_OF_FOVS = {'avhrr': 2048,
                   'amsua': 30,
                   'ascat': 42,
                   'viirs': 6400}
-
-BASEMAP_NOT_CARTOPY = False
-try:
-    from mpl_toolkits.basemap import BasemapXXX
-    BASEMAP_NOT_CARTOPY = True
-except ImportError:
-    logger.warning("Failed loading Basemap, will try Cartopy instead")
-    import matplotlib.pyplot as plt
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
-    from trollsched.helper_functions import fill_dark_side
 
 
 class MapperBasemap(object):
@@ -116,12 +118,13 @@ class MapperCartopy(object):
                          'false_northing': 0,
                          'globe': None}
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8, 6))
 
         self._ax = fig.add_subplot(1, 1, 1, projection=ccrs.NearsidePerspective(**proj_info))
 
         self._ax.add_feature(cfeature.OCEAN, zorder=0)
         self._ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
+        self._ax.add_feature(cfeature.BORDERS, zorder=0)
 
         self._ax.set_global()
         self._ax.gridlines()
@@ -131,6 +134,9 @@ class MapperCartopy(object):
         return plt.plot(*args, **kwargs)
 
     def nightshade(self, utctime, **kwargs):
+
+        from trollsched.helper_functions import fill_dark_side
+
         color = kwargs.get('color', 'black')
         alpha = kwargs.get('alpha', 0.4)
         fill_dark_side(self._ax, time=utctime, color=color, alpha=alpha)
@@ -348,9 +354,6 @@ class Pass(SimplePass):
             return filename
 
         logger.debug("Filename = <%s>", filename)
-        import matplotlib as mpl
-        mpl.use('Agg')
-
         with Mapper() as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
             # self.draw(mapper, "-r")
@@ -372,8 +375,6 @@ class Pass(SimplePass):
              outline='-r'):
         """Show the current pass on screen (matplotlib, basemap).
         """
-        #import matplotlib.pyplot as plt
-        # plt.clf()
         proj = proj or {}
         with Mapper(**proj) as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
@@ -696,7 +697,7 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
                                 for rtime, ftime, uptime in passlist
                                 if ftime - rtime > timedelta(minutes=MIN_PASS)]
 
-    return set(reduce(operator.concat, list(passes.values())))
+    return set(fctools_reduce(operator.concat, list(passes.values())))
 
 
 def main():
