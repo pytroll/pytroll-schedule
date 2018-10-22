@@ -146,7 +146,7 @@ class SwathBoundary(Boundary):
         else:
             start_idx = 0
 
-        reduced = np.hstack([0, mid_range[start_idx::], maxval - 1])
+        reduced = np.hstack([0, mid_range[start_idx::], maxval - 1]).astype('int')
 
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.falltime,
