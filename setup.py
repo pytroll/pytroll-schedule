@@ -32,7 +32,7 @@ import sys
 
 version = imp.load_source('trollsched.version', 'trollsched/version.py')
 
-requires = ['numpy', 'pyresample', 'pyorbital']
+requires = ['numpy', 'pyresample', 'pyorbital', 'cartopy']
 test_requires = ['satpy']
 
 if sys.version_info < (2, 7):
