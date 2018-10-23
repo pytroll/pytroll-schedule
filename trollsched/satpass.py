@@ -45,7 +45,8 @@ from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
 
 import matplotlib as mpl
-mpl.use('Agg')
+MPL_BACKEND = mpl.get_backend()
+mpl.use(MPL_BACKEND)
 import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
@@ -340,6 +341,10 @@ class Pass(SimplePass):
                  outline='-r'):
         """Save the pass as a figure. Filename is automatically generated.
         """
+        mpl.use('Agg')
+        import matplotlib.pyplot as plt
+        # plt.clf()
+
         logger.debug("Save fig " + str(self))
         rise = self.risetime.strftime("%Y%m%d%H%M%S")
         fall = self.falltime.strftime("%Y%m%d%H%M%S")
@@ -380,7 +385,7 @@ class Pass(SimplePass):
             mapper.nightshade(self.uptime, alpha=0.2)
             self.draw(mapper, outline)
             if poly is not None:
-                draw(poly, mapper, "+b")
+                draw(poly, mapper, "-b")
             if other_poly is not None:
                 draw(other_poly, mapper, "-g")
         plt.title(str(self))
