@@ -10,5 +10,5 @@ install:
 script: coverage run --source=trollsched setup.py test
 before_install:
 - sudo apt-get update -qq
-- sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran
+- sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran python-tk python3-tk tk-dev
 after_success: coveralls
