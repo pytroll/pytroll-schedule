@@ -6,6 +6,7 @@ install:
 - pip install .
 - pip install coveralls
 - pip install pykdtree
+- pip install matplotlib
 script: coverage run --source=trollsched setup.py test
 before_install:
 - sudo apt-get update -qq
