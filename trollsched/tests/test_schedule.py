@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014, 2018 Martin Raspaud
 
 # Author(s):
 
@@ -28,7 +28,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from trollsched.schedule import fermia, fermib, conflicting_passes
-from trollsched.boundary import AreaBoundary
+from pyresample.boundary import AreaBoundary
 
 # class TestPass(unittest.TestCase):
 
