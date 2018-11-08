@@ -30,10 +30,11 @@ import operator
 import os
 import six
 import socket
+from functools import reduce
 try:
-    from urlparse import urlparse
-except ImportError:
     from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 from functools import reduce
 from datetime import datetime, timedelta
 from tempfile import mkstemp
@@ -51,6 +52,12 @@ MIN_PASS = 4
 
 # DRL still use the name JPSS-1 in the TLEs:
 NOAA20_NAME = {'NOAA-20': 'JPSS-1'}
+
+NUMBER_OF_FOVS = {'avhrr': 2048,
+                  'mhs': 90,
+                  'amsua': 30,
+                  'ascat': 42,
+                  'viirs': 3200}
 
 
 class Mapper(object):
@@ -114,10 +121,10 @@ class SimplePass(object):
         return ((self.risetime < other.falltime + delay) and
                 (self.falltime + delay > other.risetime))
 
-    def __lt__(self,other):
+    def __lt__(self, other):
         return self.uptime < other.uptime
 
-    def __gt__(self,other):
+    def __gt__(self, other):
         return self.uptime > other.uptime
 
     def __cmp__(self, other):
@@ -169,17 +176,26 @@ class Pass(SimplePass):
     """A pass: satellite, risetime, falltime, (orbital)
     """
 
-    def __init__(self, satellite, risetime, falltime, orb=None, uptime=None,
-                 instrument=None, tle1=None, tle2=None):
+    def __init__(self, satellite, risetime, falltime, **kwargs):
         SimplePass.__init__(self, satellite, risetime, falltime)
+
+        orb = kwargs.get('orb', None)
+        uptime = kwargs.get('uptime', None)
+        instrument = kwargs.get('instrument', None)
+        tle1 = kwargs.get('tle1', None)
+        tle2 = kwargs.get('tle2', None)
+        self.number_of_fovs = kwargs.get('number_of_fovs', NUMBER_OF_FOVS.get(instrument, 2048))
+        frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
+
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
+        self.frequency = frequency
         if orb:
             self.orb = orb
         else:
             try:
                 self.orb = orbital.Orbital(satellite, line1=tle1, line2=tle2)
-            except KeyError, err:
+            except KeyError as err:
                 logger.debug('Failed in PyOrbital: %s', str(err))
                 self.orb = orbital.Orbital(NOAA20_NAME.get(satellite, satellite), line1=tle1, line2=tle2)
                 logger.info('Using satellite name %s instead', str(NOAA20_NAME.get(satellite, satellite)))
@@ -189,12 +205,12 @@ class Pass(SimplePass):
     @property
     def boundary(self):
         if not self._boundary:
-            self._boundary = SwathBoundary(self)
+            self._boundary = SwathBoundary(self, frequency=self.frequency)
         return self._boundary
 
     @boundary.setter
     def boundary(self, value):
-        self._boundary = SwathBoundary(self)
+        self._boundary = SwathBoundary(self, frequency=self.frequency)
 
     def pass_direction(self):
         """Get the direction of the pass in (ascending, descending).
@@ -237,7 +253,7 @@ class Pass(SimplePass):
             area_boundary = area_of_interest.poly
         except AttributeError:
             area_boundary = AreaDefBoundary(area_of_interest,
-                                            frequency=500)
+                                            frequency=100)
             area_boundary = area_boundary.contour_poly
         inter = self.boundary.contour_poly.intersection(area_boundary)
         if inter is None:
@@ -245,7 +261,8 @@ class Pass(SimplePass):
         return inter.area() / area_boundary.area()
 
     def save_fig(self, poly=None, directory="/tmp/plots",
-                 overwrite=False, labels=None, extension=".png", plot_parameters=None, plot_title=None):
+                 overwrite=False, labels=None, extension=".png",
+                 plot_parameters=None, plot_title=None, outline='-r'):
         """Save the pass as a figure. Filename is automatically generated.
         """
         logger.debug("Save fig " + str(self))
@@ -261,6 +278,7 @@ class Pass(SimplePass):
         if not overwrite and os.path.exists(filename):
             return filename
 
+        logger.debug("Filename = <%s>", filename)
         import matplotlib as mpl
         mpl.use('Agg')
         import matplotlib.pyplot as plt
@@ -268,18 +286,24 @@ class Pass(SimplePass):
         plot_parameters = plot_parameters or {}
         with Mapper(**plot_parameters) as mapper:
             mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, "-r")
+            # self.draw(mapper, "-r")
+            logger.debug("Draw: outline = <%s>", outline)
+            self.draw(mapper, outline)
             if poly is not None:
                 poly.draw(mapper, "-b")
-        
+
         _plot_title = {'satellite_name': self.satellite.name.upper(),
                       'risetime': self.risetime,
                       'falltime': self.falltime}
         pt = plot_title or plot_parameters.get('plot_title',str(self))
-        plt.title(str(compose(pt, _plot_title)))
+        title = str(compose(pt, _plot_title))
+        plt.title(title)
+        logger.debug("Title = %s", title)
         for label in labels or []:
             plt.figtext(*label[0], **label[1])
+        logger.debug("Save plot...")
         plt.savefig(filename)
+        logger.debug("Return...")
         return filename
 
     def show(self, poly=None, labels=None, other_poly=None, proj=None):
@@ -447,6 +471,7 @@ NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des 
             rec=rec,
             direction=self.pass_direction().capitalize()[:3])
         return line
+
 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
@@ -698,14 +723,19 @@ def get_next_passes(satellites, utctime, forward, coords, tle_file=None, aqua_te
 
         else:
             passes[sat.name] = [Pass(sat, rtime, ftime, satorb, uptime, instrument)
-                           for rtime, ftime, uptime in passlist
-                           if ftime - rtime > timedelta(minutes=min_pass)]
+                                for rtime, ftime, uptime in passlist
+                                if ftime - rtime > timedelta(minutes=min_pass)]
 
     return set(reduce(operator.concat, list(passes.values())))
 
-if __name__ == '__main__':
+
+def main():
     from trollsched.satpass import get_next_passes
     passes = get_next_passes(
         ["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))
     for p in passes:
         p.save_fig(directory="/tmp/plots/")
+
+
+if __name__ == '__main__':
+    main()

@@ -27,7 +27,13 @@ import logging
 from collections import Mapping
 from six.moves.configparser import ConfigParser
 
-from trollsched import satpass
+try:
+    from trollsched import schedule
+    from trollsched import satpass
+except ImportError:
+    import schedule
+    import satpass
+
 from pyresample import utils as resample_utils
 
 logger = logging.getLogger("trollsched")
@@ -70,7 +76,6 @@ def read_config_cfg(filename):
     """Read the config file *filename* and replace the values in global
     variables.
     """
-    from trollsched import schedule
     cfg = ConfigParser()
     cfg.read(filename)
 
@@ -117,7 +122,6 @@ def read_config_cfg(filename):
 
 def read_config_yaml(filename):
     """Read the yaml file *filename* and create a scheduler."""
-    from trollsched import schedule
 
     cfg = read_yaml_file(filename)
     satellites = {sat_name: schedule.Satellite(sat_name, **sat_params)

@@ -76,6 +76,17 @@ sat_dict = {'npp': 'Suomi NPP',
             'noaa20': 'NOAA-20',
             }
 
+INSTRUMENT = {'Suomi NPP': 'viirs',
+              'NOAA-20': 'viirs',
+              'Aqua': 'modis',
+              'Terra': 'modis',
+              'NOAA 19': 'avhrr',
+              'NOAA 18': 'avhrr',
+              'NOAA 15': 'avhrr',
+              'Metop-A': 'avhrr',
+              'Metop-B': 'avhrr',
+              'Metop-C': 'avhrr'}
+
 
 def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
 
@@ -86,14 +97,20 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
         if child.tag == 'pass':
             LOG.debug("Pass: %s", str(child.attrib))
             platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
+            instrument = INSTRUMENT.get(platform_name)
+            if not instrument:
+                raise AttributeError('Instrument unknown! Platform = %s' % platform_name)
+
             if platform_name in excluded_satellites:
+                LOG.debug('Platform name excluded: %s', platform_name)
                 continue
             try:
                 overpass = Pass(platform_name,
                                 datetime.strptime(child.attrib['start-time'],
                                                   '%Y-%m-%d-%H:%M:%S'),
                                 datetime.strptime(child.attrib['end-time'],
-                                                  '%Y-%m-%d-%H:%M:%S'))
+                                                  '%Y-%m-%d-%H:%M:%S'),
+                                instrument=instrument)
             except KeyError as err:
                 LOG.warning('Failed on satellite %s: %s', platform_name, str(err))
                 continue
@@ -101,6 +118,7 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
             overpass.save_fig(directory=plotdir)
             child.set('img', overpass.fig)
             child.set('rec', 'True')
+            LOG.debug("Plot saved - plotdir = %s, platform_name = %s", plotdir, platform_name)
 
     tree.write(output_file, encoding='utf-8', xml_declaration=True)
 
@@ -151,6 +169,7 @@ def schedule_page_generator(excluded_satellite_list=None):
                 if len(keys) > 5:
                     keys.sort()
                     job_registry.pop(keys[0])
+
 
 if __name__ == "__main__":
 

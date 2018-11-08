@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015, 2017 Martin Raspaud
+# Copyright (c) 2014-2018 PyTroll community
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -133,7 +134,7 @@ class SwathBoundary(Boundary):
             instrument = "avhrr"
         elif instrument == "viirs":
             scan_angle = 55.84
-            instrument = "avhrr"
+            instrument = "viirs"
         elif instrument == "iasi":
             scan_angle = 48.3
             instrument = "avhrr"
@@ -147,6 +148,10 @@ class SwathBoundary(Boundary):
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
         if instrument == "olci":
+            sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument == 'ascat':
+            sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument == 'viirs':
             sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             sgeom = instrument_fun(scans_nb, scanpoints,
@@ -183,8 +188,7 @@ class SwathBoundary(Boundary):
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
-                                                            np.array(
-                                                                [0, 2047]),
+                                                            np.array([0, self.overpass.number_of_fovs-1]),
                                                             frequency=frequency)
 
         self.left_lons = sides_lons[::-1, 0]
@@ -193,9 +197,7 @@ class SwathBoundary(Boundary):
         self.right_lats = sides_lats[:, 1]
 
         # compute bottom
-
-        # avhrr
-        maxval = 2048
+        maxval = self.overpass.number_of_fovs
         rest = maxval % frequency
         reduced = np.hstack(
             [0, np.arange(rest / 2, maxval, frequency), maxval - 1])
