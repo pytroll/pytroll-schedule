@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2016 Martin Raspaud
+# Copyright (c) 2014 - 2018 PyTroll Community
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,6 +33,7 @@ import sys
 version = imp.load_source('trollsched.version', 'trollsched/version.py')
 
 requires = ['numpy', 'pyresample', 'pyorbital']
+test_requires = ['satpy']
 
 if sys.version_info < (2, 7):
     # multiprocessing is not in the standard library
@@ -56,6 +58,7 @@ setup(name='pytroll-schedule',
                               'compare_scheds = trollsched.compare:run']},
       scripts=['generate_schedule_xmlpage.py'],
       packages=['trollsched'],
+      tests_require=test_requires,
       install_requires=requires,
       zip_safe=False,
       )
