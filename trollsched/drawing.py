@@ -148,7 +148,7 @@ def save_fig(pass_obj,
     """
     mpl.use('Agg')
     import matplotlib.pyplot as plt
-    # plt.clf()
+    plt.clf()
 
     logger.debug("Save fig " + str(pass_obj))
     rise = pass_obj.risetime.strftime("%Y%m%d%H%M%S")
