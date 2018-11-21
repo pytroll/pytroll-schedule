@@ -29,7 +29,6 @@ import logging.handlers
 import numpy as np
 import matplotlib as mpl
 MPL_BACKEND = mpl.get_backend()
-# mpl.use('Agg')
 
 logger = logging.getLogger(__name__)
 
@@ -38,14 +37,8 @@ try:
     import cartopy.feature as cfeature
     BASEMAP_NOT_CARTOPY = False
 except ImportError:
+    logger.warning("Failed loading Cartopy, will try Basemap instead")
     BASEMAP_NOT_CARTOPY = True
-    # logger.warning("Failed loading Cartopy, will try Basemap instead")
-    # try:
-    #     from mpl_toolkits.basemap import Basemap
-    #     BASEMAP_NOT_CARTOPY = True
-    # except ImportError:
-    #     BASEMAP_NOT_CARTOPY = None
-    #     logger.warning("Failed loading Cartopy or Basemap. No plotting available!")
 
 
 class MapperBasemap(object):
@@ -54,9 +47,6 @@ class MapperBasemap(object):
 
     def __init__(self, **proj_info):
 
-        #import matplotlib as mpl
-        # mpl.use('Agg')
-        # mpl.use(MPL_BACKEND)
         from mpl_toolkits.basemap import Basemap
 
         if not proj_info:
@@ -143,10 +133,8 @@ class MapperCartopy(object):
 
 if BASEMAP_NOT_CARTOPY:
     Mapper = MapperBasemap
-elif BASEMAP_NOT_CARTOPY == False:
+else:
     Mapper = MapperCartopy
-# else:
-#    Mapper = None
 
 
 def save_fig(pass_obj,

@@ -44,11 +44,9 @@ import numpy as np
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
-
+from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
 logger = logging.getLogger(__name__)
-
-from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
 
 class SimplePass(object):
@@ -76,8 +74,7 @@ class SimplePass(object):
     def overlaps(self, other, delay=timedelta(seconds=0)):
         """Check if two passes overlap in time.
         """
-        return ((self.risetime < other.falltime + delay)
-                and (self.falltime + delay > other.risetime))
+        return ((self.risetime < other.falltime + delay) and (self.falltime + delay > other.risetime))
 
     def __lt__(self, other):
         return self.uptime < other.uptime
@@ -101,14 +98,12 @@ class SimplePass(object):
         # b) the time difference between rise- and fall-times.
         if other is not None and isinstance(self, Pass) and isinstance(
                 other, Pass):
-            return (self.satellite.name == other.satellite.name
-                    and self.orb.get_orbit_number(
-                        self.risetime) == other.orb.get_orbit_number(
-                            other.risetime))
+            return (self.satellite.name == other.satellite.name and
+                    self.orb.get_orbit_number(self.risetime) == other.orb.get_orbit_number(other.risetime))
         tol = timedelta(seconds=1)
-        return (other is not None and abs(self.risetime - other.risetime) < tol
-                and abs(self.falltime - other.falltime) < tol
-                and self.satellite == other.satellite)
+        return (other is not None and abs(self.risetime - other.risetime) < tol and
+                abs(self.falltime - other.falltime) < tol and
+                self.satellite == other.satellite)
 
     def __str__(self):
         return (self.satellite.name + " " + self.risetime.isoformat() + " " +
@@ -235,9 +230,10 @@ class Pass(SimplePass):
     def print_vcs(self, coords):
         """Should look like this::
 
-
-        # SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration
-        # NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des N   N   none                  0 19580101 000000 20131204 001450 20131204 003003 15.2
+        # SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName
+        #      OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration
+        # NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des N   N   none
+        #      0 19580101 000000 20131204 001450 20131204 003003 15.2
 
 
         """
@@ -518,15 +514,15 @@ def get_next_passes(satellites,
                 add = True
                 for dump_pass in dumps:
                     if dump_pass.overlaps(overpass):
-                        if (dump_pass.uptime < overpass.uptime
-                                and dump_pass.falltime > overpass.risetime):
+                        if (dump_pass.uptime < overpass.uptime and
+                                dump_pass.falltime > overpass.risetime):
                             logger.debug("adjusting " + str(overpass) +
                                          " to new risetime " +
                                          str(dump_pass.falltime))
                             overpass.risetime = dump_pass.falltime
                             overpass.boundary = SwathBoundary(overpass)
-                        elif (dump_pass.uptime >= overpass.uptime
-                              and dump_pass.risetime < overpass.falltime):
+                        elif (dump_pass.uptime >= overpass.uptime and
+                              dump_pass.risetime < overpass.falltime):
                             logger.debug("adjusting " + str(overpass) +
                                          " to new falltime " +
                                          str(dump_pass.risetime))
