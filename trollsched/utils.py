@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2017 Alexander Maul
+# Copyright (c) 2017, 2018 Alexander Maul
 #
 # Author(s):
 #
@@ -19,9 +19,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Combine several graphs.
+
+"""Utility functions and config reading for the pytroll-scheduler
 """
-import os
+
 import yaml
 import logging
 from collections import Mapping
@@ -29,12 +30,9 @@ from six.moves.configparser import ConfigParser
 
 try:
     from trollsched import schedule
-    from trollsched import satpass
 except ImportError:
     import schedule
-    import satpass
 
-from pyresample import utils as resample_utils
 
 logger = logging.getLogger("trollsched")
 

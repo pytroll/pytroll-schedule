@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2015, 2016, 2017, 2018 Martin Raspaud
+# Copyright (c) 2014 - 2018 PyTroll Community
 # Author(s):
+
 #   Martin Raspaud <martin.raspaud@smhi.se>
 #   Alexander Maul <alexander.maul@dwd.de>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,129 +45,10 @@ from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
 
-import matplotlib as mpl
-MPL_BACKEND = mpl.get_backend()
-mpl.use(MPL_BACKEND)
-import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
 
-try:
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
-    BASEMAP_NOT_CARTOPY = False
-except ImportError:
-    logger.warning("Failed loading Cartopy, will try Basemap instead")
-    try:
-        from mpl_toolkits.basemap import Basemap
-        BASEMAP_NOT_CARTOPY = True
-    except ImportError:
-        BASEMAP_NOT_CARTOPY = None
-        logger.warning("Failed loading Cartopy or Basemap. No plotting available!")
-
-# shortest allowed pass in minutes
-MIN_PASS = 4
-
-# DRL still use the name JPSS-1 in the TLEs:
-NOAA20_NAME = {'NOAA-20': 'JPSS-1'}
-
-NUMBER_OF_FOVS = {
-    'avhrr': 2048,
-    'mhs': 90,
-    'amsua': 30,
-    'ascat': 42,
-    'viirs': 6400
-}
-
-
-class MapperBasemap(object):
-    """A class to generate nice plots with basemap.
-    """
-
-    def __init__(self, **proj_info):
-
-        if not proj_info:
-            proj_info = {
-                'projection': 'nsper',
-                'lat_0': 58,
-                'lon_0': 16,
-                'resolution': 'l',
-                'area_thresh': 1000.
-            }
-
-        self.map = Basemap(**proj_info)
-
-        self.map.drawcoastlines()
-        self.map.drawcountries()
-
-        self.map.drawmapboundary(fill_color='white')
-
-        self.map.drawmeridians(np.arange(0, 360, 30))
-        self.map.drawparallels(np.arange(-90, 90, 30))
-
-    def __enter__(self):
-        return self.map
-
-    def __exit__(self, etype, value, tb):
-        pass
-
-
-class MapperCartopy(object):
-    """A class to generate nice plots with Cartopy.
-    """
-
-    def __init__(self, **proj_info):
-
-        if not proj_info:
-            proj_info = {
-                'central_latitude': 58,
-                'central_longitude': 16,
-                'satellite_height': 35785831,
-                'false_easting': 0,
-                'false_northing': 0,
-                'globe': None
-            }
-
-        fig = plt.figure(figsize=(8, 6))
-
-        self._ax = fig.add_subplot(
-            1, 1, 1, projection=ccrs.NearsidePerspective(**proj_info))
-
-        self._ax.add_feature(cfeature.OCEAN, zorder=0)
-        self._ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
-        self._ax.add_feature(cfeature.BORDERS, zorder=0)
-
-        self._ax.set_global()
-        self._ax.gridlines()
-
-    def plot(self, *args, **kwargs):
-        kwargs['transform'] = ccrs.Geodetic()
-        return plt.plot(*args, **kwargs)
-
-    def nightshade(self, utctime, **kwargs):
-
-        from trollsched.helper_functions import fill_dark_side
-
-        color = kwargs.get('color', 'black')
-        alpha = kwargs.get('alpha', 0.4)
-        fill_dark_side(self._ax, time=utctime, color=color, alpha=alpha)
-
-    def __call__(self, *args):
-        return args
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, etype, value, tb):
-        pass
-
-
-if BASEMAP_NOT_CARTOPY:
-    Mapper = MapperBasemap
-elif BASEMAP_NOT_CARTOPY == False:
-    Mapper = MapperCartopy
-else:
-    Mapper = None
+from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
 
 class SimplePass(object):
@@ -349,83 +232,12 @@ class Pass(SimplePass):
             return 0
         return inter.area() / area_boundary.area()
 
-    def save_fig(self,
-                 poly=None,
-                 directory="/tmp/plots",
-                 overwrite=False,
-                 labels=None,
-                 extension=".png",
-                 outline='-r'):
-        """Save the pass as a figure. Filename is automatically generated.
-        """
-        mpl.use('Agg')
-        import matplotlib.pyplot as plt
-        # plt.clf()
-
-        logger.debug("Save fig " + str(self))
-        rise = self.risetime.strftime("%Y%m%d%H%M%S")
-        fall = self.falltime.strftime("%Y%m%d%H%M%S")
-        if not os.path.exists(directory):
-            logger.debug("Create plot dir " + directory)
-            os.makedirs(directory)
-        filename = os.path.join(
-            directory,
-            (rise + self.satellite.name.replace(" ", "_") + fall + extension))
-
-        self.fig = filename
-        if not overwrite and os.path.exists(filename):
-            return filename
-
-        logger.debug("Filename = <%s>", filename)
-        with Mapper() as mapper:
-            mapper.nightshade(self.uptime, alpha=0.2)
-            # self.draw(mapper, "-r")
-            logger.debug("Draw: outline = <%s>", outline)
-            self.draw(mapper, outline)
-            if poly is not None:
-                draw(poly, mapper, "-b")
-
-        logger.debug("Title = %s", str(self))
-        plt.title(str(self))
-        for label in labels or []:
-            plt.figtext(*label[0], **label[1])
-        logger.debug("Save plot...")
-        plt.savefig(filename)
-        logger.debug("Return...")
-        return filename
-
-    def show(self,
-             poly=None,
-             labels=None,
-             other_poly=None,
-             proj=None,
-             outline='-r'):
-        """Show the current pass on screen (matplotlib, basemap).
-        """
-        proj = proj or {}
-        with Mapper(**proj) as mapper:
-            mapper.nightshade(self.uptime, alpha=0.2)
-            self.draw(mapper, outline)
-            if poly is not None:
-                draw(poly, mapper, "-b")
-            if other_poly is not None:
-                draw(other_poly, mapper, "-g")
-        plt.title(str(self))
-        for label in (labels or []):
-            plt.figtext(*label[0], **label[1])
-        plt.show()
-
-    def draw(self, mapper, options, **more_options):
-        """Draw the pass to the *mapper* object (basemap).
-        """
-        draw(self.boundary.contour_poly, mapper, options, **more_options)
-
     def print_vcs(self, coords):
         """Should look like this::
 
 
-        #SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration
-        #NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des N   N   none                  0 19580101 000000 20131204 001450 20131204 003003 15.2
+        # SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration
+        # NOAA 19           24845 20131204 001450 20131204 003003 32.0 15.2 225.6 Y   Des N   N   none                  0 19580101 000000 20131204 001450 20131204 003003 15.2
 
 
         """
@@ -467,13 +279,6 @@ class Pass(SimplePass):
 
 
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
-
-
-def draw(poly, mapper, options, **more_options):
-    lons = np.rad2deg(poly.lon.take(np.arange(len(poly.lon) + 1), mode="wrap"))
-    lats = np.rad2deg(poly.lat.take(np.arange(len(poly.lat) + 1), mode="wrap"))
-    rx, ry = mapper(lons, lats)
-    mapper.plot(rx, ry, options, **more_options)
 
 
 def get_aqua_terra_dumps_from_ftp(start_time,
@@ -741,15 +546,3 @@ def get_next_passes(satellites,
             ]
 
     return set(fctools_reduce(operator.concat, list(passes.values())))
-
-
-def main():
-    from trollsched.satpass import get_next_passes
-    passes = get_next_passes(["noaa 19", "suomi npp"], datetime.now(), 24,
-                             (16, 58, 0))
-    for p in passes:
-        p.save_fig(directory="/tmp/plots/")
-
-
-if __name__ == '__main__':
-    main()
