@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015, 2018 Martin Raspaud
 
 # Author(s):
 
@@ -225,7 +225,7 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(135),
                                np.deg2rad(89)))
 
-        self.assertEqual(np.rad2deg(arc1.angle(arc2)), -44.996385007218926)
+        self.assertAlmostEqual(np.rad2deg(arc1.angle(arc2)), -44.996385007218926, 13)
 
         arc1 = Arc(SCoordinate(np.deg2rad(112.5),
                                np.deg2rad(89.234600944314138)),
@@ -234,7 +234,7 @@ class TestArc(unittest.TestCase):
                                np.deg2rad(89.234600944314138)),
                    SCoordinate(np.deg2rad(45), np.deg2rad(89)))
 
-        self.assertEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883)
+        self.assertAlmostEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883, 13)
 
         arc1 = Arc(SCoordinate(0, 0), SCoordinate(1, 0))
         self.assertEqual(arc1.angle(arc1), 0)
@@ -705,6 +705,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(TestSphericalPolygon))
 
     return mysuite
+
 
 if __name__ == '__main__':
     unittest.main()

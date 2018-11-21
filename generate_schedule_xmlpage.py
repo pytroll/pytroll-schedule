@@ -27,7 +27,6 @@ schedule request xml files and then triggers the png and xml output generation.
 """
 
 import os
-#from ConfigParser import RawConfigParser
 from six.moves.configparser import RawConfigParser
 import logging
 LOG = logging.getLogger(__name__)
@@ -197,3 +196,8 @@ if __name__ == "__main__":
     LOG.info("Exclude the following satellite platforms: %s", str(no_sats))
 
     schedule_page_generator(no_sats)
+
+    # uri = "/data/temp/AdamD/xxx/2018-10-22-00-42-28-acquisition-schedule-confirmation-nrk.xml"
+    # urlobj = urlparse(uri)
+    # process_xmlrequest(urlobj.path,
+    #                    OPTIONS['path_plots'], OPTIONS['xmlfilepath'], no_sats)

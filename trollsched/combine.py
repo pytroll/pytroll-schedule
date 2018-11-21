@@ -349,14 +349,7 @@ def main():
     import logging.handlers
     import os
     import pickle
-    from pprint import pformat
-    import numpy as np
-    from pyresample import utils
-    from pyorbital import astronomy
-    from trollsched.spherical import get_twilight_poly
-    from trollsched.satpass import get_next_passes, SimplePass
-    from pyresample.boundary import AreaDefBoundary
-    from trollsched.schedule import get_passes_from_xml_file, generate_sch_file, generate_xml_file, parse_datetime
+    from trollsched.schedule import parse_datetime
     from trollsched.schedule import combined_stations, build_filename
 
     try:
