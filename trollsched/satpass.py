@@ -55,9 +55,13 @@ try:
     import cartopy.feature as cfeature
     BASEMAP_NOT_CARTOPY = False
 except ImportError:
-    from mpl_toolkits.basemap import Basemap
     logger.warning("Failed loading Cartopy, will try Basemap instead")
-    BASEMAP_NOT_CARTOPY = True
+    try:
+        from mpl_toolkits.basemap import Basemap
+        BASEMAP_NOT_CARTOPY = True
+    except ImportError:
+        BASEMAP_NOT_CARTOPY = None
+        logger.warning("Failed loading Cartopy or Basemap. No plotting available!")
 
 # shortest allowed pass in minutes
 MIN_PASS = 4
@@ -158,8 +162,10 @@ class MapperCartopy(object):
 
 if BASEMAP_NOT_CARTOPY:
     Mapper = MapperBasemap
-else:
+elif BASEMAP_NOT_CARTOPY == False:
     Mapper = MapperCartopy
+else:
+    Mapper = None
 
 
 class SimplePass(object):
