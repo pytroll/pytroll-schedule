@@ -29,6 +29,21 @@ schedule request xml files and then triggers the png and xml output generation.
 import os
 from six.moves.configparser import RawConfigParser
 import logging
+import sys
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+import posttroll.subscriber
+from posttroll.publisher import Publish
+import xml.etree.ElementTree as ET
+from datetime import datetime
+import os.path
+
+from trollsched.satpass import Pass
+from trollsched.drawing import save_fig
+from trollsched import (SATELLITE_NAMES, INSTRUMENT)
+
 LOG = logging.getLogger(__name__)
 
 CFG_DIR = os.environ.get('PYTROLL_SCHEDULE_CONFIG_DIR', './')
@@ -49,21 +64,6 @@ _DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 #: Default log format
 _DEFAULT_LOG_FORMAT = '[%(levelname)s: %(asctime)s : %(name)s] %(message)s'
-
-import sys
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-import posttroll.subscriber
-from posttroll.publisher import Publish
-import xml.etree.ElementTree as ET
-from datetime import datetime
-import os.path
-
-from trollsched.satpass import Pass
-from trollsched.drawing import save_fig
-from trollsched import (SATELLITE_NAMES, INSTRUMENT)
 
 
 def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
