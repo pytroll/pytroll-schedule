@@ -74,6 +74,7 @@ sat_dict = {'npp': 'Suomi NPP',
             'metopb': 'Metop-B',
             'metopa': 'Metop-A',
             'noaa20': 'NOAA-20',
+            'fengyun3d': 'FY-3D'
             }
 
 INSTRUMENT = {'Suomi NPP': 'viirs',
@@ -85,7 +86,8 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'NOAA 15': 'avhrr',
               'Metop-A': 'avhrr',
               'Metop-B': 'avhrr',
-              'Metop-C': 'avhrr'}
+              'Metop-C': 'avhrr',
+              'FY-3D': 'avhrr'}
 
 
 def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
@@ -99,7 +101,8 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
             platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
             instrument = INSTRUMENT.get(platform_name)
             if not instrument:
-                raise AttributeError('Instrument unknown! Platform = %s' % platform_name)
+                LOG.error('Instrument unknown! Platform = %s', platform_name)
+                continue
 
             if platform_name in excluded_satellites:
                 LOG.debug('Platform name excluded: %s', platform_name)
