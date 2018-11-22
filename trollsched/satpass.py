@@ -389,6 +389,10 @@ def get_next_passes(satellites,
         tlefile.fetch(tle_file)
 
     for sat in satellites:
+        if not hasattr(sat, 'name'):
+            from trollsched.schedule import Satellite
+            sat = Satellite(sat, 0, 0)
+
         satorb = orbital.Orbital(sat.name, tle_file=tle_file)
         orbitals[sat.name] = satorb
         passlist = satorb.get_next_passes(utctime, forward, *coords)
@@ -404,7 +408,7 @@ def get_next_passes(satellites,
         # take care of metop-a
         if sat.name == "metop-a":
             metop_passes = [
-                Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist if rtime < ftime
             ]
 
@@ -424,7 +428,7 @@ def get_next_passes(satellites,
             passlist_wp = satorb.get_next_passes(
                 utctime - timedelta(minutes=30), forward + 1, *wpcoords)
             wp_passes = [
-                Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist_wp if rtime < ftime
             ]
 
@@ -432,19 +436,19 @@ def get_next_passes(satellites,
             passlist_sv = satorb.get_next_passes(
                 utctime - timedelta(minutes=30), forward + 1, *svcoords)
             sv_passes = [
-                Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist_sv if rtime < ftime
             ]
             pfcoords = (-147.43, 65.12, 0.51)
             passlist_pf = satorb.get_next_passes(
                 utctime - timedelta(minutes=30), forward + 1, *pfcoords)
             pf_passes = [
-                Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist_pf if rtime < ftime
             ]
 
             aqua_passes = [
-                Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist if rtime < ftime
             ]
 
@@ -536,7 +540,7 @@ def get_next_passes(satellites,
 
         else:
             passes[sat.name] = [
-                Pass(sat, rtime, ftime, satorb, uptime, instrument)
+                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist
                 if ftime - rtime > timedelta(minutes=MIN_PASS)
             ]

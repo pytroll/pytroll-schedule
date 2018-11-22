@@ -178,8 +178,6 @@ def save_fig(pass_obj,
         plt.figtext(*label[0], **label[1])
     logger.debug("Save plot...")
     plt.savefig(filename)
-    plt.clf()
-    del plt
     logger.debug("Return...")
     return filename
 
