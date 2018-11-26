@@ -149,6 +149,8 @@ class Pass(SimplePass):
         # frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
         frequency = kwargs.get('frequency', 100)
 
+        self.station = None
+        self.max_elev = None
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
         self.frequency = frequency
@@ -282,7 +284,7 @@ def get_aqua_terra_dumps_from_ftp(start_time,
                                   satorb,
                                   sat,
                                   dump_url=None):
-    logger.info("Fetch %s dump info from internet" % sat.name)
+    logger.info("Fetch %s dump info from internet", str(sat.name))
     if isinstance(dump_url, six.text_type):
         url = urlparse(dump_url % sat.name)
     else:
@@ -355,7 +357,7 @@ def get_aqua_terra_dumps_from_ftp(start_time,
             los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
             if los >= start_time and aos <= end_time:
                 uptime = aos + (los - aos) / 2
-                overpass = Pass(sat, aos, los, satorb, uptime, "modis")
+                overpass = Pass(sat, aos, los, orb=satorb, uptime=uptime, instrument="modis")
                 overpass.station = station
                 overpass.max_elev = elev
                 dumps.append(overpass)
