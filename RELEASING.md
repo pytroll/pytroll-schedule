@@ -15,7 +15,7 @@ Don't forget to commit!
 5. Create a tag with the new version number, starting with a 'v', eg:
 
 ```
-git tag v0.5.1 -m "Version 0.5.1
+git tag v0.5.1 -m "Version 0.5.1"
 ```
 
 See [semver.org](http://semver.org/) on how to write a version number.
