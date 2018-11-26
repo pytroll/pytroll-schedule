@@ -61,3 +61,7 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-B': 'avhrr',
               'Metop-C': 'avhrr',
               'FY-3D': 'avhrr'}
+
+from .version import get_versions
+__version__ = get_versions()['version']
+del get_versions

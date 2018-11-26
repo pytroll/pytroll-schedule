@@ -29,6 +29,7 @@ import multiprocessing
 from setuptools import setup
 import imp
 import sys
+import versioneer
 
 version = imp.load_source('trollsched.version', 'trollsched/version.py')
 
@@ -40,7 +41,8 @@ if sys.version_info < (2, 7):
     requires.append('argparse')
 
 setup(name='pytroll-schedule',
-      version=version.__version__,
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       description='Scheduling satellite passes in Python',
       author='Martin Raspaud',
       author_email='martin.raspaud@smhi.se',
