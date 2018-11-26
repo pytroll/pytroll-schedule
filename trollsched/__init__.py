@@ -23,6 +23,11 @@
 """Package file.
 """
 
+from .version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
+
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
@@ -61,7 +66,3 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-B': 'avhrr',
               'Metop-C': 'avhrr',
               'FY-3D': 'avhrr'}
-
-from .version import get_versions
-__version__ = get_versions()['version']
-del get_versions
