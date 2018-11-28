@@ -31,6 +31,16 @@ script: coverage run --source=trollsched setup.py test
 after_success:
 - if [[ $PYTHON_VERSION == 3.6 ]]; then coveralls; fi
 #
+deploy:
+  - provider: pypi
+    user: adybbroe
+    password:
+      secure: SY0qo7sZXDjDx0DHvuXrHvL9VTAulgU/T33d6UWXf469jT9DOexuZ2VYLgJbYQen5FSe5JmQE0ZMdId1cb8IPP/77qCgQK6f0lRDa43fSYXhcD+fHzlQskievJrwamkRYx6WBrJbwGAKBNinUgNSaTdbh9XUugziGFiOHUfVppM=
+    distributions: sdist
+    skip_existing: true
+    on:
+      tags: true
+      repo: pytroll/pytroll-schedule
 notifications:
   slack:
     rooms:

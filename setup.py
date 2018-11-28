@@ -26,10 +26,8 @@
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 import multiprocessing
 from setuptools import setup
-import imp
 import sys
-
-version = imp.load_source('trollsched.version', 'trollsched/version.py')
+import versioneer
 
 requires = ['numpy', 'pyresample', 'pyorbital']
 test_requires = ['satpy']
@@ -39,7 +37,8 @@ if sys.version_info < (2, 7):
     requires.append('argparse')
 
 setup(name='pytroll-schedule',
-      version=version.__version__,
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       description='Scheduling satellite passes in Python',
       author='Martin Raspaud',
       author_email='martin.raspaud@smhi.se',

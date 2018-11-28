@@ -23,6 +23,11 @@
 """Package file.
 """
 
+from .version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
+
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
