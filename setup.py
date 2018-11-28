@@ -25,13 +25,9 @@
 """
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 import multiprocessing
-
 from setuptools import setup
-import imp
 import sys
 import versioneer
-
-version = imp.load_source('trollsched.version', 'trollsched/version.py')
 
 requires = ['numpy', 'pyresample', 'pyorbital']
 test_requires = ['satpy']
