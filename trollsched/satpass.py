@@ -48,6 +48,9 @@ from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
 logger = logging.getLogger(__name__)
 
+VIIRS_PLATFORM_NAMES = ['SUOMI NPP', 'SNPP',
+                        'NOAA-20', 'NOAA 20']
+
 
 class SimplePass(object):
     """A pass: satellite, risetime, falltime, (orbital)
@@ -149,6 +152,8 @@ class Pass(SimplePass):
         # frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
         frequency = kwargs.get('frequency', 100)
 
+        self.station = None
+        self.max_elev = None
         self.uptime = uptime or (risetime + (falltime - risetime) / 2)
         self.instrument = instrument
         self.frequency = frequency
@@ -277,12 +282,38 @@ class Pass(SimplePass):
 HOST = "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 
-def get_aqua_terra_dumps_from_ftp(start_time,
-                                  end_time,
-                                  satorb,
-                                  sat,
-                                  dump_url=None):
-    logger.info("Fetch %s dump info from internet" % sat.name)
+def get_aqua_terra_dumps(start_time,
+                         end_time,
+                         satorb,
+                         sat,
+                         dump_url=None):
+    """
+    Get the Terra and Aqua overpasses taking into account the fact that when
+    there are global dumps there is no direct broadcast
+    """
+
+    # Get the list of aqua/terra dump info:
+    dump_info_list = get_aqua_terra_dumpdata_from_ftp(sat, dump_url)
+
+    dumps = []
+    for elem in dump_info_list:
+        if elem['los'] >= start_time and elem['aos'] <= end_time:
+            uptime = elem['aos'] + (elem['los'] - elem['aos']) / 2
+            overpass = Pass(sat, elem['aos'], elem['los'],
+                            orb=satorb, uptime=uptime, instrument="modis")
+            overpass.station = elem['station']
+            overpass.max_elev = elem['elev']
+            dumps.append(overpass)
+
+    return dumps
+
+
+def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
+    """
+    Get the information on the internet on the actual global dumps of Terra and Aqua
+    """
+
+    logger.info("Fetch %s dump info from internet", str(sat.name))
     if isinstance(dump_url, six.text_type):
         url = urlparse(dump_url % sat.name)
     else:
@@ -347,18 +378,27 @@ def get_aqua_terra_dumps_from_ftp(start_time,
                 for line in fd_:
                     lines.append(line)
 
+        # for line in lines[7::2]:
+        #     if line.strip() == '':
+        #         break
+        #     station, aos, elev, los = line.split()[:4]
+        #     aos = datetime.strptime(aos, "%Y:%j:%H:%M:%S")
+        #     los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
+        #     if los >= start_time and aos <= end_time:
+        #         uptime = aos + (los - aos) / 2
+        #         overpass = Pass(sat, aos, los, orb=satorb, uptime=uptime, instrument="modis")
+        #         overpass.station = station
+        #         overpass.max_elev = elev
+        #         dumps.append(overpass)
+
         for line in lines[7::2]:
             if line.strip() == '':
                 break
             station, aos, elev, los = line.split()[:4]
             aos = datetime.strptime(aos, "%Y:%j:%H:%M:%S")
             los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
-            if los >= start_time and aos <= end_time:
-                uptime = aos + (los - aos) / 2
-                overpass = Pass(sat, aos, los, satorb, uptime, "modis")
-                overpass.station = station
-                overpass.max_elev = elev
-                dumps.append(overpass)
+            dumps.append({'station': station, 'aos': aos, 'los': los, 'elev': elev})
+
     if f is not None:
         f.quit()
     return dumps
@@ -376,7 +416,6 @@ def get_next_passes(satellites,
     otherwise.
     """
     passes = {}
-    orbitals = {}
 
     if tle_file is None and 'TLES' not in os.environ:
         fp_, tle_file = mkstemp(prefix="tle", dir="/tmp")
@@ -394,33 +433,22 @@ def get_next_passes(satellites,
             sat = Satellite(sat, 0, 0)
 
         satorb = orbital.Orbital(sat.name, tle_file=tle_file)
-        orbitals[sat.name] = satorb
         passlist = satorb.get_next_passes(utctime, forward, *coords)
+
         if sat.name.lower().startswith("metop") or sat.name.lower().startswith(
                 "noaa"):
             instrument = "avhrr"
         elif sat.name in ["aqua", "terra"]:
             instrument = "modis"
-        elif sat.name.endswith("npp") or sat.name.startswith("jpss"):
+        elif sat.name.upper() in VIIRS_PLATFORM_NAMES:
             instrument = "viirs"
         else:
             instrument = "unknown"
+
         # take care of metop-a
         if sat.name == "metop-a":
-            metop_passes = [
-                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
-                for rtime, ftime, uptime in passlist if rtime < ftime
-            ]
+            passes["metop-a"] = get_metopa_passes(sat, passlist, satorb,  instrument)
 
-            passes["metop-a"] = []
-            for overpass in metop_passes:
-                if overpass.pass_direction() == "descending":
-                    new_rise = overpass.slsearch(60)
-                    if new_rise is not None and new_rise < overpass.falltime:
-                        overpass.risetime = new_rise
-                        overpass.boundary = SwathBoundary(overpass)
-                        if overpass.seconds() > MIN_PASS * 60:
-                            passes["metop-a"].append(overpass)
         # take care of aqua (dumps in svalbard and poker flat)
         elif sat.name in ["aqua", "terra"] and aqua_terra_dumps:
 
@@ -452,10 +480,9 @@ def get_next_passes(satellites,
                 for rtime, ftime, uptime in passlist if rtime < ftime
             ]
 
-            dumps = get_aqua_terra_dumps_from_ftp(
-                utctime - timedelta(minutes=30),
-                utctime + timedelta(hours=forward + 0.5), satorb, sat,
-                aqua_terra_dumps)
+            dumps = get_aqua_terra_dumps(utctime - timedelta(minutes=30),
+                                         utctime + timedelta(hours=forward + 0.5),
+                                         satorb, sat, aqua_terra_dumps)
 
             # remove the known dumps
             for dump in dumps:
@@ -546,3 +573,27 @@ def get_next_passes(satellites,
             ]
 
     return set(fctools_reduce(operator.concat, list(passes.values())))
+
+
+def get_metopa_passes(sat, passlist, satorb, instrument):
+    """Get the Metop-A passes, taking care that Metop-A doesn't transmit to ground
+    everywhere
+
+    """
+
+    metop_passes = [
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
+        for rtime, ftime, uptime in passlist if rtime < ftime
+    ]
+
+    passes = []
+    for overpass in metop_passes:
+        if overpass.pass_direction() == "descending":
+            new_rise = overpass.slsearch(60)
+            if new_rise is not None and new_rise < overpass.falltime:
+                overpass.risetime = new_rise
+                overpass.boundary = SwathBoundary(overpass)
+                if overpass.seconds() > MIN_PASS * 60:
+                    passes.append(overpass)
+
+    return passes
