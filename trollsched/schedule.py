@@ -26,27 +26,24 @@
 import logging
 import logging.handlers
 import os
-from six.moves.configparser import ConfigParser
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
-from six.moves.configparser import ConfigParser
+
 from datetime import datetime, timedelta
 from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
 from pyresample import utils as resample_utils
-try:
-    from trollsched import utils
-except ImportError:
-    import utils
+from trollsched import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
 from pyresample.boundary import AreaDefBoundary
 from trollsched.combine import get_combined_sched
+from trollsched.drawing import save_fig
 
 
 logger = logging.getLogger(__name__)
@@ -577,8 +574,10 @@ def parse_datetime(strtime):
 
 
 def save_passes(allpasses, poly, output_dir):
-    for passage in allpasses:
-        passage.save_fig(poly, directory=output_dir)
+    """Save overpass plots to png and store in directory *output_dir*
+    """
+    for overpass in allpasses:
+        save_fig(overpass, poly=poly, directory=output_dir)
 
 
 def get_passes_from_xml_file(filename):

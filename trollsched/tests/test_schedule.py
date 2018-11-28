@@ -23,12 +23,26 @@
 """Test the schedule module.
 """
 
-import unittest
+import sys
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
+
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
+
 import numpy as np
 from datetime import datetime, timedelta
 
 from trollsched.schedule import fermia, fermib, conflicting_passes
 from pyresample.boundary import AreaBoundary
+from pyorbital import orbital
+from trollsched.satpass import get_next_passes
+from trollsched.satpass import Pass
+
 
 # class TestPass(unittest.TestCase):
 
@@ -141,14 +155,121 @@ class TestUtils(unittest.TestCase):
 
 class TestAll(unittest.TestCase):
 
-    def test_gen(self):
-        utctime = datetime(2014, 1, 18, 14, 20)
-        satellites = ["noaa 19", "noaa 18", "noaa 16", "noaa 15",
-                      "metop-a", "metop-b",
-                      "terra", "aqua",
-                      "suomi npp"]
-        tle_file = "./tle_20140120.txt"
-        #allpasses = get_next_passes(satellites, utctime, 2, tle_file)
+    def setUp(self):
+        """Set up"""
+        from pyorbital import orbital
+
+        self.utctime = datetime(2018, 11, 28, 10, 0)
+        self.satellites = ["noaa-20", ]
+        self.tles = {'noaa-20': {}}
+        self.tles['noaa-20']['line1'] = "1 43013U 17073A   18331.00000000  .00000048  00000-0  22749-4 0  3056"
+        self.tles['noaa-20']['line2'] = "2 43013 098.7413 267.0121 0001419 108.5818 058.1314 14.19552981053016"
+
+        self.aquas = ["aqua", ]
+        self.tles['aqua'] = {}
+        self.tles['aqua']['line1'] = "1 27424U 02022A   18332.21220389  .00000093  00000-0  30754-4 0  9994"
+        self.tles['aqua']['line2'] = "2 27424  98.2121 270.9368 0001045 343.9225 155.8703 14.57111538881313"
+
+        self.orb = orbital.Orbital('NOAA 20',
+                                   line1=self.tles['noaa-20']['line1'],
+                                   line2=self.tles['noaa-20']['line2'])
+        self.aqua_orb = orbital.Orbital('AQUA',
+                                        line1=self.tles['aqua']['line1'],
+                                        line2=self.tles['aqua']['line2'])
+
+        self.dumpdata = [
+            {'los': datetime(2018, 11, 28, 10, 0, 30), 'station': 'USAK05',
+             'aos': datetime(2018, 11, 28, 9, 50, 24), 'elev': '11.188'},
+            {'los': datetime(2018, 11, 28, 11, 39, 47), 'station': 'AS2',
+             'aos': datetime(2018, 11, 28, 11, 28, 51), 'elev': '39.235'},
+            {'los': datetime(2018, 11, 28, 13, 19, 8), 'station': 'USAK05',
+             'aos': datetime(2018, 11, 28, 13, 6, 36), 'elev': '58.249'},
+            {'los': datetime(2018, 11, 28, 14, 54, 25), 'station': 'AS2',
+             'aos': datetime(2018, 11, 28, 14, 44, 37), 'elev': '22.403'},
+            {'los': datetime(2018, 11, 28, 16, 27, 22), 'station': 'SG1',
+             'aos': datetime(2018, 11, 28, 16, 16, 58), 'elev': '9.521'}
+        ]
+
+    @patch('os.path.exists')
+    def test_get_next_passes_viirs(self, exists):
+
+        exists.return_code = True
+
+        # mymock:
+        with patch('pyorbital.orbital.Orbital') as mymock:
+            instance = mymock.return_value
+            instance.get_next_passes = self.orb.get_next_passes
+
+            allpasses = get_next_passes(self.satellites, self.utctime,
+                                        4, (16, 58, 0), tle_file='nonexisting')
+
+            self.assertEqual(len(allpasses), 2)
+
+            n20pass1 = allpasses.pop()
+
+            rt1 = datetime(2018, 11, 28, 10, 53, 42, 79483)
+            ft1 = datetime(2018, 11, 28, 11, 9, 6, 916787)
+            rt2 = datetime(2018, 11, 28, 12, 34, 44, 667963)
+            ft2 = datetime(2018, 11, 28, 12, 49, 25, 134067)
+
+            dt_ = n20pass1.risetime - rt1
+            self.assertAlmostEqual(dt_.seconds, 0)
+
+            dt_ = n20pass1.falltime - ft1
+            self.assertAlmostEqual(dt_.seconds, 0)
+
+            n20pass2 = allpasses.pop()
+
+            dt_ = n20pass2.risetime - rt2
+            self.assertAlmostEqual(dt_.seconds, 0)
+
+            dt_ = n20pass2.falltime - ft2
+            self.assertAlmostEqual(dt_.seconds, 0)
+
+    @patch('os.path.exists')
+    @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
+    def test_get_next_passes_with_aquadumps(self, dumps_from_ftp, exists):
+        dumps_from_ftp.return_value = self.dumpdata
+        exists.return_code = True
+
+        # mymock:
+        with patch('pyorbital.orbital.Orbital') as mymock:
+            instance = mymock.return_value
+            instance.get_next_passes = self.aqua_orb.get_next_passes
+
+            allpasses = get_next_passes(self.aquas, self.utctime,
+                                        6, (16, 58, 0), tle_file='nonexisting',
+                                        aqua_terra_dumps=True)
+
+            self.assertEqual(len(allpasses), 3)
+
+            rt1 = datetime(2018, 11, 28, 11, 12, 8, 728455)
+            ft1 = datetime(2018, 11, 28, 11, 26, 8, 250021)
+            rt2 = datetime(2018, 11, 28, 12, 50, 46, 574975)
+            ft2 = datetime(2018, 11, 28, 13, 3, 53, 262440)
+            rt3 = datetime(2018, 11, 28, 14, 33, 33, 973194)
+            ft3 = datetime(2018, 11, 28, 14, 40, 10, 761405)
+
+            for mypass in allpasses:
+                dtmin = timedelta(seconds=10000000)
+                for risetime in [rt1, rt2, rt3]:
+                    dt_ = abs(mypass.risetime - risetime)
+                    if dt_ < dtmin:
+                        dtmin = dt_
+
+                self.assertAlmostEqual(dtmin.seconds, 0)
+
+                dtmin = timedelta(seconds=10000000)
+                for falltime in [ft1, ft2, ft3]:
+                    dt_ = abs(mypass.falltime - falltime)
+                    if dt_ < dtmin:
+                        dtmin = dt_
+
+                self.assertAlmostEqual(dtmin.seconds, 0)
+
+    def tearDown(self):
+        """Clean up"""
+        pass
 
 
 def suite():
