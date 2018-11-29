@@ -23,6 +23,13 @@
 """Test the schedule module.
 """
 
+import numpy as np
+from datetime import datetime, timedelta
+
+from trollsched.schedule import fermia, fermib, conflicting_passes
+from pyresample.boundary import AreaBoundary
+from trollsched.satpass import get_next_passes
+
 import sys
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -33,15 +40,6 @@ try:
     from unittest.mock import patch
 except ImportError:
     from mock import patch
-
-import numpy as np
-from datetime import datetime, timedelta
-
-from trollsched.schedule import fermia, fermib, conflicting_passes
-from pyresample.boundary import AreaBoundary
-from pyorbital import orbital
-from trollsched.satpass import get_next_passes
-from trollsched.satpass import Pass
 
 
 # class TestPass(unittest.TestCase):

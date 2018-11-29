@@ -121,7 +121,6 @@ class SwathBoundary(Boundary):
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
         scans_nb = scanlength_seconds/sec_scan_duration * along_scan_reduce_factor
         # Devide by the scan step to a reduced number of scans:
-        #scans_nb = np.ceil(scans_nb/scan_step)
         scans_nb = np.floor(scans_nb/scan_step)
         scans_nb = int(max(scans_nb, 1))
 
