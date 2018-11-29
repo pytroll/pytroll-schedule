@@ -63,13 +63,14 @@ class SwathBoundary(Boundary):
             instrument = "avhrr"
         else:
             scan_angle = 55.25
-            instrument = "avhrr"
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
         if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
-        elif instrument in ["olci", "ascat"]:
+        elif instrument in ["ascat", ]:
+            sgeom = instrument_fun(scans_nb)
+        elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
@@ -111,6 +112,8 @@ class SwathBoundary(Boundary):
         elif self.overpass.instrument == 'ascat':
             sec_scan_duration = 3.74747474747
             along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 1
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
@@ -170,11 +173,6 @@ class SwathBoundary(Boundary):
 
         self.top_lons = lons[0]
         self.top_lats = lats[0]
-
-        # self.top_lons = np.array([])
-        # self.top_lats = np.array([])
-        # self.bottom_lons = np.array([])
-        # self.bottom_lats = np.array([])
 
     def decimate(self, ratio):
         l = len(self.top_lons)
