@@ -50,24 +50,27 @@ class SwathBoundary(Boundary):
         # cheating at the moment.
         # scan_angle = 55.37
         if instrument == "modis":
-            # scan_angle = 55.0
+            scan_angle = 55.0
             instrument = "avhrr"
         elif instrument == "viirs":
-            # scan_angle = 55.84
+            scan_angle = 55.84
             instrument = "viirs"
         elif instrument == "iasi":
-            # scan_angle = 48.3
+            scan_angle = 48.3
             instrument = "avhrr"
         elif overpass.satellite == "noaa 16":
-            # scan_angle = 55.25
+            scan_angle = 55.25
             instrument = "avhrr"
         else:
-            # scan_angle = 55.25
-            instrument = "avhrr"
+            scan_angle = 55.25
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
-        if instrument in ["olci", "avhrr", "ascat", "avhrr/3", "avhrr/2"]:
+        if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
+            sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
+        elif instrument in ["ascat", ]:
+            sgeom = instrument_fun(scans_nb)
+        elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
@@ -86,7 +89,7 @@ class SwathBoundary(Boundary):
         return (lons.reshape(-1, len(scanpoints)),
                 lats.reshape(-1, len(scanpoints)))
 
-    def __init__(self, overpass, scan_step=20, frequency=100):
+    def __init__(self, overpass, scan_step=50, frequency=200):
         # compute area covered by pass
 
         Boundary.__init__(self)
@@ -102,20 +105,26 @@ class SwathBoundary(Boundary):
         logger.debug("Instrument = %s", self.overpass.instrument)
         if self.overpass.instrument == 'viirs':
             sec_scan_duration = 1.779166667
+            along_scan_reduce_factor = 1
         elif self.overpass.instrument in ['avhrr', 'avhrr/3', 'avhrr/2']:
             sec_scan_duration = 1./6.
+            along_scan_reduce_factor = 0.1
         elif self.overpass.instrument == 'ascat':
             sec_scan_duration = 3.74747474747
+            along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 1
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
             logger.warning(logmsg + "%s", str(self.overpass.instrument))
             sec_scan_duration = 1./6.
+            along_scan_reduce_factor = 0.1
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
-        scans_nb = scanlength_seconds/sec_scan_duration
+        scans_nb = scanlength_seconds/sec_scan_duration * along_scan_reduce_factor
         # Devide by the scan step to a reduced number of scans:
-        scans_nb = np.ceil(scans_nb/scan_step)
+        scans_nb = np.floor(scans_nb/scan_step)
         scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,

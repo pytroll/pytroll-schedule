@@ -150,7 +150,7 @@ class Pass(SimplePass):
         self.number_of_fovs = kwargs.get('number_of_fovs', default)
         # The frequency shouldn't actualy depend on the number of FOVS along a scanline should it!?
         # frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
-        frequency = kwargs.get('frequency', 100)
+        frequency = kwargs.get('frequency', 300)
 
         self.station = None
         self.max_elev = None
