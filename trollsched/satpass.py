@@ -444,7 +444,7 @@ def get_next_passes(satellites,
         elif sat.name in ["aqua", "terra"] and aqua_terra_dumps:
             # Take care of aqua (dumps in svalbard and poker flat)
             # Get the Terra/Aqua passes and fill the passes dict:
-            get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb)
+            get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps)
 
         else:
             if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
@@ -487,7 +487,7 @@ def get_metopa_passes(sat, passlist, satorb):
     return passes
 
 
-def get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb):
+def get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps):
     """Get the Terra/Aqua passes, taking care that Terra and Aqua do not have
        direct broadcast when there are global dumps
 
