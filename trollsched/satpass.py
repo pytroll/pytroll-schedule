@@ -414,6 +414,8 @@ def get_next_passes(satellites,
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
     otherwise.
+
+    Metop-A, Terra and Aqua need special treatment due to downlink restrictions.
     """
     passes = {}
 
@@ -435,137 +437,23 @@ def get_next_passes(satellites,
         satorb = orbital.Orbital(sat.name, tle_file=tle_file)
         passlist = satorb.get_next_passes(utctime, forward, *coords)
 
-        if sat.name.lower().startswith("metop") or sat.name.lower().startswith(
-                "noaa"):
-            instrument = "avhrr"
-        elif sat.name in ["aqua", "terra"]:
-            instrument = "modis"
-        elif sat.name.upper() in VIIRS_PLATFORM_NAMES:
-            instrument = "viirs"
-        else:
-            instrument = "unknown"
-
-        # take care of metop-a
         if sat.name == "metop-a":
-            passes["metop-a"] = get_metopa_passes(sat, passlist, satorb,  instrument)
+            # Take care of metop-a
+            passes["metop-a"] = get_metopa_passes(sat, passlist, satorb)
 
-        # take care of aqua (dumps in svalbard and poker flat)
         elif sat.name in ["aqua", "terra"] and aqua_terra_dumps:
-
-            wpcoords = (-75.457222, 37.938611, 0)
-            passlist_wp = satorb.get_next_passes(
-                utctime - timedelta(minutes=30), forward + 1, *wpcoords)
-            wp_passes = [
-                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
-                for rtime, ftime, uptime in passlist_wp if rtime < ftime
-            ]
-
-            svcoords = (15.399, 78.228, 0)
-            passlist_sv = satorb.get_next_passes(
-                utctime - timedelta(minutes=30), forward + 1, *svcoords)
-            sv_passes = [
-                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
-                for rtime, ftime, uptime in passlist_sv if rtime < ftime
-            ]
-            pfcoords = (-147.43, 65.12, 0.51)
-            passlist_pf = satorb.get_next_passes(
-                utctime - timedelta(minutes=30), forward + 1, *pfcoords)
-            pf_passes = [
-                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
-                for rtime, ftime, uptime in passlist_pf if rtime < ftime
-            ]
-
-            aqua_passes = [
-                Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
-                for rtime, ftime, uptime in passlist if rtime < ftime
-            ]
-
-            dumps = get_aqua_terra_dumps(utctime - timedelta(minutes=30),
-                                         utctime + timedelta(hours=forward + 0.5),
-                                         satorb, sat, aqua_terra_dumps)
-
-            # remove the known dumps
-            for dump in dumps:
-                # print "*", dump.station, dump, dump.max_elev
-                logger.debug("dump from ftp: " + str((dump.station, dump,
-                                                      dump.max_elev)))
-                for i, sv_pass in enumerate(sv_passes):
-                    if sv_pass.overlaps(dump, timedelta(minutes=40)):
-                        sv_elevation = sv_pass.orb.get_observer_look(
-                            sv_pass.uptime, *svcoords)[1]
-                        logger.debug("Computed " + str(("SG", sv_pass,
-                                                        sv_elevation)))
-                        del sv_passes[i]
-                for i, pf_pass in enumerate(pf_passes):
-                    if pf_pass.overlaps(dump, timedelta(minutes=40)):
-                        pf_elevation = pf_pass.orb.get_observer_look(
-                            pf_pass.uptime, *pfcoords)[1]
-                        logger.debug("Computed " + str(("PF", pf_pass,
-                                                        pf_elevation)))
-                        del pf_passes[i]
-                for i, wp_pass in enumerate(wp_passes):
-                    if wp_pass.overlaps(dump, timedelta(minutes=40)):
-                        wp_elevation = wp_pass.orb.get_observer_look(
-                            wp_pass.uptime, *wpcoords)[1]
-                        logger.debug("Computed " + str(("WP", wp_pass,
-                                                        wp_elevation)))
-                        del wp_passes[i]
-
-            # sort out dump passes first
-            # between sv an pf, we take the one with the highest elevation if
-            # pf < 20°, pf otherwise
-            # I think wp is also used if sv is the only other alternative
-            used_pf = []
-            for sv_pass in sv_passes:
-                found_pass = False
-                for pf_pass in pf_passes:
-                    if sv_pass.overlaps(pf_pass):
-                        found_pass = True
-                        used_pf.append(pf_pass)
-                        sv_elevation = sv_pass.orb.get_observer_look(
-                            sv_pass.uptime, *svcoords)[1]
-                        pf_elevation = pf_pass.orb.get_observer_look(
-                            pf_pass.uptime, *pfcoords)[1]
-                        if pf_elevation > 20:
-                            dumps.append(pf_pass)
-                        elif sv_elevation > pf_elevation:
-                            dumps.append(sv_pass)
-                        else:
-                            dumps.append(pf_pass)
-                        break
-                if not found_pass:
-                    dumps.append(sv_pass)
-
-            for pf_pass in pf_passes:
-                if pf_pass not in used_pf:
-                    dumps.append(pf_pass)
-
-            passes[sat.name] = []
-            for overpass in aqua_passes:
-                add = True
-                for dump_pass in dumps:
-                    if dump_pass.overlaps(overpass):
-                        if (dump_pass.uptime < overpass.uptime and
-                                dump_pass.falltime > overpass.risetime):
-                            logger.debug("adjusting " + str(overpass) +
-                                         " to new risetime " +
-                                         str(dump_pass.falltime))
-                            overpass.risetime = dump_pass.falltime
-                            overpass.boundary = SwathBoundary(overpass)
-                        elif (dump_pass.uptime >= overpass.uptime and
-                              dump_pass.risetime < overpass.falltime):
-                            logger.debug("adjusting " + str(overpass) +
-                                         " to new falltime " +
-                                         str(dump_pass.risetime))
-                            overpass.falltime = dump_pass.risetime
-                            overpass.boundary = SwathBoundary(overpass)
-                        if overpass.falltime <= overpass.risetime:
-                            add = False
-                            logger.debug("skipping " + str(overpass))
-                if add and overpass.seconds() > MIN_PASS * 60:
-                    passes[sat.name].append(overpass)
+            # Take care of aqua (dumps in svalbard and poker flat)
+            # Get the Terra/Aqua passes and fill the passes dict:
+            get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps)
 
         else:
+            if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
+                instrument = "avhrr"
+            elif sat.name.upper() in VIIRS_PLATFORM_NAMES:
+                instrument = "viirs"
+            else:
+                instrument = "unknown"
+
             passes[sat.name] = [
                 Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist
@@ -575,14 +463,14 @@ def get_next_passes(satellites,
     return set(fctools_reduce(operator.concat, list(passes.values())))
 
 
-def get_metopa_passes(sat, passlist, satorb, instrument):
+def get_metopa_passes(sat, passlist, satorb):
     """Get the Metop-A passes, taking care that Metop-A doesn't transmit to ground
     everywhere
 
     """
 
     metop_passes = [
-        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument='avhrr')
         for rtime, ftime, uptime in passlist if rtime < ftime
     ]
 
@@ -592,8 +480,149 @@ def get_metopa_passes(sat, passlist, satorb, instrument):
             new_rise = overpass.slsearch(60)
             if new_rise is not None and new_rise < overpass.falltime:
                 overpass.risetime = new_rise
-                overpass.boundary = SwathBoundary(overpass)
+                # overpass has a boundary property, and it is not really needed here anyways!
+                # overpass.boundary = SwathBoundary(overpass)
                 if overpass.seconds() > MIN_PASS * 60:
                     passes.append(overpass)
 
     return passes
+
+
+def get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps):
+    """Get the Terra/Aqua passes, taking care that Terra and Aqua do not have
+       direct broadcast when there are global dumps
+
+    passes: The dictionary of satellite passes which is being built
+
+    utctime: The start time (datetime object)
+
+    forward: The number of hours ahead for which we will get the coming passes
+
+    sat: The Satellite platform considered
+
+    passlist: List of Pass objects
+
+    satorb: Orbital instance for the actual satellite and tles considered
+
+    aqua_terra_dumps: True or False or the actual URL to get info on Terra/Aqua
+       dumps.  If True, the default URL will be used. If False or None, no dump
+       info will be considered.
+
+    """
+
+    instrument = 'modis'
+
+    wpcoords = (-75.457222, 37.938611, 0)
+    passlist_wp = satorb.get_next_passes(
+        utctime - timedelta(minutes=30), forward + 1, *wpcoords)
+    wp_passes = [
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
+        for rtime, ftime, uptime in passlist_wp if rtime < ftime
+    ]
+
+    svcoords = (15.399, 78.228, 0)
+    passlist_sv = satorb.get_next_passes(
+        utctime - timedelta(minutes=30), forward + 1, *svcoords)
+    sv_passes = [
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
+        for rtime, ftime, uptime in passlist_sv if rtime < ftime
+    ]
+    pfcoords = (-147.43, 65.12, 0.51)
+    passlist_pf = satorb.get_next_passes(
+        utctime - timedelta(minutes=30), forward + 1, *pfcoords)
+    pf_passes = [
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
+        for rtime, ftime, uptime in passlist_pf if rtime < ftime
+    ]
+
+    aqua_passes = [
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
+        for rtime, ftime, uptime in passlist if rtime < ftime
+    ]
+
+    dumps = get_aqua_terra_dumps(utctime - timedelta(minutes=30),
+                                 utctime + timedelta(hours=forward + 0.5),
+                                 satorb, sat, aqua_terra_dumps)
+
+    # remove the known dumps
+    for dump in dumps:
+        # print "*", dump.station, dump, dump.max_elev
+        logger.debug("dump from ftp: " + str((dump.station, dump,
+                                              dump.max_elev)))
+        for i, sv_pass in enumerate(sv_passes):
+            if sv_pass.overlaps(dump, timedelta(minutes=40)):
+                sv_elevation = sv_pass.orb.get_observer_look(
+                    sv_pass.uptime, *svcoords)[1]
+                logger.debug("Computed " + str(("SG", sv_pass,
+                                                sv_elevation)))
+                del sv_passes[i]
+        for i, pf_pass in enumerate(pf_passes):
+            if pf_pass.overlaps(dump, timedelta(minutes=40)):
+                pf_elevation = pf_pass.orb.get_observer_look(
+                    pf_pass.uptime, *pfcoords)[1]
+                logger.debug("Computed " + str(("PF", pf_pass,
+                                                pf_elevation)))
+                del pf_passes[i]
+        for i, wp_pass in enumerate(wp_passes):
+            if wp_pass.overlaps(dump, timedelta(minutes=40)):
+                wp_elevation = wp_pass.orb.get_observer_look(
+                    wp_pass.uptime, *wpcoords)[1]
+                logger.debug("Computed " + str(("WP", wp_pass,
+                                                wp_elevation)))
+                del wp_passes[i]
+
+    # sort out dump passes first
+    # between sv an pf, we take the one with the highest elevation if
+    # pf < 20°, pf otherwise
+    # I think wp is also used if sv is the only other alternative
+    used_pf = []
+    for sv_pass in sv_passes:
+        found_pass = False
+        for pf_pass in pf_passes:
+            if sv_pass.overlaps(pf_pass):
+                found_pass = True
+                used_pf.append(pf_pass)
+                sv_elevation = sv_pass.orb.get_observer_look(
+                    sv_pass.uptime, *svcoords)[1]
+                pf_elevation = pf_pass.orb.get_observer_look(
+                    pf_pass.uptime, *pfcoords)[1]
+                if pf_elevation > 20:
+                    dumps.append(pf_pass)
+                elif sv_elevation > pf_elevation:
+                    dumps.append(sv_pass)
+                else:
+                    dumps.append(pf_pass)
+                break
+        if not found_pass:
+            dumps.append(sv_pass)
+
+    for pf_pass in pf_passes:
+        if pf_pass not in used_pf:
+            dumps.append(pf_pass)
+
+    passes[sat.name] = []
+    for overpass in aqua_passes:
+        add = True
+        for dump_pass in dumps:
+            if dump_pass.overlaps(overpass):
+                if (dump_pass.uptime < overpass.uptime and
+                        dump_pass.falltime > overpass.risetime):
+                    logger.debug("adjusting " + str(overpass) +
+                                 " to new risetime " +
+                                 str(dump_pass.falltime))
+                    overpass.risetime = dump_pass.falltime
+                    overpass.boundary = SwathBoundary(overpass)
+                elif (dump_pass.uptime >= overpass.uptime and
+                      dump_pass.risetime < overpass.falltime):
+                    logger.debug("adjusting " + str(overpass) +
+                                 " to new falltime " +
+                                 str(dump_pass.risetime))
+                    overpass.falltime = dump_pass.risetime
+                    overpass.boundary = SwathBoundary(overpass)
+                if overpass.falltime <= overpass.risetime:
+                    add = False
+                    logger.debug("skipping " + str(overpass))
+        if add and overpass.seconds() > MIN_PASS * 60:
+            passes[sat.name].append(overpass)
+
+    return
