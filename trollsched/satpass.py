@@ -480,7 +480,8 @@ def get_metopa_passes(sat, passlist, satorb):
             new_rise = overpass.slsearch(60)
             if new_rise is not None and new_rise < overpass.falltime:
                 overpass.risetime = new_rise
-                overpass.boundary = SwathBoundary(overpass)
+                # overpass has a boundary property, and it is not really needed here anyways!
+                # overpass.boundary = SwathBoundary(overpass)
                 if overpass.seconds() > MIN_PASS * 60:
                     passes.append(overpass)
 
@@ -490,6 +491,22 @@ def get_metopa_passes(sat, passlist, satorb):
 def get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps):
     """Get the Terra/Aqua passes, taking care that Terra and Aqua do not have
        direct broadcast when there are global dumps
+
+    passes: The dictionary of satellite passes which is being built
+
+    utctime: The start time (datetime object)
+
+    forward: The number of hours ahead for which we will get the coming passes
+
+    sat: The Satellite platform considered
+
+    passlist: List of Pass objects
+
+    satorb: Orbital instance for the actual satellite and tles considered
+
+    aqua_terra_dumps: True or False or the actual URL to get info on Terra/Aqua
+       dumps.  If True, the default URL will be used. If False or None, no dump
+       info will be considered.
 
     """
 

@@ -29,6 +29,8 @@ from datetime import datetime, timedelta
 from trollsched.schedule import fermia, fermib, conflicting_passes
 from pyresample.boundary import AreaBoundary
 from trollsched.satpass import get_next_passes
+from trollsched.satpass import get_aqua_terra_dumps
+from trollsched.satpass import get_metopa_passes
 
 import sys
 if sys.version_info < (2, 7):
@@ -156,6 +158,7 @@ class TestAll(unittest.TestCase):
     def setUp(self):
         """Set up"""
         from pyorbital import orbital
+        from trollsched.schedule import Satellite
 
         self.utctime = datetime(2018, 11, 28, 10, 0)
         self.satellites = ["noaa-20", ]
@@ -164,9 +167,19 @@ class TestAll(unittest.TestCase):
         self.tles['noaa-20']['line2'] = "2 43013 098.7413 267.0121 0001419 108.5818 058.1314 14.19552981053016"
 
         self.aquas = ["aqua", ]
+        self.terras = ["terra", ]
+        self.terra = Satellite('terra', 0, 0)
+        self.metopa = Satellite('metop-a', 0, 0)
+
         self.tles['aqua'] = {}
         self.tles['aqua']['line1'] = "1 27424U 02022A   18332.21220389  .00000093  00000-0  30754-4 0  9994"
         self.tles['aqua']['line2'] = "2 27424  98.2121 270.9368 0001045 343.9225 155.8703 14.57111538881313"
+        self.tles['terra'] = {}
+        self.tles['terra']['line1'] = "1 25994U 99068A   18338.20920286  .00000076  00000-0  26867-4 0  9999"
+        self.tles['terra']['line2'] = "2 25994  98.2142  50.5750 0000577 102.5211 257.6060 14.57132862  8586"
+        self.tles['metop-a'] = {}
+        self.tles['metop-a']['line1'] = "1 29499U 06044A   18338.30873671  .00000000  00000+0  31223-4 0 00013"
+        self.tles['metop-a']['line2'] = "2 29499  98.6045  31.7725 0001942  91.8780 346.4884 14.21536046629175"
 
         self.orb = orbital.Orbital('NOAA 20',
                                    line1=self.tles['noaa-20']['line1'],
@@ -174,6 +187,29 @@ class TestAll(unittest.TestCase):
         self.aqua_orb = orbital.Orbital('AQUA',
                                         line1=self.tles['aqua']['line1'],
                                         line2=self.tles['aqua']['line2'])
+        self.terra_orb = orbital.Orbital('TERRA',
+                                         line1=self.tles['terra']['line1'],
+                                         line2=self.tles['terra']['line2'])
+        self.metopa_orb = orbital.Orbital('Metop-A',
+                                          line1=self.tles['metop-a']['line1'],
+                                          line2=self.tles['metop-a']['line2'])
+
+        # These values were used to generate the get_next_passes list mock:
+        # utctime = datetime(2018, 12, 4, 9, 0)
+        # forward = 6
+        # coords = (16, 58, 0)
+        self.metopa_passlist = [(datetime(2018, 12, 4, 9, 10, 4, 574801),
+                                 datetime(2018, 12, 4, 9, 25, 29, 157194),
+                                 datetime(2018, 12, 4, 9, 17, 48, 530484)),
+                                (datetime(2018, 12, 4, 10, 50, 23, 899232),
+                                 datetime(2018, 12, 4, 11, 4, 2, 335184),
+                                 datetime(2018, 12, 4, 10, 57, 13, 691637)),
+                                (datetime(2018, 12, 4, 12, 30, 24, 97160),
+                                 datetime(2018, 12, 4, 12, 40, 42, 403698),
+                                 datetime(2018, 12, 4, 12, 35, 33, 317647)),
+                                (datetime(2018, 12, 4, 14, 9, 1, 937869),
+                                 datetime(2018, 12, 4, 14, 17, 20, 556654),
+                                 datetime(2018, 12, 4, 14, 13, 11, 247497))]
 
         self.dumpdata = [
             {'los': datetime(2018, 11, 28, 10, 0, 30), 'station': 'USAK05',
@@ -187,6 +223,46 @@ class TestAll(unittest.TestCase):
             {'los': datetime(2018, 11, 28, 16, 27, 22), 'station': 'SG1',
              'aos': datetime(2018, 11, 28, 16, 16, 58), 'elev': '9.521'}
         ]
+        self.dumpdata_terra = [{'los': datetime(2018, 11, 20, 23, 24, 41), 'station': 'SG2',
+                                'aos': datetime(2018, 11, 20, 23, 12, 32), 'elev': '17.4526'},
+                               {'los': datetime(2018, 11, 22, 23, 19, 21), 'station': 'AS3',
+                                'aos': datetime(2018, 11, 22, 23, 8, 55), 'elev': '28.9558'},
+                               {'los': datetime(2018, 11, 22, 23, 19, 21), 'station': 'AS3',
+                                'aos': datetime(2018, 11, 22, 23, 8, 55), 'elev': '28.9558'},
+                               {'los': datetime(2018, 11, 26, 22, 47, 34), 'station': 'SG1',
+                                'aos': datetime(2018, 11, 26, 22, 34, 58), 'elev': '21.5694'},
+                               {'los': datetime(2018, 11, 26, 22, 47, 34), 'station': 'SG1',
+                                'aos': datetime(2018, 11, 26, 22, 34, 58), 'elev': '21.5694'},
+                               {'los': datetime(2018, 11, 26, 22, 47, 34), 'station': 'SG1',
+                                'aos': datetime(2018, 11, 26, 22, 34, 58), 'elev': '21.5694'},
+                               {'los': datetime(2018, 11, 27, 23, 30, 44), 'station': 'SG2',
+                                'aos': datetime(2018, 11, 27, 23, 18, 39), 'elev': '16.8795'},
+                               {'los': datetime(2018, 11, 27, 23, 30, 44), 'station': 'SG2',
+                                'aos': datetime(2018, 11, 27, 23, 18, 39), 'elev': '16.8795'},
+                               {'los': datetime(2018, 11, 28, 22, 43, 53), 'station': 'USAK05',
+                                'aos': datetime(2018, 11, 28, 22, 31, 57), 'elev': '40.9264'},
+                               {'los': datetime(2018, 11, 28, 22, 43, 53), 'station': 'USAK05',
+                                'aos': datetime(2018, 11, 28, 22, 31, 57), 'elev': '40.9264'},
+                               {'los': datetime(2018, 11, 29, 23, 25, 11), 'station': 'USAK05',
+                                'aos': datetime(2018, 11, 29, 23, 14, 47), 'elev': '26.9937'},
+                               {'los': datetime(2018, 11, 29, 23, 25, 11), 'station': 'USAK05',
+                                'aos': datetime(2018, 11, 29, 23, 14, 47), 'elev': '26.9937'},
+                               {'los': datetime(2018, 11, 30, 22, 31, 3), 'station': 'AS2',
+                                'aos': datetime(2018, 11, 30, 22, 19, 48), 'elev': '47.8599'},
+                               {'los': datetime(2018, 12, 1, 1, 29, 2), 'station': 'WG1',
+                                'aos': datetime(2018, 12, 1, 1, 21, 11), 'elev': '8.0543'},
+                               {'los': datetime(2018, 11, 30, 22, 31, 3), 'station': 'AS2',
+                                'aos': datetime(2018, 11, 30, 22, 19, 48), 'elev': '47.8599'},
+                               {'los': datetime(2018, 12, 1, 1, 29, 2), 'station': 'WG1',
+                                'aos': datetime(2018, 12, 1, 1, 21, 11), 'elev': '8.0543'},
+                               {'los': datetime(2018, 12, 3, 1, 28, 14), 'station': 'SG2',
+                                'aos': datetime(2018, 12, 3, 1, 17, 53), 'elev': '9.2428'},
+                               {'los': datetime(2018, 12, 3, 22, 53, 35), 'station': 'SG1',
+                                'aos': datetime(2018, 12, 3, 22, 41, 5), 'elev': '20.8371'},
+                               {'los': datetime(2018, 12, 3, 22, 53, 35), 'station': 'SG1',
+                                'aos': datetime(2018, 12, 3, 22, 41, 5), 'elev': '20.8371'},
+                               {'los': datetime(2018, 12, 4, 23, 43, 5), 'station': 'AS2',
+                                'aos': datetime(2018, 12, 4, 23, 33, 8), 'elev': '23.546'}]
 
     @patch('os.path.exists')
     def test_get_next_passes_viirs(self, exists):
@@ -264,6 +340,51 @@ class TestAll(unittest.TestCase):
                         dtmin = dt_
 
                 self.assertAlmostEqual(dtmin.seconds, 0)
+
+    @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
+    def test_get_aqua_terra_dumps(self, dumps_from_ftp):
+        dumps_from_ftp.return_value = self.dumpdata_terra
+
+        # mymock:
+        with patch('pyorbital.orbital.Orbital') as mymock:
+            instance = mymock.return_value
+            instance.get_next_passes = self.terra_orb.get_next_passes
+
+            dumps = get_aqua_terra_dumps(datetime(2018, 12, 3, 0, 0),
+                                         datetime(2018, 12, 10, 0, 0),
+                                         self.terra_orb,
+                                         self.terra)
+
+            self.assertEqual(len(dumps), 4)
+            self.assertEqual(dumps[0].station, 'SG2')
+            self.assertEqual(dumps[0].max_elev, '9.2428')
+            self.assertEqual(dumps[0].pass_direction(), 'ascending')
+            self.assertEqual((dumps[0].risetime - datetime(2018, 12, 3, 1, 17, 53)).seconds, 0)
+            self.assertEqual((dumps[0].falltime - datetime(2018, 12, 3, 1, 28, 14)).seconds, 0)
+
+            self.assertEqual(dumps[3].station, 'AS2')
+            self.assertEqual(dumps[3].max_elev, '23.546')
+            self.assertEqual(dumps[3].pass_direction(), 'descending')
+            self.assertEqual((dumps[3].risetime - datetime(2018, 12, 4, 23, 33, 8)).seconds, 0)
+            self.assertEqual((dumps[3].falltime - datetime(2018, 12, 4, 23, 43, 5)).seconds, 0)
+
+    @patch('os.path.exists')
+    def test_get_metopa_passes(self, exists):
+
+        exists.return_code = True
+
+        # mymock:
+        with patch('pyorbital.orbital.Orbital') as mymock:
+            instance = mymock.return_value
+            instance.get_next_passes = self.metopa_orb.get_next_passes
+
+            metopa_passes = get_metopa_passes(self.metopa, self.metopa_passlist, self.metopa_orb)
+
+            self.assertEqual(len(metopa_passes), 2)
+            self.assertEqual(metopa_passes[0].pass_direction(), 'descending')
+            self.assertEqual(metopa_passes[0].seconds(), 462.466119)
+            self.assertEqual((metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds, 0)
+            self.assertEqual((metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 46, 691075)).seconds, 0)
 
     def tearDown(self):
         """Clean up"""
