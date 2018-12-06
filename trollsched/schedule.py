@@ -43,7 +43,6 @@ from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
 from pyresample.boundary import AreaDefBoundary
 from trollsched.combine import get_combined_sched
-from trollsched.drawing import save_fig
 
 
 logger = logging.getLogger(__name__)
@@ -576,6 +575,7 @@ def parse_datetime(strtime):
 def save_passes(allpasses, poly, output_dir):
     """Save overpass plots to png and store in directory *output_dir*
     """
+    from trollsched.drawing import save_fig
     for overpass in allpasses:
         save_fig(overpass, poly=poly, directory=output_dir)
 
