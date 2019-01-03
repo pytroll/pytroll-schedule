@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014-2018 PyTroll community
+# Copyright (c) 2014-2019 PyTroll community
 
 # Author(s):
 
@@ -69,7 +69,7 @@ class SwathBoundary(Boundary):
         if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
         elif instrument in ["ascat", ]:
-            sgeom = instrument_fun(scans_nb)
+            sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
