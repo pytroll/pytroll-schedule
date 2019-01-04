@@ -253,8 +253,12 @@ class TestSwathBoundary(unittest.TestCase):
         tle2 = '2 38771  98.7284  63.8171 0002025  96.0390 346.4075 14.21477776326431'
 
         mypass = Pass('Metop-B', tstart, tend, instrument='ascat', tle1=tle1, tle2=tle2)
-        acov = mypass.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.103526, 5)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.322812, 5)
+
+        mypass = Pass('Metop-B', tstart, tend, instrument='avhrr', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.357324, 5)
 
     def tearDown(self):
         """Clean up"""
