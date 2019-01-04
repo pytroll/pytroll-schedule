@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018 - 2019 PyTroll
 
 # Author(s):
 
-#   Adam.Dybbroe <a000680@c20671.ad.smhi.se>
+#   Adam.Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 import unittest
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from trollsched.satpass import Pass
 from trollsched.boundary import SwathBoundary
 from pyorbital.orbital import Orbital
@@ -245,6 +245,20 @@ class TestSwathBoundary(unittest.TestCase):
 
         cov = overp.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.103526, 5)
+
+        # ASCAT and AVHRR on Metop-B:
+        tstart = datetime.strptime("2019-01-02T10:19:39", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=180)
+        tle1 = '1 38771U 12049A   19002.35527803  .00000000  00000+0  21253-4 0 00017'
+        tle2 = '2 38771  98.7284  63.8171 0002025  96.0390 346.4075 14.21477776326431'
+
+        mypass = Pass('Metop-B', tstart, tend, instrument='ascat', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.322812, 5)
+
+        mypass = Pass('Metop-B', tstart, tend, instrument='avhrr', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.357324, 5)
 
     def tearDown(self):
         """Clean up"""
