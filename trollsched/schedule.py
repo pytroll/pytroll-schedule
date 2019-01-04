@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015, 2016, 2017, 2018 Martin Raspaud
+# Copyright (c) 2013 - 2019 PyTroll
 
 # Author(s):
 
@@ -602,6 +602,7 @@ def build_filename(pattern_name, pattern_dict, kwargs):
         for v in pattern_dict.values():
             if "{" + k + "}" in v:
                 kwargs[k] = pattern_dict[k].format(**kwargs)
+
     return pattern_dict[pattern_name].format(**kwargs)
 
 

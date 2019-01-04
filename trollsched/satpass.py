@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2018 PyTroll Community
+# Copyright (c) 2014 - 2019 PyTroll Community
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
@@ -50,6 +50,8 @@ logger = logging.getLogger(__name__)
 
 VIIRS_PLATFORM_NAMES = ['SUOMI NPP', 'SNPP',
                         'NOAA-20', 'NOAA 20']
+MERSI2_PLATFORM_NAMES = ['FENGYUN 3D', 'FENGYUN-3D', 'FY-3D',
+                         'FENGYUN 3E', 'FENGYUN-3E', 'FY-3E']
 
 
 class SimplePass(object):
@@ -141,7 +143,8 @@ class Pass(SimplePass):
         instrument = kwargs.get('instrument', None)
         tle1 = kwargs.get('tle1', None)
         tle2 = kwargs.get('tle2', None)
-        # logger.info("instrument: %s", str(instrument))
+        logger.debug("instrument: %s", str(instrument))
+
         if isinstance(instrument, list):
             logger.warning("Instrument is a list! Assume avhrr...")
             instrument = 'avhrr'
@@ -228,6 +231,7 @@ class Pass(SimplePass):
             area_boundary = area_boundary.contour_poly
 
         inter = self.boundary.contour_poly.intersection(area_boundary)
+
         if inter is None:
             return 0
         return inter.area() / area_boundary.area()
@@ -451,6 +455,8 @@ def get_next_passes(satellites,
                 instrument = "avhrr"
             elif sat.name.upper() in VIIRS_PLATFORM_NAMES:
                 instrument = "viirs"
+            elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
+                instrument = "mersi2"
             else:
                 instrument = "unknown"
 

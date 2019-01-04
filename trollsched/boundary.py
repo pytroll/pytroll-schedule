@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014-2018 PyTroll community
+# Copyright (c) 2014-2019 PyTroll community
 
 # Author(s):
 
@@ -61,15 +61,19 @@ class SwathBoundary(Boundary):
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
             instrument = "avhrr"
+        elif instrument == "mersi2":
+            scan_angle = 55.4
+            instrument = "avhrr"
         else:
             scan_angle = 55.25
+            instrument = 'avhrr'
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
         if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
         elif instrument in ["ascat", ]:
-            sgeom = instrument_fun(scans_nb)
+            sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
