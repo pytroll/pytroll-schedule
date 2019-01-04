@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2018 Martin Raspaud
+# Copyright (c) 2014 - 2019 PyTroll
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from trollsched.schedule import fermia, fermib, conflicting_passes
+from trollsched.schedule import parse_datetime, build_filename
 from pyresample.boundary import AreaBoundary
 from trollsched.satpass import get_next_passes
 from trollsched.satpass import get_aqua_terra_dumps
@@ -151,6 +153,27 @@ class TestUtils(unittest.TestCase):
     def test_fermi(self):
         self.assertEquals(fermia(0.25), 0.875)
         self.assertEquals(fermib(0.25), 0.5)
+
+    def test_parse_datetime(self):
+
+        dtobj = parse_datetime('20190104110059')
+        self.assertEqual(dtobj, datetime(2019, 1, 4, 11, 0, 59))
+
+    def test_build_filename(self):
+
+        pattern_name = "dir_output"
+        pattern_dict = {'file_xml': '{dir_output}/{date}-{time}-aquisition-schedule-{mode}-{station}.xml', 'file_sci': '{dir_output}/scisys-schedule-{station}.txt',
+                        'dir_plots': '{dir_output}/plots.{station}', 'dir_output': '/tmp', 'file_graph': '{dir_output}/graph.{station}'}
+        kwargs = {'date': '20190104', 'output_dir': '.', 'dir_output': '/tmp', 'time': '122023'}
+
+        res = build_filename(pattern_name, pattern_dict, kwargs)
+        self.assertEqual(res, '/tmp')
+
+        pattern_name = "file_xml"
+        kwargs = {'station': 'nrk', 'mode': 'request', 'time': '125334',
+                  'date': '20190104', 'dir_output': '/tmp', 'output_dir': '.'}
+        res = build_filename(pattern_name, pattern_dict, kwargs)
+        self.assertEqual(res, '/tmp/20190104-125334-aquisition-schedule-request-nrk.xml')
 
 
 class TestAll(unittest.TestCase):
