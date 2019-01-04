@@ -260,6 +260,17 @@ class TestSwathBoundary(unittest.TestCase):
         cov = mypass.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.357324, 5)
 
+        tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60*15.5)
+
+        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
+        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+
+        self.assertAlmostEqual(cov, 0.786836, 5)
+
     def tearDown(self):
         """Clean up"""
         pass
