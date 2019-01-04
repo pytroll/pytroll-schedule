@@ -66,7 +66,6 @@ class SwathBoundary(Boundary):
             instrument = "avhrr"
         else:
             scan_angle = 55.25
-            instrument = 'avhrr'
 
         instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
