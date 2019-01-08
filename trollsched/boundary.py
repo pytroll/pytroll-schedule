@@ -35,6 +35,9 @@ from pyorbital import geoloc, geoloc_instrument_definitions
 
 logger = logging.getLogger(__name__)
 
+INSTRUMENT = {'avhrr/3': 'avhrr',
+              'avhrr/2': 'avhrr'}
+
 
 class SwathBoundary(Boundary):
 
@@ -67,7 +70,7 @@ class SwathBoundary(Boundary):
         else:
             scan_angle = 55.25
 
-        instrument_fun = getattr(geoloc_instrument_definitions, instrument)
+        instrument_fun = getattr(geoloc_instrument_definitions, INSTRUMENT.get(instrument, instrument))
 
         if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
