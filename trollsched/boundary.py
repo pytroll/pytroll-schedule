@@ -36,7 +36,8 @@ from pyorbital import geoloc, geoloc_instrument_definitions
 logger = logging.getLogger(__name__)
 
 INSTRUMENT = {'avhrr/3': 'avhrr',
-              'avhrr/2': 'avhrr'}
+              'avhrr/2': 'avhrr',
+              'avhrr-3': 'avhrr'}
 
 
 class SwathBoundary(Boundary):
@@ -70,9 +71,10 @@ class SwathBoundary(Boundary):
         else:
             scan_angle = 55.25
 
-        instrument_fun = getattr(geoloc_instrument_definitions, INSTRUMENT.get(instrument, instrument))
+        instrument_fun = getattr(geoloc_instrument_definitions,
+                                 INSTRUMENT.get(instrument, instrument))
 
-        if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
+        if instrument.startswith("avhrr"):
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
         elif instrument in ["ascat", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
@@ -112,7 +114,7 @@ class SwathBoundary(Boundary):
         if self.overpass.instrument == 'viirs':
             sec_scan_duration = 1.779166667
             along_scan_reduce_factor = 1
-        elif self.overpass.instrument in ['avhrr', 'avhrr/3', 'avhrr/2']:
+        elif self.overpass.instrument.startswith("avhrr"):
             sec_scan_duration = 1./6.
             along_scan_reduce_factor = 0.1
         elif self.overpass.instrument == 'ascat':
