@@ -215,6 +215,14 @@ class TestSwathBoundary(unittest.TestCase):
         assertNumpyArraysEqual(cont[0], LONS3)
         assertNumpyArraysEqual(cont[1], LATS3)
 
+        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr-3')
+        overp_boundary = SwathBoundary(overp, frequency=500)
+
+        cont = overp_boundary.contour()
+
+        assertNumpyArraysEqual(cont[0], LONS3)
+        assertNumpyArraysEqual(cont[1], LATS3)
+
     def test_swath_coverage(self):
 
         # NOAA-19 AVHRR:
