@@ -123,7 +123,7 @@ class SwathBoundary(Boundary):
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
-            logger.warning(logmsg + "%s", str(self.overpass.instrument))
+            logger.info(logmsg + "%s", str(self.overpass.instrument))
             sec_scan_duration = 1./6.
             along_scan_reduce_factor = 0.1
 
