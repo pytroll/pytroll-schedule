@@ -145,8 +145,8 @@ class Pass(SimplePass):
         tle2 = kwargs.get('tle2', None)
         logger.debug("instrument: %s", str(instrument))
 
-        if isinstance(instrument, list):
-            logger.warning("Instrument is a list! Assume avhrr...")
+        if isinstance(instrument, (list, set)):
+            logger.warning("Instrument is a list or set! Assume avhrr...")
             instrument = 'avhrr'
 
         default = NUMBER_OF_FOVS.get(instrument, 2048)
