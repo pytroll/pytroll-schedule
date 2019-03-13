@@ -146,8 +146,17 @@ class Pass(SimplePass):
         logger.debug("instrument: %s", str(instrument))
 
         if isinstance(instrument, (list, set)):
-            logger.warning("Instrument is a list or set! Assume avhrr...")
-            instrument = 'avhrr'
+            if 'avhrr' in instrument:
+                logger.warning("Instrument is a sequence Assume avhrr...")
+                instrument = 'avhrr'
+            elif 'viirs' in instrument:
+                logger.warning("Instrument is a sequence! Assume viirs...")
+                instrument = 'viirs'
+            elif 'modis' in instrument:
+                logger.warning("Instrument is a sequence! Assume modis...")
+                instrument = 'modis'
+            else:
+                raise TypeError("Instrument is a sequence! Don't know which one to choose!")
 
         default = NUMBER_OF_FOVS.get(instrument, 2048)
         self.number_of_fovs = kwargs.get('number_of_fovs', default)
