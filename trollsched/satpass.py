@@ -460,10 +460,10 @@ def get_next_passes(satellites,
             get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps)
 
         else:
-            if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
-                instrument = "avhrr"
-            elif sat.name.upper() in VIIRS_PLATFORM_NAMES:
+            if sat.name.upper() in VIIRS_PLATFORM_NAMES:
                 instrument = "viirs"
+            elif sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
+                instrument = "avhrr"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
                 instrument = "mersi2"
             else:
