@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015, 2016, 2017, 2018 Martin Raspaud
+# Copyright (c) 2013 - 2019 PyTroll
 
 # Author(s):
 
@@ -26,29 +26,24 @@
 import logging
 import logging.handlers
 import os
-from six.moves.configparser import ConfigParser
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
-from six.moves.configparser import ConfigParser
+
 from datetime import datetime, timedelta
 from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
 from pyresample import utils as resample_utils
-try:
-    from trollsched import utils
-except ImportError:
-    import utils
+from trollsched import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
 from trollsched.satpass import get_next_passes, SimplePass
 from pyresample.boundary import AreaDefBoundary
 from trollsched.combine import get_combined_sched
-from trollsched.graph import Graph
-from trollsched.spherical import get_twilight_poly
+
 
 logger = logging.getLogger(__name__)
 
@@ -655,9 +650,13 @@ def parse_datetime(strtime):
     """
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
 
+
 def save_passes(allpasses, poly, output_dir, plot_parameters, plot_title):
-    for passage in allpasses:
-        passage.save_fig(poly, directory=output_dir, plot_parameters=plot_parameters, plot_title=plot_title)
+    """Save overpass plots to png and store in directory *output_dir*
+    """
+    from trollsched.drawing import save_fig
+    for overpass in allpasses:
+        save_fig(overpass, poly=poly, directory=output_dir, plot_parameters=plot_parameters, plot_title=plot_title)
 
 
 def get_passes_from_xml_file(filename):
@@ -682,6 +681,7 @@ def build_filename(pattern_name, pattern_dict, kwargs):
         for v in pattern_dict.values():
             if "{" + k + "}" in v:
                 kwargs[k] = pattern_dict[k].format(**kwargs)
+
     return pattern_dict[pattern_name].format(**kwargs)
 
 

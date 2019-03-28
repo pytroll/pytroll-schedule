@@ -27,9 +27,23 @@ schedule request xml files and then triggers the png and xml output generation.
 """
 
 import os
-#from ConfigParser import RawConfigParser
 from six.moves.configparser import RawConfigParser
 import logging
+import sys
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+import posttroll.subscriber
+from posttroll.publisher import Publish
+import xml.etree.ElementTree as ET
+from datetime import datetime
+import os.path
+
+from trollsched.satpass import Pass
+from trollsched.drawing import save_fig
+from trollsched import (SATELLITE_NAMES, INSTRUMENT)
+
 LOG = logging.getLogger(__name__)
 
 CFG_DIR = os.environ.get('PYTROLL_SCHEDULE_CONFIG_DIR', './')
@@ -51,42 +65,6 @@ _DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 #: Default log format
 _DEFAULT_LOG_FORMAT = '[%(levelname)s: %(asctime)s : %(name)s] %(message)s'
 
-import sys
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-import posttroll.subscriber
-from posttroll.publisher import Publish
-import xml.etree.ElementTree as ET
-from datetime import datetime
-import os.path
-
-from trollsched.satpass import Pass
-
-sat_dict = {'npp': 'Suomi NPP',
-            'noaa19': 'NOAA 19',
-            'noaa18': 'NOAA 18',
-            'noaa15': 'NOAA 15',
-            'aqua': 'Aqua',
-            'terra': 'Terra',
-            'metopc': 'Metop-C',
-            'metopb': 'Metop-B',
-            'metopa': 'Metop-A',
-            'noaa20': 'NOAA-20',
-            }
-
-INSTRUMENT = {'Suomi NPP': 'viirs',
-              'NOAA-20': 'viirs',
-              'Aqua': 'modis',
-              'Terra': 'modis',
-              'NOAA 19': 'avhrr',
-              'NOAA 18': 'avhrr',
-              'NOAA 15': 'avhrr',
-              'Metop-A': 'avhrr',
-              'Metop-B': 'avhrr',
-              'Metop-C': 'avhrr'}
-
 
 def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
 
@@ -96,10 +74,11 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
     for child in root:
         if child.tag == 'pass':
             LOG.debug("Pass: %s", str(child.attrib))
-            platform_name = sat_dict.get(child.attrib['satellite'], child.attrib['satellite'])
+            platform_name = SATELLITE_NAMES.get(child.attrib['satellite'], child.attrib['satellite'])
             instrument = INSTRUMENT.get(platform_name)
             if not instrument:
-                raise AttributeError('Instrument unknown! Platform = %s' % platform_name)
+                LOG.error('Instrument unknown! Platform = %s', platform_name)
+                continue
 
             if platform_name in excluded_satellites:
                 LOG.debug('Platform name excluded: %s', platform_name)
@@ -115,7 +94,7 @@ def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
                 LOG.warning('Failed on satellite %s: %s', platform_name, str(err))
                 continue
 
-            overpass.save_fig(directory=plotdir)
+            save_fig(overpass, directory=plotdir)
             child.set('img', overpass.fig)
             child.set('rec', 'True')
             LOG.debug("Plot saved - plotdir = %s, platform_name = %s", plotdir, platform_name)
@@ -197,3 +176,8 @@ if __name__ == "__main__":
     LOG.info("Exclude the following satellite platforms: %s", str(no_sats))
 
     schedule_page_generator(no_sats)
+
+    # uri = "/data/temp/AdamD/xxx/2018-10-22-00-42-28-acquisition-schedule-confirmation-nrk.xml"
+    # urlobj = urlparse(uri)
+    # process_xmlrequest(urlobj.path,
+    #                    OPTIONS['path_plots'], OPTIONS['xmlfilepath'], no_sats)
