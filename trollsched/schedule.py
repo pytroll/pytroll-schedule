@@ -532,7 +532,7 @@ def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_
                 overpass.generate_metno_xml(coords, root)
 
                
-        out.write(ET.tostring(root))
+        out.write(ET.tostring(root).decode("utf-8"))
         out.close()
     return output_file
 
