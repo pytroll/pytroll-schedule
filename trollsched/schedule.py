@@ -581,21 +581,6 @@ def generate_xml_requests(sched, start, end, station_name, center_id, report_mod
     """
     import xml.etree.ElementTree as ET
 
-    sats = {"noaa 15": "noaa15",
-            "noaa 16": "noaa16",
-            "noaa 18": "noaa18",
-            "noaa 19": "noaa19",
-            "metop-a": "metop-a",
-            "metop-b": "metop-b",
-            "metop-c": "metop-c",
-            "terra": "terra",
-            "aqua": "aqua",
-            "suomi npp": "npp",
-            "fengyun 3a": "fengyun-3a",
-            "fengyun 3b": "fengyun-3b",
-            "fengyun 3c": "fengyun-3c",
-    }
-
     reqtime = datetime.utcnow()
     eum_format = "%Y-%m-%d-%H:%M:%S"
 
@@ -757,11 +742,6 @@ def combined_stations(scheduler, start_time, graph, allpasses):
         logger.exception("Failed to reset 'rec' for s:%s  ap:%s  passes[s]:%s  p:%s",
                          a, ap, passes[s], p)
         raise
-
-#    station_meta = {}
-#    print "scheduler",scheduler.stations
-#    for coords, station, min_pass, local_horizon, area, scores in station_list:
-#        station_meta[station] = {'coords':coords, 'area':area, 'scores':scores}
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
 #     logger.debug(pformat(schedule))
