@@ -85,10 +85,10 @@ def read_config_cfg(filename):
         for k, v in cfg.items(section):
             try:
                 kv_dict[k] = int(v)
-            except:
+            except Exception:
                 try:
                     kv_dict[k] = float(v)
-                except:
+                except Exception:
                     kv_dict[k] = v
         return kv_dict
 
@@ -147,7 +147,7 @@ def read_config_yaml(filename):
     sched_params = cfg['default']
     plot_parameters = sched_params['plot_parameters'] or {}
     plot_title = sched_params['plot_title'] or None
-        
+
     scheduler = schedule.Scheduler(stations=[stations[st_id]
                                              for st_id in sched_params['station']],
                                    min_pass=sched_params.get('min_pass', 4),

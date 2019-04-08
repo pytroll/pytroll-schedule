@@ -281,9 +281,9 @@ class Pass(SimplePass):
                 poly.draw(mapper, "-b")
 
         _plot_title = {'satellite_name': self.satellite.name.upper(),
-                      'risetime': self.risetime,
-                      'falltime': self.falltime}
-        pt = plot_title or plot_parameters.get('plot_title',str(self))
+                       'risetime': self.risetime,
+                       'falltime': self.falltime}
+        pt = plot_title or plot_parameters.get('plot_title', str(self))
         title = str(compose(pt, _plot_title))
         plt.title(title)
         logger.debug("Title = %s", title)
@@ -323,12 +323,12 @@ class Pass(SimplePass):
 
         asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
         pass_direction = self.pass_direction().capitalize()[:1]
-        #anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
+        # anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
         asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
-        orbit=self.orb.get_orbit_number(self.risetime)
-        #aos_epoch=int((self.risetime-datetime(1970,1,1)).total_seconds())
+        orbit = self.orb.get_orbit_number(self.risetime)
+        # aos_epoch=int((self.risetime-datetime(1970,1,1)).total_seconds())
         sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
-        
+
         ovpass = ET.SubElement(root, "pass")
         ovpass.set("satellite", self.satellite.name)
         ovpass.set("aos", self.risetime.strftime("%Y%m%d%H%M%S"))
@@ -343,9 +343,8 @@ class Pass(SimplePass):
         ovpass.set("tle-epoch", self.orb.orbit_elements.epoch.astype(datetime).strftime("%Y%m%d%H%M%S.%f"))
         if self.fig:
             ovpass.set("figure", self.fig)
-            
-        return True
 
+        return True
 
     def print_meos(self, coords, line_no):
         """
@@ -354,17 +353,17 @@ class Pass(SimplePass):
 
         asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
         pass_direction = self.pass_direction().capitalize()[:1]
-        #anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
+        # anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
         asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
-        orbit=self.orb.get_orbit_number(self.risetime)
-        aos_epoch=int((self.risetime-datetime(1970,1,1)).total_seconds())
+        orbit = self.orb.get_orbit_number(self.risetime)
+        aos_epoch = int((self.risetime - datetime(1970, 1, 1)).total_seconds())
         sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
-        
+
         dur_secs = (self.falltime - self.risetime).seconds
         dur_hours, dur_reminder = divmod(dur_secs, 3600)
         dur_minutes, dur_seconds = divmod(dur_reminder, 60)
         duration = "{:0>2}:{:0>2}".format(dur_minutes, dur_seconds)
-        
+
         satellite_meos_translation = {"NOAA 19": "NOAA_19",
                                       "NOAA 18": "NOAA_18",
                                       "NOAA 15": "NOAA_15",
@@ -374,21 +373,22 @@ class Pass(SimplePass):
                                       "FENGYUN 3B": "FENGYUN-3B",
                                       "FENGYUN 3C": "FENGYUN-3C",
                                       "SUOMI NPP": "NPP"}
-                                      
+
         import md5
-        pass_key = md5.new("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".format(satellite_meos_translation.get(self.satellite.upper(), self.satellite.upper()),
+        pass_key = md5.new("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".format(satellite_meos_translation.get(self.satellite.upper(),
+                                                                                                self.satellite.upper()),
                                                                  int(orbit),
                                                                  aos_epoch,
                                                                  sat_lon,
                                                                  sat_lat)).hexdigest()
 
-        line_list = [" {line_no:>2}",                     
+        line_list = [" {line_no:>2}",
                      "{date}",
                      "{satellite:<10}",
                      "{orbit:>5}",
                      "{elevation:>6.3f} ",
                      "{risetime}",
-                     "{overlap:<5s}",                     
+                     "{overlap:<5s}",
                      "{falltime}",
                      "{duration}",
                      "{asimuth_at_aos:>5.1f}",
@@ -399,7 +399,7 @@ class Pass(SimplePass):
                      ]
 
         line = " ".join(line_list).format(
-            #line_no=line_no,
+            # line_no=line_no,
             line_no=1,
             date=self.risetime.strftime("%Y%m%d"),
             satellite=satellite_meos_translation.get(self.satellite.upper(), self.satellite.upper()),

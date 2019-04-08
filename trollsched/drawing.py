@@ -167,7 +167,7 @@ def save_fig(pass_obj,
         return filename
 
     logger.debug("Filename = <%s>", filename)
-    plot_parameters = plot_parameters or {}    
+    plot_parameters = plot_parameters or {}
     with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
         logger.debug("Draw: outline = <%s>", outline)
