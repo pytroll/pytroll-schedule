@@ -206,7 +206,7 @@ class Station(object):
                                                   pattern_args), "allpasses.%s.pkl" % self.id), "wb")
             pickle.dump(allpasses, ph)
             ph.close()
-            
+
         return graph, allpasses
 
 

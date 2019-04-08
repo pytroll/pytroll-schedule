@@ -143,7 +143,9 @@ def save_fig(pass_obj,
              overwrite=False,
              labels=None,
              extension=".png",
-             outline='-r'):
+             outline='-r',
+             plot_parameters=None,
+             plot_title=None):
     """Save the pass as a figure. Filename is automatically generated.
     """
     mpl.use('Agg')
@@ -165,7 +167,8 @@ def save_fig(pass_obj,
         return filename
 
     logger.debug("Filename = <%s>", filename)
-    with Mapper() as mapper:
+    plot_parameters = plot_parameters or {}    
+    with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)

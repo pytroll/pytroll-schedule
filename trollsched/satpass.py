@@ -52,6 +52,7 @@ logger = logging.getLogger(__name__)
 
 VIIRS_PLATFORM_NAMES = ['SUOMI NPP', 'SNPP',
                         'NOAA-20', 'NOAA 20']
+MERSI_PLATFORM_NAMES = ['FENGYUN 3C', 'FENGYUN-3C', 'FY-3C']
 MERSI2_PLATFORM_NAMES = ['FENGYUN 3D', 'FENGYUN-3D', 'FY-3D',
                          'FENGYUN 3E', 'FENGYUN-3E', 'FY-3E']
 
@@ -650,6 +651,8 @@ def get_next_passes(satellites,
                 instrument = "viirs"
             elif sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
                 instrument = "avhrr"
+            elif sat.name.upper() in MERSI_PLATFORM_NAMES:
+                instrument = "mersi"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
                 instrument = "mersi2"
             else:
