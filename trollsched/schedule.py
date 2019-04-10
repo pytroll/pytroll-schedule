@@ -642,7 +642,7 @@ def parse_datetime(strtime):
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
 
 
-def save_passes(allpasses, poly, output_dir, plot_parameters, plot_title):
+def save_passes(allpasses, poly, output_dir, plot_parameters=None, plot_title=None):
     """Save overpass plots to png and store in directory *output_dir*
     """
     from trollsched.drawing import save_fig
