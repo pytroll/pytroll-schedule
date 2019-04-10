@@ -374,13 +374,15 @@ class Pass(SimplePass):
                                       "FENGYUN 3C": "FENGYUN-3C",
                                       "SUOMI NPP": "NPP"}
 
-        import md5
-        pass_key = md5.new("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".format(satellite_meos_translation.get(self.satellite.upper(),
-                                                                                                self.satellite.upper()),
-                                                                 int(orbit),
-                                                                 aos_epoch,
-                                                                 sat_lon,
-                                                                 sat_lat)).hexdigest()
+        import hashlib
+
+        pass_key = hashlib.md5(("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".
+                                format(satellite_meos_translation.get(self.satellite.name.upper(),
+                                                                      self.satellite.name.upper()),
+                                       int(orbit),
+                                       aos_epoch,
+                                       sat_lon,
+                                       sat_lat)).encode('utf-8')).hexdigest()
 
         line_list = [" {line_no:>2}",
                      "{date}",
@@ -402,7 +404,8 @@ class Pass(SimplePass):
             # line_no=line_no,
             line_no=1,
             date=self.risetime.strftime("%Y%m%d"),
-            satellite=satellite_meos_translation.get(self.satellite.upper(), self.satellite.upper()),
+            satellite=satellite_meos_translation.get(self.satellite.name.upper(),
+                                                     self.satellite.name.upper()),
             orbit=orbit,
             elevation=max_elevation,
             risetime=self.risetime.strftime("%H:%M:%S"),
