@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018, 2019 Adam.Dybbroe
 
 # Author(s):
 
@@ -158,7 +158,8 @@ def save_fig(pass_obj,
         os.makedirs(directory)
     filename = os.path.join(
         directory,
-        (rise + pass_obj.satellite.name.replace(" ", "_") + fall + extension))
+        (rise + pass_obj.satellite.name.replace(" ", "_") + "_" +
+         pass_obj.instrument.replace('/', '-') + "_" + fall + extension))
 
     pass_obj.fig = filename
     if not overwrite and os.path.exists(filename):

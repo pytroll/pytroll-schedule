@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2018 PyTroll Community
+# Copyright (c) 2014, 2018, 2019 PyTroll Community
 
 # Author(s):
 
@@ -39,7 +39,9 @@ NUMBER_OF_FOVS = {
     'mhs': 90,
     'amsua': 30,
     'ascat': 42,
-    'viirs': 6400
+    'viirs': 6400,
+    'atms': 96,
+    'mwhs-2': 98
 }
 
 SATELLITE_NAMES = {'npp': 'Suomi NPP',
@@ -52,7 +54,8 @@ SATELLITE_NAMES = {'npp': 'Suomi NPP',
                    'metopb': 'Metop-B',
                    'metopa': 'Metop-A',
                    'noaa20': 'NOAA-20',
-                   'fengyun3d': 'FY-3D'
+                   'fengyun3d': 'FY-3D',
+                   'fengyun3c': 'FY-3C'
                    }
 
 INSTRUMENT = {'Suomi NPP': 'viirs',
@@ -65,4 +68,5 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-A': 'avhrr',
               'Metop-B': 'avhrr',
               'Metop-C': 'avhrr',
-              'FY-3D': 'avhrr'}
+              'FY-3D': 'avhrr',
+              'FY-3C': 'avhrr'}
