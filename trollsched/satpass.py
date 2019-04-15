@@ -145,9 +145,18 @@ class Pass(SimplePass):
         tle2 = kwargs.get('tle2', None)
         logger.debug("instrument: %s", str(instrument))
 
-        if isinstance(instrument, list):
-            logger.warning("Instrument is a list! Assume avhrr...")
-            instrument = 'avhrr'
+        if isinstance(instrument, (list, set)):
+            if 'avhrr' in instrument:
+                logger.warning("Instrument is a sequence Assume avhrr...")
+                instrument = 'avhrr'
+            elif 'viirs' in instrument:
+                logger.warning("Instrument is a sequence! Assume viirs...")
+                instrument = 'viirs'
+            elif 'modis' in instrument:
+                logger.warning("Instrument is a sequence! Assume modis...")
+                instrument = 'modis'
+            else:
+                raise TypeError("Instrument is a sequence! Don't know which one to choose!")
 
         default = NUMBER_OF_FOVS.get(instrument, 2048)
         self.number_of_fovs = kwargs.get('number_of_fovs', default)
@@ -451,10 +460,10 @@ def get_next_passes(satellites,
             get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps)
 
         else:
-            if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
-                instrument = "avhrr"
-            elif sat.name.upper() in VIIRS_PLATFORM_NAMES:
+            if sat.name.upper() in VIIRS_PLATFORM_NAMES:
                 instrument = "viirs"
+            elif sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
+                instrument = "avhrr"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
                 instrument = "mersi2"
             else:

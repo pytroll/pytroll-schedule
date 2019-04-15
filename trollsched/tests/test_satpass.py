@@ -163,6 +163,35 @@ def get_region(areaid):
     return get_area_def(areaid)
 
 
+class TestPass(unittest.TestCase):
+
+    def setUp(self):
+        """Set up"""
+        self.n20orb = get_n20_orbital()
+        self.n19orb = get_n19_orbital()
+
+    def test_pass_instrument_interface(self):
+
+        tstart = datetime(2018, 10, 16, 2, 48, 29)
+        tend = datetime(2018, 10, 16, 3, 2, 38)
+
+        instruments = set(('viirs', 'avhrr', 'modis'))
+        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
+        self.assertEqual(overp.instrument, 'avhrr')
+
+        instruments = set(('viirs', 'modis'))
+        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
+        self.assertEqual(overp.instrument, 'viirs')
+
+        instruments = set(('amsu-a', 'mhs'))
+        self.assertRaises(TypeError, Pass, self,
+                          'NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
+
+    def tearDown(self):
+        """Clean up"""
+        pass
+
+
 class TestSwathBoundary(unittest.TestCase):
 
     def setUp(self):
@@ -208,6 +237,14 @@ class TestSwathBoundary(unittest.TestCase):
         assertNumpyArraysEqual(cont[1], LATS3)
 
         overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr/3')
+        overp_boundary = SwathBoundary(overp, frequency=500)
+
+        cont = overp_boundary.contour()
+
+        assertNumpyArraysEqual(cont[0], LONS3)
+        assertNumpyArraysEqual(cont[1], LATS3)
+
+        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr-3')
         overp_boundary = SwathBoundary(overp, frequency=500)
 
         cont = overp_boundary.contour()
@@ -290,5 +327,6 @@ def suite():
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathBoundary))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestPass))
 
     return mysuite

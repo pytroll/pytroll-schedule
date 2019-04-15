@@ -1,3 +1,16 @@
+## Version 0.5.2 (2019/03/19)
+
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 36](https://github.com/pytroll/pytroll-schedule/pull/36) - Add xarray to conda dependencies
+* [PR 35](https://github.com/pytroll/pytroll-schedule/pull/35) - Bugfix - when a set of sensors are provided choose avhrr if it is one of them
+* [PR 33](https://github.com/pytroll/pytroll-schedule/pull/33) - Bugfix avhrr naming
+
+In this release 3 pull requests were closed.
+
 ## Version 0.5.1 (2019/01/08)
 
 ### Issues Closed
