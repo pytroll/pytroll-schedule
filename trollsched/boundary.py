@@ -122,6 +122,12 @@ class SwathBoundary(Boundary):
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
+        elif self.overpass.instrument == 'olci':
+            # 3 minutes of data is 4091 300meter lines:
+            sec_scan_duration = 0.04399902224395014
+            along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 100
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
@@ -131,7 +137,7 @@ class SwathBoundary(Boundary):
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
         scans_nb = scanlength_seconds/sec_scan_duration * along_scan_reduce_factor
-        # Devide by the scan step to a reduced number of scans:
+        # Devide by the scan step to reduced number of scans:
         scans_nb = np.floor(scans_nb/scan_step)
         scans_nb = int(max(scans_nb, 1))
 
