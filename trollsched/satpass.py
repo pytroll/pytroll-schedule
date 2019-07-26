@@ -333,7 +333,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
         url = urlparse(HOST % sat.name)
     logger.debug("Connect to ftp server")
     try:
-        f = ftplib.FTP(url.netloc)
+        f = ftplib.FTP_TLS(url.netloc)
     except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
