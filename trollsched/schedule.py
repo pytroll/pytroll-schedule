@@ -36,7 +36,7 @@ from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
-from pyresample import utils as resample_utils
+from pyresample import parse_area_file
 from trollsched import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
@@ -67,7 +67,7 @@ class Station(object):
 
         if area_file is not None:
             try:
-                self.area = resample_utils.parse_area_file(area_file, area)[0]
+                self.area = parse_area_file(area_file, area)[0]
             except TypeError:
                 pass
 
