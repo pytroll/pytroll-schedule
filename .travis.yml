@@ -5,7 +5,7 @@ env:
   - PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
-  - CONDA_DEPENDENCIES='scipy coveralls coverage codecov mock six appdirs pykdtree pyresample docutils pyyaml matplotlib xarray'
+  - CONDA_DEPENDENCIES='dask distributed toolz Cython sphinx cartopy pillow scipy coveralls coverage codecov behave netcdf4 h5py h5netcdf gdal rasterio<1.0.14 imageio pyhdf mock libtiff pycoast pydecorate geoviews six appdirs pykdtree pyresample docutils pyyaml matplotlib xarray'
   - PIP_DEPENDENCIES=''
   - SETUP_XVFB=False
   - EVENT_TYPE='push pull_request cron'
