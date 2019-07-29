@@ -350,6 +350,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     if f is not None:
         data = []
         try:
+            f.prot_p()  # explicitly call for protected transfer
             f.dir(url.path, data.append)
         except socket.error as e:
             logger.error("Can't get any data: " + str(e))
@@ -377,6 +378,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
         lines = []
         if not os.path.exists(os.path.join("/tmp", filedates[date])):
             try:
+                f.prot_p()  # explicitly call for protected transfer
                 f.retrlines('RETR ' + os.path.join(url.path, filedates[date]),
                             lines.append)
             except ftplib.error_perm:
