@@ -36,7 +36,12 @@ from pprint import pformat
 
 import numpy as np
 from pyorbital import astronomy
-from pyresample import parse_area_file
+try:
+    from pyresample import parse_area_file
+except ImportError:
+    # Older versions of pyresample:
+    from pyresample.utils import parse_area_file
+
 from trollsched import utils
 from trollsched.spherical import get_twilight_poly
 from trollsched.graph import Graph
