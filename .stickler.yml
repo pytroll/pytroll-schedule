@@ -1,0 +1,9 @@
+linters:
+  flake8:
+    python: 3
+    config: setup.cfg
+
+files:
+    ignore:
+        - 'docs/Makefile'
+        - 'docs/make.bat'
