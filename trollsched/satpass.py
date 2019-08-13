@@ -32,11 +32,7 @@ import os
 import six
 import socket
 from functools import reduce as fctools_reduce
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
-
+from six.moves.urllib.parse import urlparse
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 import numpy as np
