@@ -29,7 +29,7 @@ from setuptools import setup
 import sys
 import versioneer
 
-requires = ['numpy', 'pyresample', 'pyorbital']
+requires = ['numpy', 'pyresample', 'pyorbital', 'trollsift']
 test_requires = ['satpy']
 
 if sys.version_info < (2, 7):
