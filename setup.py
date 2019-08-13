@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2018 PyTroll Community
+# Copyright (c) 2014 - 2019 PyTroll Community
 
 # Author(s):
 
@@ -30,7 +30,7 @@ import sys
 import versioneer
 
 requires = ['numpy', 'pyresample', 'pyorbital', 'trollsift']
-test_requires = ['satpy']
+test_requires = []
 
 if sys.version_info < (2, 7):
     # multiprocessing is not in the standard library
