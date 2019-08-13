@@ -802,7 +802,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
                                           passes[station_id],
                                           # station_meta[station]['coords'],
                                           [s.coords for s in scheduler.stations if s.id == station_id][0],
-                                          start_time + timedelta(hours=start),
+                                          start_time + timedelta(hours=scheduler.start),
                                           False)  # Ie only print schedule passes
             logger.info("Generated " + str(meosfile))
         if scheduler.opts.metno_xml:

@@ -44,7 +44,6 @@ import numpy as np
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
-from trollsift.parser import compose
 
 from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
