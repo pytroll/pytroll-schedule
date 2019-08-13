@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016, 2018 Adam.Dybbroe
+# Copyright (c) 2016, 2018, 2019 Adam.Dybbroe
 
 # Author(s):
 
@@ -26,14 +26,11 @@ schedule request xml files and then triggers the png and xml output generation.
 
 """
 
-import os
-from six.moves.configparser import RawConfigParser
 import logging
 import sys
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
+import os
+from six.moves.configparser import RawConfigParser
+from six.moves.urllib.parse import urlparse
 import posttroll.subscriber
 from posttroll.publisher import Publish
 import xml.etree.ElementTree as ET

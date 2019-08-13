@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 from trollsched.satpass import Pass
 from trollsched.boundary import SwathBoundary
 from pyorbital.orbital import Orbital
-
+from pyresample.geometry import AreaDefinition
 
 LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   143.1730880418349, 105.69172088208997, 93.03135571771092,
@@ -128,6 +128,11 @@ LATS3 = np.array([66.94713585, 67.07854554, 66.53108388, 65.27837805, 63.5022359
                   58.33858588, 57.71210872, 55.14964148, 55.72506407, 60.40889798,
                   61.99561474, 63.11425455, 63.67173255, 63.56939058], dtype='float64')
 
+AREA_DEF_EURON1 = AreaDefinition('euron1', 'Northern Europe - 1km',
+                                 '', {'proj': 'stere', 'ellps': 'WGS84',
+                                      'lat_0': 90.0, 'lon_0': 0.0, 'lat_ts': 60.0},
+                                 3072, 3072, (-1000000.0, -4500000.0, 2072000.0, -1428000.0))
+
 
 def assertNumpyArraysEqual(self, other):
     if self.shape != other.shape:
@@ -152,15 +157,6 @@ def get_n19_orbital():
     tle1 = "1 33591U 09005A   18288.64852564  .00000055  00000-0  55330-4 0  9992"
     tle2 = "2 33591  99.1559 269.1434 0013899 353.0306   7.0669 14.12312703499172"
     return Orbital('NOAA-19', line1=tle1, line2=tle2)
-
-
-def get_region(areaid):
-    try:
-        from satpy.resample import get_area_def
-    except ImportError:
-        from mpop.projector import get_area_def
-
-    return get_area_def(areaid)
 
 
 class TestPass(unittest.TestCase):
@@ -198,7 +194,7 @@ class TestSwathBoundary(unittest.TestCase):
         """Set up"""
         self.n20orb = get_n20_orbital()
         self.n19orb = get_n19_orbital()
-        self.euron1 = get_region('euron1')
+        self.euron1 = AREA_DEF_EURON1
 
     def test_swath_boundary(self):
 

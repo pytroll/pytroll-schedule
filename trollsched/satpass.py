@@ -32,11 +32,7 @@ import os
 import six
 import socket
 from functools import reduce as fctools_reduce
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
-
+from six.moves.urllib.parse import urlparse
 from datetime import datetime, timedelta
 from tempfile import mkstemp
 import numpy as np
@@ -437,7 +433,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
         url = urlparse(HOST % sat.name)
     logger.debug("Connect to ftp server")
     try:
-        f = ftplib.FTP(url.netloc)
+        f = ftplib.FTP_TLS(url.netloc)
     except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
@@ -454,6 +450,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     if f is not None:
         data = []
         try:
+            f.prot_p()  # explicitly call for protected transfer
             f.dir(url.path, data.append)
         except socket.error as e:
             logger.error("Can't get any data: " + str(e))
@@ -481,6 +478,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
         lines = []
         if not os.path.exists(os.path.join("/tmp", filedates[date])):
             try:
+                f.prot_p()  # explicitly call for protected transfer
                 f.retrlines('RETR ' + os.path.join(url.path, filedates[date]),
                             lines.append)
             except ftplib.error_perm:
