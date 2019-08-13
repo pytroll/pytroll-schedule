@@ -317,6 +317,56 @@ class TestSwathBoundary(unittest.TestCase):
         pass
 
 
+class TestPassList(unittest.TestCase):
+
+    def setUp(self):
+        """Set up"""
+        pass
+
+    def test_meos_pass_list(self):
+        orig = ("  1 20190105 FENGYUN 3D  5907 52.943  01:01:45 n/a   01:17:15 15:30  18.6 107.4 -- "
+                "Undefined(Scheduling not done 1546650105 ) a3d0df0cd289244e2f39f613f229a5cc D")
+
+        tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60 * 15.5)
+
+        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
+        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+
+        coords = (10.72, 59.942, 0.1)
+        meos_format_str = mypass.print_meos(coords, line_no=1)
+
+        self.assertEqual(meos_format_str, orig)
+
+    def test_generate_metno_xml(self):
+        import xml.etree.ElementTree as ET
+        root = ET.Element("acquisition-schedule")
+
+        orig = ('<acquisition-schedule><pass aos="20190105010145" asimuth-at-aos="18.555" '
+                'asimuth-at-max-elevation="107.385" los="20190105011715" max-elevation="52.943" '
+                'orbit="5907" pass-direction="D" satellite="FENGYUN 3D" satellite-lat-at-aos="80.739" '
+                'satellite-lon-at-aos="76.204" tle-epoch="20181229125844.110848" /></acquisition-schedule>')
+
+        tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60 * 15.5)
+
+        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
+        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+
+        coords = (10.72, 59.942, 0.1)
+        mypass.generate_metno_xml(coords, root)
+
+        self.assertEqual(ET.tostring(root).decode("utf-8"), orig)
+
+    def tearDown(self):
+        """Clean up"""
+        pass
+
+
 def suite():
     """The suite for test_satpass
     """
@@ -324,5 +374,6 @@ def suite():
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathBoundary))
     mysuite.addTest(loader.loadTestsFromTestCase(TestPass))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestPassList))
 
     return mysuite

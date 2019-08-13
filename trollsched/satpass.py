@@ -40,12 +40,14 @@ import numpy as np
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 from trollsched.boundary import SwathBoundary
+
 from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
 logger = logging.getLogger(__name__)
 
 VIIRS_PLATFORM_NAMES = ['SUOMI NPP', 'SNPP',
                         'NOAA-20', 'NOAA 20']
+MERSI_PLATFORM_NAMES = ['FENGYUN 3C', 'FENGYUN-3C', 'FY-3C']
 MERSI2_PLATFORM_NAMES = ['FENGYUN 3D', 'FENGYUN-3D', 'FY-3D',
                          'FENGYUN 3E', 'FENGYUN-3E', 'FY-3E']
 
@@ -241,6 +243,107 @@ class Pass(SimplePass):
             return 0
         return inter.area() / area_boundary.area()
 
+    def generate_metno_xml(self, coords, root):
+        import xml.etree.ElementTree as ET
+
+        asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
+        pass_direction = self.pass_direction().capitalize()[:1]
+        # anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
+        asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
+        orbit = self.orb.get_orbit_number(self.risetime)
+        # aos_epoch=int((self.risetime-datetime(1970,1,1)).total_seconds())
+        sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
+
+        ovpass = ET.SubElement(root, "pass")
+        ovpass.set("satellite", self.satellite.name)
+        ovpass.set("aos", self.risetime.strftime("%Y%m%d%H%M%S"))
+        ovpass.set("los", self.falltime.strftime("%Y%m%d%H%M%S"))
+        ovpass.set("orbit", "{:d}".format(orbit))
+        ovpass.set("max-elevation", "{:.3f}".format(max_elevation))
+        ovpass.set("asimuth-at-max-elevation", "{:.3f}".format(asimuth_at_max_elevation))
+        ovpass.set("asimuth-at-aos", "{:.3f}".format(asimuth_at_aos))
+        ovpass.set("pass-direction", pass_direction)
+        ovpass.set("satellite-lon-at-aos", "{:.3f}".format(sat_lon))
+        ovpass.set("satellite-lat-at-aos", "{:.3f}".format(sat_lat))
+        ovpass.set("tle-epoch", self.orb.orbit_elements.epoch.astype(datetime).strftime("%Y%m%d%H%M%S.%f"))
+        if self.fig:
+            ovpass.set("figure", self.fig)
+
+        return True
+
+    def print_meos(self, coords, line_no):
+        """
+         No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)
+        """
+
+        asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
+        pass_direction = self.pass_direction().capitalize()[:1]
+        # anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
+        asimuth_at_aos, aos_elevation = self.orb.get_observer_look(self.risetime, *coords)
+        orbit = self.orb.get_orbit_number(self.risetime)
+        aos_epoch = int((self.risetime - datetime(1970, 1, 1)).total_seconds())
+        sat_lon, sat_lat, alt = self.orb.get_lonlatalt(self.risetime)
+
+        dur_secs = (self.falltime - self.risetime).seconds
+        dur_hours, dur_reminder = divmod(dur_secs, 3600)
+        dur_minutes, dur_seconds = divmod(dur_reminder, 60)
+        duration = "{:0>2}:{:0>2}".format(dur_minutes, dur_seconds)
+
+        satellite_meos_translation = {"NOAA 19": "NOAA_19",
+                                      "NOAA 18": "NOAA_18",
+                                      "NOAA 15": "NOAA_15",
+                                      "METOP-A": "M02",
+                                      "METOP-B": "M01",
+                                      "FENGYUN 3A": "FENGYUN-3A",
+                                      "FENGYUN 3B": "FENGYUN-3B",
+                                      "FENGYUN 3C": "FENGYUN-3C",
+                                      "SUOMI NPP": "NPP"}
+
+        import hashlib
+
+        pass_key = hashlib.md5(("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".
+                                format(satellite_meos_translation.get(self.satellite.name.upper(),
+                                                                      self.satellite.name.upper()),
+                                       int(orbit),
+                                       aos_epoch,
+                                       sat_lon,
+                                       sat_lat)).encode('utf-8')).hexdigest()
+
+        line_list = [" {line_no:>2}",
+                     "{date}",
+                     "{satellite:<10}",
+                     "{orbit:>5}",
+                     "{elevation:>6.3f} ",
+                     "{risetime}",
+                     "{overlap:<5s}",
+                     "{falltime}",
+                     "{duration}",
+                     "{asimuth_at_aos:>5.1f}",
+                     "{asimuth_at_max:>5.1f}",
+                     "-- Undefined(Scheduling not done {aos_epoch} )",
+                     "{passkey}",
+                     "{pass_direction}"
+                     ]
+
+        line = " ".join(line_list).format(
+            # line_no=line_no,
+            line_no=1,
+            date=self.risetime.strftime("%Y%m%d"),
+            satellite=satellite_meos_translation.get(self.satellite.name.upper(),
+                                                     self.satellite.name.upper()),
+            orbit=orbit,
+            elevation=max_elevation,
+            risetime=self.risetime.strftime("%H:%M:%S"),
+            overlap="n/a",
+            falltime=self.falltime.strftime("%H:%M:%S"),
+            duration=duration,
+            asimuth_at_aos=asimuth_at_aos,
+            asimuth_at_max=asimuth_at_max_elevation,
+            aos_epoch=aos_epoch,
+            passkey=pass_key,
+            pass_direction=pass_direction)
+        return line
+
     def print_vcs(self, coords):
         """Should look like this::
 
@@ -420,7 +523,9 @@ def get_next_passes(satellites,
                     forward,
                     coords,
                     tle_file=None,
-                    aqua_terra_dumps=None):
+                    aqua_terra_dumps=None,
+                    min_pass=MIN_PASS,
+                    local_horizon=0):
     """Get the next passes for *satellites*, starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
@@ -446,7 +551,21 @@ def get_next_passes(satellites,
             sat = Satellite(sat, 0, 0)
 
         satorb = orbital.Orbital(sat.name, tle_file=tle_file)
-        passlist = satorb.get_next_passes(utctime, forward, *coords)
+        passlist = satorb.get_next_passes(utctime,
+                                          forward,
+                                          horizon=local_horizon,
+                                          *coords
+                                          )
+        if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
+            instrument = "avhrr"
+        elif sat.name in ["aqua", "terra"]:
+            instrument = "modis"
+        elif sat.name.endswith("npp") or sat.name.startswith("jpss"):
+            instrument = "viirs"
+        elif sat.name.lower() in ["fengyun 3a", "fengyun 3b", "fengyun 3c", "fengyun 3d"]:
+            instrument = "mersi"
+        else:
+            instrument = "unknown"
 
         if sat.name == "metop-a":
             # Take care of metop-a
@@ -462,6 +581,8 @@ def get_next_passes(satellites,
                 instrument = "viirs"
             elif sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
                 instrument = "avhrr"
+            elif sat.name.upper() in MERSI_PLATFORM_NAMES:
+                instrument = "mersi"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
                 instrument = "mersi2"
             else:

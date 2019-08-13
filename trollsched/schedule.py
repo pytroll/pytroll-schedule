@@ -56,7 +56,8 @@ class Station(object):
 
     """docstring for Station."""
 
-    def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None):
+    def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None,
+                 min_pass=None, local_horizon=0):
         super(Station, self).__init__()
         self.id = station_id
         self.name = name
@@ -71,6 +72,8 @@ class Station(object):
                 self.area = parse_area_file(area_file, area)[0]
             except TypeError:
                 pass
+        self.min_pass = min_pass
+        self.local_horizon = local_horizon
 
     @property
     def coords(self):
@@ -101,7 +104,9 @@ class Station(object):
                                     self.coords, tle_file,
                                     aqua_terra_dumps=(sched.dump_url or True
                                                       if opts.no_aqua_terra_dump
-                                                      else None)
+                                                      else None),
+                                    min_pass=self.min_pass,
+                                    local_horizon=self.local_horizon
                                     )
         logger.info("Computation of next overpasses done")
 
@@ -119,7 +124,9 @@ class Station(object):
                 args=(allpasses,
                       self.area.poly,
                       build_filename(
-                          "dir_plots", pattern, pattern_args)
+                          "dir_plots", pattern, pattern_args),
+                      sched.plot_parameters,
+                      sched.plot_title
                       )
             )
             image_saver.start()
@@ -144,16 +151,26 @@ class Station(object):
             generate_sch_file(build_filename("file_sci", pattern,
                                              pattern_args), allpasses, self.coords)
 
+        if opts.meos:
+            generate_meos_file(build_filename("file_meos", pattern, pattern_args), allpasses,
+                               self.coords, start_time + timedelta(hours=sched.start), True)  # Ie report mode
+
+        if opts.plot:
+            logger.info("Waiting for images to be saved...")
+            image_saver.join()
+            logger.info("Done!")
+
+        if opts.metno_xml:
+            generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), allpasses,
+                                    self.coords, start_time + timedelta(hours=sched.start),
+                                    start_time + timedelta(hours=sched.forward), self.id, sched.center_id, True)
+
         if opts.xml or opts.report:
             url = urlparse(opts.output_url or opts.output_dir)
             if url.scheme not in ["file", ""]:
                 directory = "/tmp"
             else:
                 directory = url.path
-            if opts.plot:
-                logger.info("Waiting for images to be saved...")
-                image_saver.join()
-                logger.info("Done!")
             if opts.xml or opts.report:
                 """Allways create xml-file in request-mode"""
                 pattern_args['mode'] = "request"
@@ -225,7 +242,7 @@ class Scheduler(object):
 
     """docstring for Scheduler."""
 
-    def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id):
+    def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id, plot_parameters, plot_title):
         super(Scheduler, self).__init__()
         self.stations = stations
         self.min_pass = min_pass
@@ -234,6 +251,8 @@ class Scheduler(object):
         self.dump_url = dump_url
         self.patterns = patterns
         self.center_id = center_id
+        self.plot_parameters = plot_parameters
+        self.plot_title = plot_title
         self.opts = None
 
 
@@ -485,6 +504,56 @@ def get_max(groups, fun):
     return groups[argmax(scores)]
 
 
+def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_name, center_id, report_mode=False):
+    import xml.etree.ElementTree as ET
+
+    reqtime = datetime.utcnow()
+
+    with open(output_file, "w") as out:
+        out.write("<?xml version='1.0' encoding='utf-8'?>")
+
+        root = ET.Element("acquisition-schedule")
+        props = ET.SubElement(root, "properties")
+        proj = ET.SubElement(props, "project")
+        proj.text = "Pytroll"
+        typep = ET.SubElement(props, "type")
+        if report_mode:
+            typep.text = "report"
+        else:
+            typep.text = "request"
+        station = ET.SubElement(props, "station")
+        station.text = station_name
+        file_start = ET.SubElement(props, "file-start")
+        file_start.text = start.strftime("%Y-%m-%dT%H:%M:%S")
+        file_end = ET.SubElement(props, "file-end")
+        file_end.text = end.strftime("%Y-%m-%dT%H:%M:%S")
+        reqby = ET.SubElement(props, "requested-by")
+        reqby.text = center_id
+        reqon = ET.SubElement(props, "requested-on")
+        reqon.text = reqtime.strftime("%Y-%m-%dT%H:%M:%S")
+
+        for overpass in sorted(allpasses, key=lambda x: x.risetime):
+            if (overpass.rec or report_mode) and overpass.risetime > start:
+                overpass.generate_metno_xml(coords, root)
+
+        out.write(ET.tostring(root).decode("utf-8"))
+        out.close()
+    return output_file
+
+
+def generate_meos_file(output_file, allpasses, coords, start, report_mode=False):
+
+    with open(output_file, "w") as out:
+        out.write(" No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)\n")
+        line_no = 1
+        for overpass in sorted(allpasses, key=lambda x: x.risetime):
+            if (overpass.rec or report_mode) and overpass.risetime > start:
+                out.write(overpass.print_meos(coords, line_no) + "\n")
+                line_no += 1
+        out.close()
+    return output_file
+
+
 def generate_sch_file(output_file, overpasses, coords):
 
     with open(output_file, "w") as out:
@@ -501,7 +570,8 @@ def generate_sch_file(output_file, overpasses, coords):
         out.write("#\n#\n#Pass List\n#\n")
 
         out.write(
-            "#SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration\n#\n")
+            "#SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        "
+            "OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration\n#\n")
 
         for overpass in sorted(overpasses):
             out.write(overpass.print_vcs(coords) + "\n")
@@ -573,12 +643,12 @@ def parse_datetime(strtime):
     return datetime.strptime(strtime, "%Y%m%d%H%M%S")
 
 
-def save_passes(allpasses, poly, output_dir):
+def save_passes(allpasses, poly, output_dir, plot_parameters=None, plot_title=None):
     """Save overpass plots to png and store in directory *output_dir*
     """
     from trollsched.drawing import save_fig
     for overpass in allpasses:
-        save_fig(overpass, poly=poly, directory=output_dir)
+        save_fig(overpass, poly=poly, directory=output_dir, plot_parameters=plot_parameters, plot_title=plot_title)
 
 
 def get_passes_from_xml_file(filename):
@@ -669,7 +739,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
             passes[s] = list(ap)
             for p in passes[s]:
                 p.rec = False
-    except:
+    except Exception:
         logger.exception("Failed to reset 'rec' for s:%s  ap:%s  passes[s]:%s  p:%s",
                          a, ap, passes[s], p)
         raise
@@ -728,6 +798,24 @@ def combined_stations(scheduler, start_time, graph, allpasses):
                                         True)
             logger.info("Generated " + str(xmlfile))
 
+        if scheduler.opts.meos:
+            meosfile = generate_meos_file(build_filename("file_meos", scheduler.patterns, pattern_args),
+                                          passes[station_id],
+                                          # station_meta[station]['coords'],
+                                          [s.coords for s in scheduler.stations if s.id == station_id][0],
+                                          start_time + timedelta(hours=scheduler.start),
+                                          False)  # Ie only print schedule passes
+            logger.info("Generated " + str(meosfile))
+        if scheduler.opts.metno_xml:
+            metno_xmlfile = generate_metno_xml_file(build_filename("file_metno_xml", scheduler.patterns, pattern_args),
+                                                    passes[station_id],
+                                                    # station_meta[station]['coords'],
+                                                    [s.coords for s in scheduler.stations if s.id == station_id][0],
+                                                    start_time + timedelta(hours=scheduler.start),
+                                                    start_time + timedelta(hours=scheduler.forward),
+                                                    station_id, scheduler.center_id, False)
+            logger.info("Generated " + str(metno_xmlfile))
+
     logger.info("Finished coordinated schedules.")
 
 
@@ -762,8 +850,8 @@ def run():
     group_postim.add_argument("-s", "--start-time", type=parse_datetime,
                               help="start time of the schedule to compute")
     group_postim.add_argument("-d", "--delay", default=60, type=float,
-                              help="delay (in seconds) needed between two "
-                              + "consecutive passes (60 seconds by default)")
+                              help="delay (in seconds) needed between two " +
+                              "consecutive passes (60 seconds by default)")
     # argument group: special behaviour
     group_spec = parser.add_argument_group(title="special",
                                            description="(additional parameter changing behaviour)")
@@ -779,8 +867,8 @@ def run():
     group_outp.add_argument("-o", "--output-dir", default=None,
                             help="where to put generated files")
     group_outp.add_argument("-u", "--output-url", default=None,
-                            help="URL where to put generated schedule file(s)"
-                            + ", otherwise use output-dir")
+                            help="URL where to put generated schedule file(s)" +
+                            ", otherwise use output-dir")
     group_outp.add_argument("-x", "--xml", action="store_true",
                             help="generate an xml request file (schedule)"
                             )
@@ -792,6 +880,10 @@ def run():
                             help="generate plot images")
     group_outp.add_argument("-g", "--graph", action="store_true",
                             help="save graph info")
+    group_outp.add_argument("--meos", action="store_true",
+                            help="generate a MEOS schedule file")
+    group_outp.add_argument("--metno-xml", action="store_true",
+                            help="generate a METNO xml pass data file")
     opts = parser.parse_args()
 
     if opts.config:
@@ -806,7 +898,7 @@ def run():
         parser.error("Coordinates must be provided in the absence of "
                      "configuration file.")
 
-    if not (opts.xml or opts.scisys or opts.report):
+    if not (opts.xml or opts.scisys or opts.report or opts.metno_xml):
         parser.error("No output specified, use '--scisys' or '-x/--xml'")
 
     if opts.output_dir is None:
@@ -918,6 +1010,6 @@ def run():
 if __name__ == '__main__':
     try:
         run()
-    except:
+    except Exception:
         logger.exception("Something wrong happened!")
         raise
