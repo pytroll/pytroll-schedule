@@ -167,10 +167,6 @@ class Station(object):
 
         if opts.xml or opts.report:
             url = urlparse(opts.output_url or opts.output_dir)
-            if url.scheme not in ["file", ""]:
-                directory = "/tmp"
-            else:
-                directory = url.path
             if opts.xml or opts.report:
                 """Allways create xml-file in request-mode"""
                 pattern_args['mode'] = "request"
@@ -741,7 +737,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
                 p.rec = False
     except Exception:
         logger.exception("Failed to reset 'rec' for s:%s  ap:%s  passes[s]:%s  p:%s",
-                         a, ap, passes[s], p)
+                         s, ap, passes[s], p)
         raise
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
@@ -936,8 +932,6 @@ def run():
     logger = logging.getLogger("trollsched")
 
     tle_file = opts.tle
-    if opts.forward:
-        forward = opts.forward
     if opts.start_time:
         start_time = opts.start_time
     else:
