@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018, 2019 Adam.Dybbroe
 
 # Author(s):
 
@@ -39,6 +39,11 @@ try:
 except ImportError:
     logger.warning("Failed loading Cartopy, will try Basemap instead")
     BASEMAP_NOT_CARTOPY = True
+
+if not BASEMAP_NOT_CARTOPY:
+    import cartopy
+    cartopy.config['pre_existing_data_dir'] = os.environ.get(
+        "CARTOPY_PRE_EXISTING_DATA_DIR", cartopy.config['pre_existing_data_dir'])
 
 
 class MapperBasemap(object):
