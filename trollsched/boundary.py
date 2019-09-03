@@ -65,6 +65,9 @@ class SwathBoundary(Boundary):
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
             instrument = "avhrr"
+        elif instrument == "mersi":
+            scan_angle = 55.4
+            instrument = "avhrr"
         elif instrument == "mersi2":
             scan_angle = 55.4
             instrument = "avhrr"
@@ -115,7 +118,7 @@ class SwathBoundary(Boundary):
             sec_scan_duration = 1.779166667
             along_scan_reduce_factor = 1
         elif self.overpass.instrument.startswith("avhrr"):
-            sec_scan_duration = 1./6.
+            sec_scan_duration = 1. / 6.
             along_scan_reduce_factor = 0.1
         elif self.overpass.instrument == 'ascat':
             sec_scan_duration = 3.74747474747
@@ -126,19 +129,19 @@ class SwathBoundary(Boundary):
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
             logger.info(logmsg + "%s", str(self.overpass.instrument))
-            sec_scan_duration = 1./6.
+            sec_scan_duration = 1. / 6.
             along_scan_reduce_factor = 0.1
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
-        scans_nb = scanlength_seconds/sec_scan_duration * along_scan_reduce_factor
+        scans_nb = scanlength_seconds / sec_scan_duration * along_scan_reduce_factor
         # Devide by the scan step to a reduced number of scans:
-        scans_nb = np.floor(scans_nb/scan_step)
+        scans_nb = np.floor(scans_nb / scan_step)
         scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
-                                                            np.array([0, self.overpass.number_of_fovs-1]),
+                                                            np.array([0, self.overpass.number_of_fovs - 1]),
                                                             scan_step=scan_step)
 
         side_shape = sides_lons[::-1, 0].shape[0]
