@@ -31,6 +31,7 @@ import glob
 
 logger = logging.getLogger(__name__)
 
+
 def xml_compare(x1_, x2_, reporter=None, skiptags=None):
     """Compare xml objects.
     """
@@ -87,6 +88,7 @@ def text_compare(t1_, t2_):
         return True
     return (t1_ or '').strip() == (t2_ or '').strip()
 
+
 def compare(file1, file2):
     """Compare two xml files, request and confirmation.
     """
@@ -139,7 +141,7 @@ def run():
                         " corresponding confirmation, from the given directory")
     parser.add_argument("-c", "--confirmation",
                         help="directory for the confirmation files")
-    
+
     opts = parser.parse_args()
 
     if opts.log:
@@ -159,7 +161,6 @@ def run():
     handler.setLevel(loglevel)
     logging.getLogger('').setLevel(loglevel)
     logging.getLogger('').addHandler(handler)
-
 
     if opts.mail:
         mhandler = logging.handlers.SMTPHandler("localhost",
@@ -184,8 +185,6 @@ def run():
 
     #     notifier.loop()
 
-
-
     if opts.most_recent:
         logger.debug("looking for most recent file in " +
                      os.path.join(opts.most_recent, "*request*.xml"))
@@ -195,12 +194,12 @@ def run():
         reqdir, newfile = os.path.split(newest)
         confdir = opts.confirmation or reqdir
         confname = os.path.join(confdir,
-                                newfile[:-15] + "confirmation" +  newfile[-8:])
+                                newfile[:-15] + "confirmation" + newfile[-8:])
         logger.debug("against " + confname)
         try:
             compare(newest, confname)
         except IOError:
-            logger.exception("Something went wrong!") 
+            logger.exception("Something went wrong!")
 
 
 if __name__ == '__main__':

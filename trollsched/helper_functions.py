@@ -60,12 +60,12 @@ def sun_pos(dt=None):
     axial_tilt = 23.4
     ref_solstice = datetime(2016, 6, 21, 22, 22)
     days_per_year = 365.2425
-    seconds_per_day = 24*60*60.0
+    seconds_per_day = 24 * 60 * 60.0
 
-    days_since_ref = (dt - ref_solstice).total_seconds()/seconds_per_day
-    lat = axial_tilt*np.cos(2*np.pi*days_since_ref/days_per_year)
+    days_since_ref = (dt - ref_solstice).total_seconds() / seconds_per_day
+    lat = axial_tilt * np.cos(2 * np.pi * days_since_ref / days_per_year)
     sec_since_midnight = (dt - datetime(dt.year, dt.month, dt.day)).seconds
-    lng = -(sec_since_midnight/seconds_per_day - 0.5)*360
+    lng = -(sec_since_midnight / seconds_per_day - 0.5) * 360
     return lat, lng
 
 
