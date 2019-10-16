@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2018 PyTroll Community
+# Copyright (c) 2014 - 2019 PyTroll Community
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,6 +39,8 @@ NUMBER_OF_FOVS = {
     'avhrr': 2048,
     'mhs': 90,
     'amsua': 30,
+    'mwhs2': 98,
+    'atms': 96,
     'ascat': 42,
     'viirs': 6400
 }

@@ -163,9 +163,10 @@ def save_fig(pass_obj,
     if not os.path.exists(directory):
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
+
     filename = os.path.join(
         directory,
-        (rise + pass_obj.satellite.name.replace(" ", "_") + fall + extension))
+        (rise + pass_obj.satellite.name.replace(" ", "_") + fall + '_' + pass_obj.instrument + extension))
 
     pass_obj.fig = filename
     if not overwrite and os.path.exists(filename):
@@ -177,11 +178,15 @@ def save_fig(pass_obj,
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
+        #draw(pass_obj.boundary.contour_poly, mapper, '*r')
         if poly is not None:
             draw(poly, mapper, "-b")
 
     logger.debug("Title = %s", str(pass_obj))
-    plt.title(str(pass_obj))
+    if not plot_title:
+        plt.title(str(pass_obj))
+    else:
+        plt.title(plot_title)
     for label in labels or []:
         plt.figtext(*label[0], **label[1])
     logger.debug("Save plot...")
