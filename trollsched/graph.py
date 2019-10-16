@@ -24,6 +24,7 @@
 """
 import numpy as np
 
+
 class Graph(object):
 
     def __init__(self, n_vertices=None, adj_matrix=None):

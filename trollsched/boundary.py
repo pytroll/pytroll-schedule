@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014-2018 PyTroll community
+# Copyright (c) 2014-2019 PyTroll community
 
 # Author(s):
 
@@ -35,6 +35,10 @@ from pyorbital import geoloc, geoloc_instrument_definitions
 
 logger = logging.getLogger(__name__)
 
+INSTRUMENT = {'avhrr/3': 'avhrr',
+              'avhrr/2': 'avhrr',
+              'avhrr-3': 'avhrr'}
+
 
 class SwathBoundary(Boundary):
 
@@ -61,15 +65,22 @@ class SwathBoundary(Boundary):
         elif overpass.satellite == "noaa 16":
             scan_angle = 55.25
             instrument = "avhrr"
+        elif instrument == "mersi":
+            scan_angle = 55.4
+            instrument = "avhrr"
+        elif instrument == "mersi2":
+            scan_angle = 55.4
+            instrument = "avhrr"
         else:
             scan_angle = 55.25
 
-        instrument_fun = getattr(geoloc_instrument_definitions, instrument)
+        instrument_fun = getattr(geoloc_instrument_definitions,
+                                 INSTRUMENT.get(instrument, instrument))
 
-        if instrument in ["avhrr", "avhrr/3", "avhrr/2"]:
+        if instrument.startswith("avhrr"):
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
         elif instrument in ["ascat", ]:
-            sgeom = instrument_fun(scans_nb)
+            sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
@@ -106,8 +117,8 @@ class SwathBoundary(Boundary):
         if self.overpass.instrument == 'viirs':
             sec_scan_duration = 1.779166667
             along_scan_reduce_factor = 1
-        elif self.overpass.instrument in ['avhrr', 'avhrr/3', 'avhrr/2']:
-            sec_scan_duration = 1./6.
+        elif self.overpass.instrument.startswith("avhrr"):
+            sec_scan_duration = 1. / 6.
             along_scan_reduce_factor = 0.1
         elif self.overpass.instrument == 'ascat':
             sec_scan_duration = 3.74747474747
@@ -117,20 +128,20 @@ class SwathBoundary(Boundary):
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
-            logger.warning(logmsg + "%s", str(self.overpass.instrument))
-            sec_scan_duration = 1./6.
+            logger.info(logmsg + "%s", str(self.overpass.instrument))
+            sec_scan_duration = 1. / 6.
             along_scan_reduce_factor = 0.1
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
-        scans_nb = scanlength_seconds/sec_scan_duration * along_scan_reduce_factor
+        scans_nb = scanlength_seconds / sec_scan_duration * along_scan_reduce_factor
         # Devide by the scan step to a reduced number of scans:
-        scans_nb = np.floor(scans_nb/scan_step)
+        scans_nb = np.floor(scans_nb / scan_step)
         scans_nb = int(max(scans_nb, 1))
 
         sides_lons, sides_lats = self.get_instrument_points(self.overpass,
                                                             overpass.risetime,
                                                             scans_nb,
-                                                            np.array([0, self.overpass.number_of_fovs-1]),
+                                                            np.array([0, self.overpass.number_of_fovs - 1]),
                                                             scan_step=scan_step)
 
         side_shape = sides_lons[::-1, 0].shape[0]

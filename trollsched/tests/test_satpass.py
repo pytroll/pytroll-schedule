@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018 - 2019 PyTroll
 
 # Author(s):
 
-#   Adam.Dybbroe <a000680@c20671.ad.smhi.se>
+#   Adam.Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,11 +25,11 @@
 
 import unittest
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from trollsched.satpass import Pass
 from trollsched.boundary import SwathBoundary
 from pyorbital.orbital import Orbital
-
+from pyresample.geometry import AreaDefinition
 
 LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   143.1730880418349, 105.69172088208997, 93.03135571771092,
@@ -128,6 +128,11 @@ LATS3 = np.array([66.94713585, 67.07854554, 66.53108388, 65.27837805, 63.5022359
                   58.33858588, 57.71210872, 55.14964148, 55.72506407, 60.40889798,
                   61.99561474, 63.11425455, 63.67173255, 63.56939058], dtype='float64')
 
+AREA_DEF_EURON1 = AreaDefinition('euron1', 'Northern Europe - 1km',
+                                 '', {'proj': 'stere', 'ellps': 'WGS84',
+                                      'lat_0': 90.0, 'lon_0': 0.0, 'lat_ts': 60.0},
+                                 3072, 3072, (-1000000.0, -4500000.0, 2072000.0, -1428000.0))
+
 
 def assertNumpyArraysEqual(self, other):
     if self.shape != other.shape:
@@ -154,13 +159,33 @@ def get_n19_orbital():
     return Orbital('NOAA-19', line1=tle1, line2=tle2)
 
 
-def get_region(areaid):
-    try:
-        from satpy.resample import get_area_def
-    except ImportError:
-        from mpop.projector import get_area_def
+class TestPass(unittest.TestCase):
 
-    return get_area_def(areaid)
+    def setUp(self):
+        """Set up"""
+        self.n20orb = get_n20_orbital()
+        self.n19orb = get_n19_orbital()
+
+    def test_pass_instrument_interface(self):
+
+        tstart = datetime(2018, 10, 16, 2, 48, 29)
+        tend = datetime(2018, 10, 16, 3, 2, 38)
+
+        instruments = set(('viirs', 'avhrr', 'modis'))
+        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
+        self.assertEqual(overp.instrument, 'avhrr')
+
+        instruments = set(('viirs', 'modis'))
+        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
+        self.assertEqual(overp.instrument, 'viirs')
+
+        instruments = set(('amsu-a', 'mhs'))
+        self.assertRaises(TypeError, Pass, self,
+                          'NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
+
+    def tearDown(self):
+        """Clean up"""
+        pass
 
 
 class TestSwathBoundary(unittest.TestCase):
@@ -169,7 +194,7 @@ class TestSwathBoundary(unittest.TestCase):
         """Set up"""
         self.n20orb = get_n20_orbital()
         self.n19orb = get_n19_orbital()
-        self.euron1 = get_region('euron1')
+        self.euron1 = AREA_DEF_EURON1
 
     def test_swath_boundary(self):
 
@@ -207,6 +232,22 @@ class TestSwathBoundary(unittest.TestCase):
         assertNumpyArraysEqual(cont[0], LONS3)
         assertNumpyArraysEqual(cont[1], LATS3)
 
+        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr/3')
+        overp_boundary = SwathBoundary(overp, frequency=500)
+
+        cont = overp_boundary.contour()
+
+        assertNumpyArraysEqual(cont[0], LONS3)
+        assertNumpyArraysEqual(cont[1], LATS3)
+
+        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr-3')
+        overp_boundary = SwathBoundary(overp, frequency=500)
+
+        cont = overp_boundary.contour()
+
+        assertNumpyArraysEqual(cont[0], LONS3)
+        assertNumpyArraysEqual(cont[1], LATS3)
+
     def test_swath_coverage(self):
 
         # NOAA-19 AVHRR:
@@ -236,7 +277,7 @@ class TestSwathBoundary(unittest.TestCase):
         cov = overp.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.103526, 5)
 
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr', frequency=133)
+        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr/3', frequency=133)
 
         cov = overp.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.103526, 5)
@@ -245,6 +286,81 @@ class TestSwathBoundary(unittest.TestCase):
 
         cov = overp.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.103526, 5)
+
+        # ASCAT and AVHRR on Metop-B:
+        tstart = datetime.strptime("2019-01-02T10:19:39", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=180)
+        tle1 = '1 38771U 12049A   19002.35527803  .00000000  00000+0  21253-4 0 00017'
+        tle2 = '2 38771  98.7284  63.8171 0002025  96.0390 346.4075 14.21477776326431'
+
+        mypass = Pass('Metop-B', tstart, tend, instrument='ascat', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.322812, 5)
+
+        mypass = Pass('Metop-B', tstart, tend, instrument='avhrr', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.357324, 5)
+
+        tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60*15.5)
+
+        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
+        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+
+        self.assertAlmostEqual(cov, 0.786836, 5)
+
+    def tearDown(self):
+        """Clean up"""
+        pass
+
+
+class TestPassList(unittest.TestCase):
+
+    def setUp(self):
+        """Set up"""
+        pass
+
+    def test_meos_pass_list(self):
+        orig = ("  1 20190105 FENGYUN 3D  5907 52.943  01:01:45 n/a   01:17:15 15:30  18.6 107.4 -- "
+                "Undefined(Scheduling not done 1546650105 ) a3d0df0cd289244e2f39f613f229a5cc D")
+
+        tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60 * 15.5)
+
+        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
+        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+
+        coords = (10.72, 59.942, 0.1)
+        meos_format_str = mypass.print_meos(coords, line_no=1)
+
+        self.assertEqual(meos_format_str, orig)
+
+    def test_generate_metno_xml(self):
+        import xml.etree.ElementTree as ET
+        root = ET.Element("acquisition-schedule")
+
+        orig = ('<acquisition-schedule><pass aos="20190105010145" asimuth-at-aos="18.555" '
+                'asimuth-at-max-elevation="107.385" los="20190105011715" max-elevation="52.943" '
+                'orbit="5907" pass-direction="D" satellite="FENGYUN 3D" satellite-lat-at-aos="80.739" '
+                'satellite-lon-at-aos="76.204" tle-epoch="20181229125844.110848" /></acquisition-schedule>')
+
+        tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60 * 15.5)
+
+        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
+        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+
+        coords = (10.72, 59.942, 0.1)
+        mypass.generate_metno_xml(coords, root)
+
+        self.assertEqual(ET.tostring(root).decode("utf-8"), orig)
 
     def tearDown(self):
         """Clean up"""
@@ -257,5 +373,7 @@ def suite():
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathBoundary))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestPass))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestPassList))
 
     return mysuite

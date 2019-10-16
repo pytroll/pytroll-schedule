@@ -5,7 +5,7 @@ env:
   - PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
-  - CONDA_DEPENDENCIES='scipy coveralls coverage codecov mock six appdirs pykdtree pyresample docutils pyyaml matplotlib'
+  - CONDA_DEPENDENCIES='sphinx cartopy scipy coveralls coverage codecov behave mock pycoast pydecorate six appdirs pykdtree pyresample docutils pyyaml matplotlib'
   - PIP_DEPENDENCIES=''
   - SETUP_XVFB=False
   - EVENT_TYPE='push pull_request cron'
@@ -27,6 +27,9 @@ matrix:
 install:
     - git clone --depth 1 git://github.com/astropy/ci-helpers.git
     - source ci-helpers/travis/setup_conda.sh
+    # reactivate environment to set proj environment variables
+    - conda deactivate
+    - conda activate test
 script: coverage run --source=trollsched setup.py test
 after_success:
 - if [[ $PYTHON_VERSION == 3.6 ]]; then coveralls; fi
@@ -36,7 +39,7 @@ deploy:
     user: adybbroe
     password:
       secure: SY0qo7sZXDjDx0DHvuXrHvL9VTAulgU/T33d6UWXf469jT9DOexuZ2VYLgJbYQen5FSe5JmQE0ZMdId1cb8IPP/77qCgQK6f0lRDa43fSYXhcD+fHzlQskievJrwamkRYx6WBrJbwGAKBNinUgNSaTdbh9XUugziGFiOHUfVppM=
-    distributions: sdist
+    distributions: sdist bdist_wheel
     skip_existing: true
     on:
       tags: true
