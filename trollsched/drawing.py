@@ -167,6 +167,7 @@ def save_fig(pass_obj,
         directory,
         (rise + '_' + pass_obj.satellite.name.replace(" ", "_") + '_' + pass_obj.instrument.replace("/", "-") + '_' + fall + extension))
 
+
     pass_obj.fig = filename
     if not overwrite and os.path.exists(filename):
         return filename
