@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018, 2019 Adam.Dybbroe
+# Copyright (c) 2018 - 2019 Pytroll Community
 
 # Author(s):
 
-#   Adam.Dybbroe <a000680@c20671.ad.smhi.se>
+#   Adam.Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -165,8 +165,8 @@ def save_fig(pass_obj,
         os.makedirs(directory)
     filename = os.path.join(
         directory,
-        (rise + pass_obj.satellite.name.replace(" ", "_") + "_" +
-         pass_obj.instrument.replace('/', '-') + "_" + fall + extension))
+        (rise + '_' + pass_obj.satellite.name.replace(" ", "_") + '_' + pass_obj.instrument.replace("/", "-") + '_' + fall + extension))
+
 
     pass_obj.fig = filename
     if not overwrite and os.path.exists(filename):
