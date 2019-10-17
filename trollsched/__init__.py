@@ -42,7 +42,9 @@ NUMBER_OF_FOVS = {
     'mwhs2': 98,
     'atms': 96,
     'ascat': 42,
-    'viirs': 6400
+    'viirs': 6400,
+    'atms': 96,
+    'mwhs-2': 98
 }
 
 SATELLITE_NAMES = {'npp': 'Suomi NPP',
@@ -55,7 +57,8 @@ SATELLITE_NAMES = {'npp': 'Suomi NPP',
                    'metopb': 'Metop-B',
                    'metopa': 'Metop-A',
                    'noaa20': 'NOAA-20',
-                   'fengyun3d': 'FY-3D'
+                   'fengyun3d': 'FY-3D',
+                   'fengyun3c': 'FY-3C'
                    }
 
 INSTRUMENT = {'Suomi NPP': 'viirs',
@@ -68,4 +71,5 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-A': 'avhrr',
               'Metop-B': 'avhrr',
               'Metop-C': 'avhrr',
-              'FY-3D': 'avhrr'}
+              'FY-3D': 'avhrr',
+              'FY-3C': 'avhrr'}

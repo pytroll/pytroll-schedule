@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 INSTRUMENT = {'avhrr/3': 'avhrr',
               'avhrr/2': 'avhrr',
-              'avhrr-3': 'avhrr'}
+              'avhrr-3': 'avhrr',
+              'mwhs-2': 'mwhs2'}
 
 
 class SwathBoundary(Boundary):
@@ -89,6 +90,8 @@ class SwathBoundary(Boundary):
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
+        elif instrument in ['mhs', 'atms', 'mwhs-2']:
+            sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             logger.warning("Instrument not tested: %s", instrument)
             sgeom = instrument_fun(scans_nb)
@@ -149,6 +152,12 @@ class SwathBoundary(Boundary):
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 100
+        elif self.overpass.instrument == 'atms':
+            sec_scan_duration = 8/3.
+            along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 1
+
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
