@@ -178,7 +178,6 @@ def save_fig(pass_obj,
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
-        #draw(pass_obj.boundary.contour_poly, mapper, '*r')
         if poly is not None:
             draw(poly, mapper, "-b")
 
