@@ -145,7 +145,7 @@ def read_config_yaml(filename):
         pattern[k] = v
 
     sched_params = cfg['default']
-    plot_parameters = sched_params.get('plot_parameters'], {})
+    plot_parameters = sched_params.get('plot_parameters', {})
     plot_title = sched_params.get('plot_title', None)
 
     scheduler = schedule.Scheduler(stations=[stations[st_id]
