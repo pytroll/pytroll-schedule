@@ -29,19 +29,20 @@ import logging
 import logging.handlers
 import operator
 import os
-import six
 import socket
-from functools import reduce as fctools_reduce
-from six.moves.urllib.parse import urlparse
+import sys
 from datetime import datetime, timedelta
+from functools import reduce as fctools_reduce
 from tempfile import mkstemp
+
 import numpy as np
+import six
+from six.moves.urllib.parse import urlparse
 
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
+from trollsched import MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS
 from trollsched.boundary import SwathBoundary
-
-from trollsched import (MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS)
 
 logger = logging.getLogger(__name__)
 
@@ -433,6 +434,9 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP_TLS(url.netloc)
+        if sys.version_info < (2, 7, 10):
+            import ssl
+            f.ssl_version = ssl.PROTOCOL_SSLv23
     except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None
