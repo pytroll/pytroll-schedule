@@ -150,9 +150,17 @@ def save_fig(pass_obj,
              extension=".png",
              outline='-r',
              plot_parameters=None,
-             plot_title=None):
+             plot_title=None,
+             poly_color=None):
     """Save the pass as a figure. Filename is automatically generated.
     """
+    poly = poly or []
+    poly_color = poly_color or []
+    if not isinstance(poly, (list, tuple)):
+        poly = [poly]
+    if not isinstance(poly_color, (list, tuple)):
+        poly_color = [poly_color]
+
     mpl.use('Agg')
     import matplotlib.pyplot as plt
     plt.clf()
@@ -176,10 +184,14 @@ def save_fig(pass_obj,
     plot_parameters = plot_parameters or {}
     with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
+        for i, p in enumerate(poly):
+            try:
+                c = poly_color[i]
+            except IndexError:
+                c = '-b'
+            draw(p, mapper, c)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
-        if poly is not None:
-            draw(poly, mapper, "-b")
 
     logger.debug("Title = %s", str(pass_obj))
     plt.title(str(pass_obj))
