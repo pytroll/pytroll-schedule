@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018 - 2019 Pytroll Community
 
 # Author(s):
 
-#   Adam.Dybbroe <a000680@c20671.ad.smhi.se>
+#   Adam.Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,6 +39,11 @@ try:
 except ImportError:
     logger.warning("Failed loading Cartopy, will try Basemap instead")
     BASEMAP_NOT_CARTOPY = True
+
+if not BASEMAP_NOT_CARTOPY:
+    import cartopy
+    cartopy.config['pre_existing_data_dir'] = os.environ.get(
+        "CARTOPY_PRE_EXISTING_DATA_DIR", cartopy.config['pre_existing_data_dir'])
 
 
 class MapperBasemap(object):
@@ -143,7 +148,9 @@ def save_fig(pass_obj,
              overwrite=False,
              labels=None,
              extension=".png",
-             outline='-r'):
+             outline='-r',
+             plot_parameters=None,
+             plot_title=None):
     """Save the pass as a figure. Filename is automatically generated.
     """
     mpl.use('Agg')
@@ -158,14 +165,16 @@ def save_fig(pass_obj,
         os.makedirs(directory)
     filename = os.path.join(
         directory,
-        (rise + pass_obj.satellite.name.replace(" ", "_") + fall + extension))
+        (rise + '_' + pass_obj.satellite.name.replace(" ", "_") + '_' + pass_obj.instrument.replace("/", "-") + '_' + fall + extension))
+
 
     pass_obj.fig = filename
     if not overwrite and os.path.exists(filename):
         return filename
 
     logger.debug("Filename = <%s>", filename)
-    with Mapper() as mapper:
+    plot_parameters = plot_parameters or {}
+    with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)

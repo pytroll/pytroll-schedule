@@ -114,9 +114,10 @@ def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
                             wl.append(0)
                         else:
                             wl.append(n[1] or grl[s].weight(pl[s].index(p[0]) + 1, pl[s].index(n[0]) + 1))
-                    except:
+                    except Exception:
                         logger.error(
-                            "Collecting weights: stat %d - parnode %s %s - newnode %s %s", s, parnode, p, newnode, n, exc_info=1)
+                            "Collecting weights: stat %d - parnode %s %s - newnode %s %s",
+                            s, parnode, p, newnode, n, exc_info=1)
                         raise
                 # Apply vertix-count to the sum of collected weights.
                 # vertix-count: number of vertices with reference to same
@@ -198,7 +199,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         # current passes node.
         try:
             gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
-        except:
+        except Exception:
             print("len(passes_list)", len(passes_list), "   len(graph_set)",
                   len(graph_set), "   statnr", statnr, "   p", p)
             print("passes_list", passes_list)
@@ -281,7 +282,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                         else:
                             print("uh-oh, something curious happened ...")
 
-                except:
+                except Exception:
                     print("\nCATCH\ngn:", gn, "-> n", n, " col:", col,
                           "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1)
                     print("len(passes_list -n -cx)", len(passes_list[statnr]), len(passes_list[statnr + 1]))
@@ -410,7 +411,8 @@ def main():
 #             print_matrix(graph[station].adj_matrix, ly=5)
 #             print_matrix(graph[station].weight_matrix, ly=5, lx=-1)
 
-#             allpasses[station] = get_passes_from_xml_file(os.path.join(opts.report, "acquisition-schedule-report." + station + ".xml"))
+#             allpasses[station] = get_passes_from_xml_file(os.path.join(opts.report,
+#                                                           "acquisition-schedule-report." + station + ".xml"))
 #             print len(allpasses[station]),allpasses[station]
 
 #             for v in graph[station].neighbours(1):
@@ -435,7 +437,7 @@ def main():
 
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
 
-    except:
+    except Exception:
         logger.exception("Something wrong happened!")
         raise
 
