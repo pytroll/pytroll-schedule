@@ -186,10 +186,10 @@ def save_fig(pass_obj,
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
         for i, p in enumerate(poly):
             try:
-                c = poly_color[i]
+                col = poly_color[i]
             except IndexError:
-                c = '-b'
-            draw(p, mapper, c)
+                col = '-b'
+            draw(p, mapper, col)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
 
