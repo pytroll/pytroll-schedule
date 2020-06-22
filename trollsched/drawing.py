@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 - 2019 Pytroll Community
+# Copyright (c) 2018 - 2020 Pytroll Community
 
 # Author(s):
 
@@ -171,10 +171,9 @@ def save_fig(pass_obj,
     if not os.path.exists(directory):
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
-    filename = os.path.join(
-        directory,
-        (rise + '_' + pass_obj.satellite.name.replace(" ", "_") + '_' + pass_obj.instrument.replace("/", "-") + '_' + fall + extension))
-
+    filename = os.path.join(directory, (rise + '_' +
+                                        pass_obj.satellite.name.replace(" ", "_") + '_' +
+                                        pass_obj.instrument.replace("/", "-") + '_' + fall + extension))
 
     pass_obj.fig = filename
     if not overwrite and os.path.exists(filename):
@@ -184,12 +183,12 @@ def save_fig(pass_obj,
     plot_parameters = plot_parameters or {}
     with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
-        for i, p in enumerate(poly):
+        for i, polygon in enumerate(poly):
             try:
                 col = poly_color[i]
             except IndexError:
                 col = '-b'
-            draw(p, mapper, col)
+            draw(polygon, mapper, col)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
 
