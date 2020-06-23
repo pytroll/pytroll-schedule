@@ -171,15 +171,18 @@ def save_fig(pass_obj,
     if not os.path.exists(directory):
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
-    filename = os.path.join(directory, (rise + '_' +
-                                        pass_obj.satellite.name.replace(" ", "_") + '_' +
-                                        pass_obj.instrument.replace("/", "-") + '_' + fall + extension))
+    filename = '{rise}_{satname}_{instrument}_{fall}{extension}'.format(rise=rise,
+                                                                        satname=pass_obj.satellite.name.replace(
+                                                                            " ", "_"),
+                                                                        instrument=pass_obj.instrument.replace(
+                                                                            "/", "-"),
+                                                                        fall=fall, extension=extension)
+    filepath = os.path.join(directory, filename)
+    pass_obj.fig = filepath
+    if not overwrite and os.path.exists(filepath):
+        return filepath
 
-    pass_obj.fig = filename
-    if not overwrite and os.path.exists(filename):
-        return filename
-
-    logger.debug("Filename = <%s>", filename)
+    logger.debug("Filename = <%s>", filepath)
     plot_parameters = plot_parameters or {}
     with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
@@ -197,9 +200,9 @@ def save_fig(pass_obj,
     for label in labels or []:
         plt.figtext(*label[0], **label[1])
     logger.debug("Save plot...")
-    plt.savefig(filename)
+    plt.savefig(filepath)
     logger.debug("Return...")
-    return filename
+    return filepath
 
 
 def show(pass_obj,
