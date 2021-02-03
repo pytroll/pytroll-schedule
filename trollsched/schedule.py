@@ -628,7 +628,7 @@ def generate_xml_file(sched, start, end, xml_file, station, center_id, report_mo
         if report_mode:
             fp_.write("<?xml version='1.0' encoding='utf-8'?>"
                       "<?xml-stylesheet type='text/xsl' href='reqreader.xsl'?>")
-        fp_.write(str(ET.tostring(tree)))
+        fp_.write(ET.tostring(tree).decode("utf-8"))
     os.rename(tmp_filename, filename)
     return filename
 
