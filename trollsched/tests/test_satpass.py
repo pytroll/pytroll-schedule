@@ -207,21 +207,21 @@ class TestSwathBoundary(unittest.TestCase):
         self.mborb = get_mb_orbital()
         self.euron1 = AREA_DEF_EURON1
         self.antarctica = create_area_def(
-                "antarctic",
-                {'ellps': 'WGS84', 'lat_0': '-90', 'lat_ts': '-60',
-                 'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
-                 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
-                width=1000, height=1000,
-                area_extent=(-4008875.4031, -4000855.294,
-                             4000855.9937, 4008874.7048))
+            "antarctic",
+            {'ellps': 'WGS84', 'lat_0': '-90', 'lat_ts': '-60',
+             'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
+             'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+            width=1000, height=1000,
+            area_extent=(-4008875.4031, -4000855.294,
+                         4000855.9937, 4008874.7048))
         self.arctica = create_area_def(
-                "arctic",
-                {'ellps': 'WGS84', 'lat_0': '90', 'lat_ts': '60',
-                 'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
-                 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
-                width=1000, height=1000,
-                area_extent=(-4008875.4031, -4000855.294,
-                             4000855.9937, 4008874.7048))
+            "arctic",
+            {'ellps': 'WGS84', 'lat_0': '90', 'lat_ts': '60',
+             'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
+             'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+            width=1000, height=1000,
+            area_extent=(-4008875.4031, -4000855.294,
+                         4000855.9937, 4008874.7048))
 
     def test_swath_boundary(self):
 
