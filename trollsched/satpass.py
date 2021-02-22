@@ -556,31 +556,21 @@ def get_next_passes(satellites,
                                           horizon=local_horizon,
                                           *coords
                                           )
-        if sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
-            instrument = "avhrr"
-        elif sat.name in ["aqua", "terra"]:
-            instrument = "modis"
-        elif sat.name.endswith("npp") or sat.name.startswith("jpss"):
-            instrument = "viirs"
-        elif sat.name.lower() in ["fengyun 3a", "fengyun 3b", "fengyun 3c", "fengyun 3d"]:
-            instrument = "mersi"
-        else:
-            instrument = "unknown"
 
-        if sat.name == "metop-a":
-            # Take care of metop-a
+        if sat.name.lower() == "metop-a":
+            # Take care of metop-a special case
             passes["metop-a"] = get_metopa_passes(sat, passlist, satorb)
-
-        elif sat.name in ["aqua", "terra"] and aqua_terra_dumps:
+        elif sat.name.lower() in ["aqua", "terra"] and aqua_terra_dumps:
             # Take care of aqua (dumps in svalbard and poker flat)
             # Get the Terra/Aqua passes and fill the passes dict:
             get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps)
-
         else:
             if sat.name.upper() in VIIRS_PLATFORM_NAMES:
                 instrument = "viirs"
             elif sat.name.lower().startswith("metop") or sat.name.lower().startswith("noaa"):
                 instrument = "avhrr"
+            elif sat.name.lower() in ["aqua", "terra"]:  # when aqua_terra_dumps=False
+                instrument = "modis"
             elif sat.name.upper() in MERSI_PLATFORM_NAMES:
                 instrument = "mersi"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
