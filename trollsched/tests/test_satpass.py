@@ -171,6 +171,11 @@ class TestPass(unittest.TestCase):
         tstart = datetime(2018, 10, 16, 2, 48, 29)
         tend = datetime(2018, 10, 16, 3, 2, 38)
 
+        instruments = set(('viirs', 'avhrr', 'modis', 'mersi', 'mersi2'))
+        for instrument in instruments:
+            overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instrument)
+            self.assertEqual(overp.instrument, instrument)
+
         instruments = set(('viirs', 'avhrr', 'modis'))
         overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
         self.assertEqual(overp.instrument, 'avhrr')
@@ -344,10 +349,10 @@ class TestPassList(unittest.TestCase):
         import xml.etree.ElementTree as ET
         root = ET.Element("acquisition-schedule")
 
-        orig = ('<acquisition-schedule><pass aos="20190105010145" asimuth-at-aos="18.555" '
-                'asimuth-at-max-elevation="107.385" los="20190105011715" max-elevation="52.943" '
-                'orbit="5907" pass-direction="D" satellite="FENGYUN 3D" satellite-lat-at-aos="80.739" '
-                'satellite-lon-at-aos="76.204" tle-epoch="20181229125844.110848" /></acquisition-schedule>')
+        orig = ('<acquisition-schedule><pass satellite="FENGYUN 3D" aos="20190105010145" los="20190105011715" '
+                'orbit="5907" max-elevation="52.943" asimuth-at-max-elevation="107.385" asimuth-at-aos="18.555" '
+                'pass-direction="D" satellite-lon-at-aos="76.204" satellite-lat-at-aos="80.739" '
+                'tle-epoch="20181229125844.110848" /></acquisition-schedule>')
 
         tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
         tend = tstart + timedelta(seconds=60 * 15.5)

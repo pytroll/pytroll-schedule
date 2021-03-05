@@ -323,6 +323,8 @@ class TestAll(unittest.TestCase):
             dt_ = n20pass2.falltime - ft2
             self.assertAlmostEqual(dt_.seconds, 0)
 
+            self.assertEqual(n20pass2.instrument, 'viirs')
+
     @patch('os.path.exists')
     @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
     def test_get_next_passes_with_aquadumps(self, dumps_from_ftp, exists):
@@ -363,6 +365,8 @@ class TestAll(unittest.TestCase):
                         dtmin = dt_
 
                 self.assertAlmostEqual(dtmin.seconds, 0)
+
+                self.assertEqual(mypass.instrument, 'modis')
 
     @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
     def test_get_aqua_terra_dumps(self, dumps_from_ftp):
