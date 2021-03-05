@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 - 2019 PyTroll
+# Copyright (c) 2018 - 2021 Pytroll-schedule developers
 
 # Author(s):
 
@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 from trollsched.satpass import Pass
 from trollsched.boundary import SwathBoundary
 from pyorbital.orbital import Orbital
-from pyresample.geometry import AreaDefinition
+from pyresample.geometry import AreaDefinition, create_area_def
 
 LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   143.1730880418349, 105.69172088208997, 93.03135571771092,
@@ -159,6 +159,16 @@ def get_n19_orbital():
     return Orbital('NOAA-19', line1=tle1, line2=tle2)
 
 
+def get_mb_orbital():
+    """Return orbital for a given set of TLEs for MetOp-B.
+
+    From 2021-02-04
+    """
+    tle1 = "1 38771U 12049A   21034.58230818 -.00000012  00000-0  14602-4 0 9998"
+    tle2 = "2 38771  98.6992  96.5537 0002329  71.3979  35.1836 14.21496632434867"
+    return Orbital("Metop-B", line1=tle1, line2=tle2)
+
+
 class TestPass(unittest.TestCase):
 
     def setUp(self):
@@ -199,7 +209,24 @@ class TestSwathBoundary(unittest.TestCase):
         """Set up"""
         self.n20orb = get_n20_orbital()
         self.n19orb = get_n19_orbital()
+        self.mborb = get_mb_orbital()
         self.euron1 = AREA_DEF_EURON1
+        self.antarctica = create_area_def(
+            "antarctic",
+            {'ellps': 'WGS84', 'lat_0': '-90', 'lat_ts': '-60',
+             'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
+             'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+            width=1000, height=1000,
+            area_extent=(-4008875.4031, -4000855.294,
+                         4000855.9937, 4008874.7048))
+        self.arctica = create_area_def(
+            "arctic",
+            {'ellps': 'WGS84', 'lat_0': '90', 'lat_ts': '60',
+             'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
+             'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+            width=1000, height=1000,
+            area_extent=(-4008875.4031, -4000855.294,
+                         4000855.9937, 4008874.7048))
 
     def test_swath_boundary(self):
 
@@ -316,6 +343,19 @@ class TestSwathBoundary(unittest.TestCase):
         cov = mypass.area_coverage(self.euron1)
 
         self.assertAlmostEqual(cov, 0.786836, 5)
+
+    def test_arctic_is_not_antarctic(self):
+
+        tstart = datetime(2021, 2, 3, 16, 28, 3)
+        tend = datetime(2021, 2, 3, 16, 31, 3)
+
+        overp = Pass('Metop-B', tstart, tend, orb=self.mborb, instrument='avhrr')
+
+        cov_south = overp.area_coverage(self.antarctica)
+        cov_north = overp.area_coverage(self.arctica)
+
+        assert cov_north == 0
+        assert cov_south != 0
 
     def tearDown(self):
         """Clean up"""
