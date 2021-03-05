@@ -171,6 +171,7 @@ def save_fig(pass_obj,
     if not os.path.exists(directory):
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
+
     filename = '{rise}_{satname}_{instrument}_{fall}{extension}'.format(rise=rise,
                                                                         satname=pass_obj.satellite.name.replace(
                                                                             " ", "_"),
@@ -196,7 +197,10 @@ def save_fig(pass_obj,
         draw(pass_obj.boundary.contour_poly, mapper, outline)
 
     logger.debug("Title = %s", str(pass_obj))
-    plt.title(str(pass_obj))
+    if not plot_title:
+        plt.title(str(pass_obj))
+    else:
+        plt.title(plot_title)
     for label in labels or []:
         plt.figtext(*label[0], **label[1])
     logger.debug("Save plot...")
