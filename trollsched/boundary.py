@@ -82,6 +82,10 @@ class SwathBoundary(Boundary):
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
         elif instrument in ["ascat", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument in ["amsua", 'mhs']:
+            sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument in ["mwhs2", ]:
+            sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument == 'viirs':
@@ -105,7 +109,6 @@ class SwathBoundary(Boundary):
 
     def __init__(self, overpass, scan_step=50, frequency=200):
         # compute area covered by pass
-
         Boundary.__init__(self)
 
         self.overpass = overpass
@@ -128,21 +131,33 @@ class SwathBoundary(Boundary):
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
-        elif self.overpass.instrument == 'mhs':
-            sec_scan_duration = 8/3.
+        elif self.overpass.instrument == 'amsua':
+            sec_scan_duration = 8.
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
+        elif self.overpass.instrument == 'mhs':
+            sec_scan_duration = 8./3.
+            along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 1
+        elif self.overpass.instrument == 'mwhs2':
+            sec_scan_duration = 8./3.
+            along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 1
+        elif self.overpass.instrument == 'olci':
+            # 3 minutes of data is 4091 300meter lines:
+            sec_scan_duration = 0.04399902224395014
+            along_scan_reduce_factor = 1
+            # Overwrite the scan step
+            scan_step = 100
         elif self.overpass.instrument == 'atms':
             sec_scan_duration = 8/3.
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
-        elif self.overpass.instrument == 'mwhs-2':
-            sec_scan_duration = 8/3.
-            along_scan_reduce_factor = 1
-            # Overwrite the scan step
-            scan_step = 1
+
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")
@@ -164,6 +179,13 @@ class SwathBoundary(Boundary):
 
         side_shape = sides_lons[::-1, 0].shape[0]
         nmod = 1
+
+        # Devide by the scan step to a reduced number of scans:
+        scans_nb = scanlength_seconds / sec_scan_duration * along_scan_reduce_factor
+        scan_step = 10  # Valid for MHS/AMSU-S/MWHS-2 only
+        scans_nb = np.floor(scans_nb / scan_step)
+        scans_nb = int(max(scans_nb, 1))
+
         if side_shape != scans_nb:
             nmod = side_shape // scans_nb
             logger.debug('Number of scan lines (%d) does not match number of scans (%d)',
@@ -203,6 +225,8 @@ class SwathBoundary(Boundary):
         self.top_lons = lons[0]
         self.top_lats = lats[0]
 
+        return
+
     def decimate(self, ratio):
         l = len(self.top_lons)
         start = (l % ratio) / 2
@@ -221,6 +245,8 @@ class SwathBoundary(Boundary):
         self.right_lats = self.right_lats[points]
         self.left_lons = self.left_lons[points]
         self.left_lats = self.left_lats[points]
+
+        return
 
     def contour(self):
         lons = np.concatenate((self.top_lons,
