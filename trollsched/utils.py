@@ -25,7 +25,7 @@
 
 import yaml
 import logging
-from collections import Mapping
+from collections.abc import Mapping
 from six.moves.configparser import ConfigParser
 
 try:
