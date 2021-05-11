@@ -405,7 +405,9 @@ class TestPassList(unittest.TestCase):
         coords = (10.72, 59.942, 0.1)
         mypass.generate_metno_xml(coords, root)
 
-        self.assertEqual(ET.tostring(root).decode("utf-8"), orig)
+        # Dictionaries don't have guaranteed ordering in Python 3.7, so convert the strings to sets and compare them
+        res = set(ET.tostring(root).decode("utf-8").split())
+        self.assertEqual(res, set(orig.split()))
 
     def tearDown(self):
         """Clean up"""
