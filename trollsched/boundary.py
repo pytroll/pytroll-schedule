@@ -180,12 +180,6 @@ class SwathBoundary(Boundary):
         side_shape = sides_lons[::-1, 0].shape[0]
         nmod = 1
 
-        # Devide by the scan step to a reduced number of scans:
-        scans_nb = scanlength_seconds / sec_scan_duration * along_scan_reduce_factor
-        scan_step = 10  # Valid for MHS/AMSU-S/MWHS-2 only
-        scans_nb = np.floor(scans_nb / scan_step)
-        scans_nb = int(max(scans_nb, 1))
-
         if side_shape != scans_nb:
             nmod = side_shape // scans_nb
             logger.debug('Number of scan lines (%d) does not match number of scans (%d)',
