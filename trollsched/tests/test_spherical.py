@@ -185,7 +185,7 @@ class TestArc(unittest.TestCase):
         lon, lat = arc1.intersection(arc2)
 
         self.assertTrue(np.allclose(np.rad2deg(lon), 5))
-        self.assertEquals(np.rad2deg(lat), 5.0575148968282093)
+        self.assertAlmostEqual(np.rad2deg(lat), 5.0575148968282093, 5)
 
         arc1 = Arc(SCoordinate(0, 0),
                    SCoordinate(np.deg2rad(10), np.deg2rad(10)))
