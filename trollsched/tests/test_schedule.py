@@ -302,28 +302,20 @@ class TestAll(unittest.TestCase):
 
             self.assertEqual(len(allpasses), 2)
 
-            n20pass1 = allpasses.pop()
-
             rt1 = datetime(2018, 11, 28, 10, 53, 42, 79483)
             ft1 = datetime(2018, 11, 28, 11, 9, 6, 916787)
             rt2 = datetime(2018, 11, 28, 12, 34, 44, 667963)
             ft2 = datetime(2018, 11, 28, 12, 49, 25, 134067)
 
-            dt_ = n20pass1.risetime - rt1
-            self.assertAlmostEqual(dt_.seconds, 0)
+            rise_times = [p.risetime for p in allpasses]
+            fall_times = [p.falltime for p in allpasses]
 
-            dt_ = n20pass1.falltime - ft1
-            self.assertAlmostEqual(dt_.seconds, 0)
+            assert rt1 in rise_times
+            assert rt2 in rise_times
+            assert ft1 in fall_times
+            assert ft2 in fall_times
 
-            n20pass2 = allpasses.pop()
-
-            dt_ = n20pass2.risetime - rt2
-            self.assertAlmostEqual(dt_.seconds, 0)
-
-            dt_ = n20pass2.falltime - ft2
-            self.assertAlmostEqual(dt_.seconds, 0)
-
-            self.assertEqual(n20pass2.instrument, 'viirs')
+            assert all([p.instrument == 'viirs' for p in allpasses])
 
     @patch('os.path.exists')
     @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
