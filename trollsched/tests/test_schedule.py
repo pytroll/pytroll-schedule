@@ -409,9 +409,9 @@ class TestAll(unittest.TestCase):
 
             self.assertEqual(len(metopa_passes), 2)
             self.assertEqual(metopa_passes[0].pass_direction(), 'descending')
-            self.assertEqual(metopa_passes[0].seconds(), 462.466119)
+            self.assertAlmostEqual(metopa_passes[0].seconds(), 487.512589, 5)
             self.assertEqual((metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds, 0)
-            self.assertEqual((metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 46, 691075)).seconds, 0)
+            self.assertEqual((metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds, 0)
 
     def tearDown(self):
         """Clean up"""
