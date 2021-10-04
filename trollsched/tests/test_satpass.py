@@ -181,7 +181,7 @@ class TestPass(unittest.TestCase):
         tstart = datetime(2018, 10, 16, 2, 48, 29)
         tend = datetime(2018, 10, 16, 3, 2, 38)
 
-        instruments = set(('viirs', 'avhrr', 'modis', 'mersi', 'mersi2'))
+        instruments = set(('viirs', 'avhrr', 'modis', 'mersi', 'mersi-2'))
         for instrument in instruments:
             overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instrument)
             self.assertEqual(overp.instrument, instrument)
@@ -341,7 +341,10 @@ class TestSwathBoundary(unittest.TestCase):
 
         mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
         cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.786836, 5)
 
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi-2', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.786836, 5)
 
     def test_arctic_is_not_antarctic(self):
@@ -379,10 +382,13 @@ class TestPassList(unittest.TestCase):
         tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
 
         mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
-
         coords = (10.72, 59.942, 0.1)
         meos_format_str = mypass.print_meos(coords, line_no=1)
+        self.assertEqual(meos_format_str, orig)
 
+        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi-2', tle1=tle1, tle2=tle2)
+        coords = (10.72, 59.942, 0.1)
+        meos_format_str = mypass.print_meos(coords, line_no=1)
         self.assertEqual(meos_format_str, orig)
 
     def test_generate_metno_xml(self):
