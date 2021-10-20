@@ -44,7 +44,7 @@ def read_yaml_file(file_name):
     conf_dict = {}
     for file_obj in file_name:
         with open(file_obj) as fp:
-            tmp_dict = yaml.load(fp)
+            tmp_dict = yaml.safe_load(fp)
         conf_dict = recursive_dict_update(conf_dict, tmp_dict)
     return conf_dict
 
