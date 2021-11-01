@@ -146,7 +146,7 @@ class Pass(SimplePass):
 
         if isinstance(instrument, (list, set)):
             if 'avhrr' in instrument:
-                logger.warning("Instrument is a sequence Assume avhrr...")
+                logger.warning("Instrument is a sequence! Assume avhrr...")
                 instrument = 'avhrr'
             elif 'viirs' in instrument:
                 logger.warning("Instrument is a sequence! Assume viirs...")
@@ -154,6 +154,12 @@ class Pass(SimplePass):
             elif 'modis' in instrument:
                 logger.warning("Instrument is a sequence! Assume modis...")
                 instrument = 'modis'
+            elif 'mersi' in instrument:
+                logger.warning("Instrument is a sequence! Assume mersi...")
+                instrument = 'mersi'
+            elif 'mersi-2' in instrument:
+                logger.warning("Instrument is a sequence! Assume mersi-2...")
+                instrument = 'mersi-2'
             else:
                 raise TypeError("Instrument is a sequence! Don't know which one to choose!")
 
@@ -578,7 +584,7 @@ def get_next_passes(satellites,
             elif sat.name.upper() in MERSI_PLATFORM_NAMES:
                 instrument = "mersi"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
-                instrument = "mersi2"
+                instrument = "mersi-2"
             else:
                 instrument = "unknown"
 
