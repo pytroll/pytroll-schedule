@@ -37,10 +37,7 @@ from trollsched.satpass import get_metopa_passes
 import sys
 import unittest
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from unittest.mock import patch
 
 
 # class TestPass(unittest.TestCase):

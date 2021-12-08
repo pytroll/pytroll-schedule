@@ -28,10 +28,7 @@ import logging
 from collections.abc import Mapping
 from configparser import ConfigParser
 
-try:
-    from trollsched import schedule
-except ImportError:
-    import schedule
+from trollsched import schedule
 
 
 logger = logging.getLogger("trollsched")
