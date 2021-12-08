@@ -26,7 +26,7 @@
 import logging
 import logging.handlers
 import os
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from pprint import pformat
 

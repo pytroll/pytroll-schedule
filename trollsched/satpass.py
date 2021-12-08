@@ -36,8 +36,7 @@ from functools import reduce as fctools_reduce
 from tempfile import mkstemp
 
 import numpy as np
-import six
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
@@ -433,7 +432,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     """
 
     logger.info("Fetch %s dump info from internet", str(sat.name))
-    if isinstance(dump_url, six.text_type):
+    if isinstance(dump_url, str):
         url = urlparse(dump_url % sat.name)
     else:
         url = urlparse(HOST % sat.name)
