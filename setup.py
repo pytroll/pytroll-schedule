@@ -29,7 +29,7 @@ from setuptools import setup
 import sys
 import versioneer
 
-requires = ['numpy', 'pyresample', 'pyorbital','pyyaml']
+requires = ['numpy', 'pyresample', 'pyorbital', 'pyyaml']
 test_requires = []
 
 setup(name='pytroll-schedule',
