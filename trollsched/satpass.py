@@ -439,9 +439,6 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     logger.debug("Connect to ftp server")
     try:
         f = ftplib.FTP_TLS(url.netloc)
-        if sys.version_info < (2, 7, 10):
-            import ssl
-            f.ssl_version = ssl.PROTOCOL_SSLv23
     except (socket.error, socket.gaierror) as e:
         logger.error('cannot reach to %s ' % HOST + str(e))
         f = None

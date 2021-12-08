@@ -35,10 +35,7 @@ from trollsched.satpass import get_aqua_terra_dumps
 from trollsched.satpass import get_metopa_passes
 
 import sys
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
 
 try:
     from unittest.mock import patch
