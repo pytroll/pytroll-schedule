@@ -29,12 +29,8 @@ from setuptools import setup
 import sys
 import versioneer
 
-requires = ['numpy', 'pyresample', 'pyorbital', 'six', 'pyyaml']
+requires = ['numpy', 'pyresample', 'pyorbital', 'pyyaml']
 test_requires = []
-
-if sys.version_info < (2, 7):
-    # multiprocessing is not in the standard library
-    requires.append('argparse')
 
 setup(name='pytroll-schedule',
       version=versioneer.get_version(),

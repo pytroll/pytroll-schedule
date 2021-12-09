@@ -26,12 +26,9 @@
 import yaml
 import logging
 from collections.abc import Mapping
-from six.moves.configparser import ConfigParser
+from configparser import ConfigParser
 
-try:
-    from trollsched import schedule
-except ImportError:
-    import schedule
+from trollsched import schedule
 
 
 logger = logging.getLogger("trollsched")
