@@ -26,7 +26,7 @@
 import logging
 import logging.handlers
 import os
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from pprint import pformat
 
@@ -699,11 +699,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
         """Collect labels, each with one pass per station."""
         # TODO: is there a simpler way?
         clabels = []
-        from sys import version_info
-        if version_info < (2, 7):
-            npasses = dict((s, set()) for s in stats)
-        else:
-            npasses = {s: set() for s in stats}
+        npasses = {s: set() for s in stats}
         for npass in newpasses:
             cl = []
             for i, s in zip(range(len(stats)), stats):
