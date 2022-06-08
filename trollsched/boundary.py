@@ -69,6 +69,10 @@ class SwathBoundary(Boundary):
         elif instrument.startswith("mersi"):
             scan_angle = 55.4
             instrument = "avhrr"
+        elif instrument.startswith("slstr"):
+            scan_angle_right = 46.5
+            scan_angle_left = 22.1
+            instrument = "slstr"
         else:
             scan_angle = 55.25
 
@@ -88,6 +92,8 @@ class SwathBoundary(Boundary):
         elif instrument == 'viirs':
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
         elif instrument in ['mhs', 'atms', 'mwhs-2']:
+            sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument.startswith("slstr"):
             sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             logger.warning("Instrument not tested: %s", instrument)
