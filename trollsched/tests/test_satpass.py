@@ -168,6 +168,7 @@ def get_mb_orbital():
     tle2 = "2 38771  98.6992  96.5537 0002329  71.3979  35.1836 14.21496632434867"
     return Orbital("Metop-B", line1=tle1, line2=tle2)
 
+
 def get_s3a_orbital():
     """
     From 2022-06-06
@@ -358,7 +359,7 @@ class TestSwathBoundary(unittest.TestCase):
         # Sentinel 3A slstr
         tstart = datetime(2022, 6, 6, 19, 58, 0)
         tend = tstart + timedelta(seconds=60)
-        
+
         tle1 = "1 41335U 16011A   22156.83983125  .00000043  00000-0  35700-4 0  9996"
         tle2 = "2 41335  98.6228 224.3150 0001264  95.7697 264.3627 14.26738650328113"
         mypass = Pass('SENTINEL 3A', tstart, tend, instrument='slstr', tle1=tle1, tle2=tle2)
