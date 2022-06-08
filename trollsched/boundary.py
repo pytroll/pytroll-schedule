@@ -70,8 +70,6 @@ class SwathBoundary(Boundary):
             scan_angle = 55.4
             instrument = "avhrr"
         elif instrument.startswith("slstr"):
-            scan_angle_right = 46.5
-            scan_angle_left = 22.1
             instrument = "slstr"
         else:
             scan_angle = 55.25

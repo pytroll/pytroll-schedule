@@ -168,6 +168,13 @@ def get_mb_orbital():
     tle2 = "2 38771  98.6992  96.5537 0002329  71.3979  35.1836 14.21496632434867"
     return Orbital("Metop-B", line1=tle1, line2=tle2)
 
+def get_s3a_orbital():
+    """
+    From 2022-06-06
+    """
+    tle1 = "1 41335U 16011A   22157.82164820  .00000041  00000-0  34834-4 0  9994"
+    tle2 = "2 41335  98.6228 225.2825 0001265  95.7364 264.3961 14.26738817328255"
+    return Orbital("Sentinel-3A", line1=tle1, line2=tle2)
 
 class TestPass(unittest.TestCase):
 
@@ -210,6 +217,7 @@ class TestSwathBoundary(unittest.TestCase):
         self.n20orb = get_n20_orbital()
         self.n19orb = get_n19_orbital()
         self.mborb = get_mb_orbital()
+        self.s3aorb = get_s3a_orbital()
         self.euron1 = AREA_DEF_EURON1
         self.antarctica = create_area_def(
             "antarctic",
@@ -346,6 +354,16 @@ class TestSwathBoundary(unittest.TestCase):
         mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi-2', tle1=tle1, tle2=tle2)
         cov = mypass.area_coverage(self.euron1)
         self.assertAlmostEqual(cov, 0.786836, 5)
+
+        # Sentinel 3A slstr
+        tstart = datetime(2022, 6, 6, 19, 58, 0)
+        tend = tstart + timedelta(seconds=60)
+        
+        tle1 = "1 41335U 16011A   22156.83983125  .00000043  00000-0  35700-4 0  9996"
+        tle2 = "2 41335  98.6228 224.3150 0001264  95.7697 264.3627 14.26738650328113"
+        mypass = Pass('SENTINEL 3A', tstart, tend, instrument='slstr', tle1=tle1, tle2=tle2)
+        cov = mypass.area_coverage(self.euron1)
+        self.assertAlmostEqual(cov, 0.05305641490480109, 6)
 
     def test_arctic_is_not_antarctic(self):
 
