@@ -52,7 +52,7 @@ MERSI2_PLATFORM_NAMES = ['FENGYUN 3D', 'FENGYUN-3D', 'FY-3D',
                          'FENGYUN 3E', 'FENGYUN-3E', 'FY-3E']
 
 
-class SimplePass(object):
+class SimplePass:
     """A pass: satellite, risetime, falltime, (orbital)
     """
 

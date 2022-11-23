@@ -23,15 +23,17 @@
 
 """Scheduling
 """
+import argparse
 import logging
 import logging.handlers
 import os
-from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from pprint import pformat
+from urllib.parse import urlparse
 
 import numpy as np
 from pyorbital import astronomy
+
 try:
     from pyresample import parse_area_file
 except ImportError:
@@ -813,70 +815,9 @@ def combined_stations(scheduler, start_time, graph, allpasses):
 
 def run():
     """The schedule command."""
-    import argparse
     global logger
 
-    parser = argparse.ArgumentParser()
-    # general arguments
-    parser.add_argument("-c", "--config", default=None,
-                        help="configuration file to use")
-    parser.add_argument("-t", "--tle", default=None,
-                        help="tle file to use")
-    parser.add_argument("-l", "--log", default=None,
-                        help="File to log to (defaults to stdout)")
-    parser.add_argument("-m", "--mail", nargs="*", default=None,
-                        help="mail address(es) to send error messages to.")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="print debug messages too")
-    # argument group: coordinates and times
-    group_postim = parser.add_argument_group(title="start-parameter",
-                                             description="(or set values in the configuration file)")
-    group_postim.add_argument("--lat", type=float,
-                              help="Latitude, degrees north")
-    group_postim.add_argument("--lon", type=float,
-                              help="Longitude, degrees east")
-    group_postim.add_argument("--alt", type=float,
-                              help="Altitude, km")
-    group_postim.add_argument("-f", "--forward", type=float,
-                              help="time ahead to compute the schedule")
-    group_postim.add_argument("-s", "--start-time", type=parse_datetime,
-                              help="start time of the schedule to compute")
-    group_postim.add_argument("-d", "--delay", default=60, type=float,
-                              help="delay (in seconds) needed between two " +
-                              "consecutive passes (60 seconds by default)")
-    # argument group: special behaviour
-    group_spec = parser.add_argument_group(title="special",
-                                           description="(additional parameter changing behaviour)")
-    group_spec.add_argument("-a", "--avoid",
-                            help="xml request file with passes to avoid")
-    group_spec.add_argument("--no-aqua-terra-dump", action="store_false",
-                            help="do not consider Aqua/Terra-dumps")
-    group_spec.add_argument("--multiproc", action="store_true",
-                            help="use multiple parallel processes")
-    # argument group: output-related
-    group_outp = parser.add_argument_group(title="output",
-                                           description="(file pattern are taken from configuration file)")
-    group_outp.add_argument("-o", "--output-dir", default=None,
-                            help="where to put generated files")
-    group_outp.add_argument("-u", "--output-url", default=None,
-                            help="URL where to put generated schedule file(s)" +
-                            ", otherwise use output-dir")
-    group_outp.add_argument("-x", "--xml", action="store_true",
-                            help="generate an xml request file (schedule)"
-                            )
-    group_outp.add_argument("-r", "--report", action="store_true",
-                            help="generate an xml report file (schedule)")
-    group_outp.add_argument("--scisys", action="store_true",
-                            help="generate a SCISYS schedule file")
-    group_outp.add_argument("-p", "--plot", action="store_true",
-                            help="generate plot images")
-    group_outp.add_argument("-g", "--graph", action="store_true",
-                            help="save graph info")
-    group_outp.add_argument("--meos", action="store_true",
-                            help="generate a MEOS schedule file")
-    group_outp.add_argument("--metno-xml", action="store_true",
-                            help="generate a METNO xml pass data file")
-    opts = parser.parse_args()
+    opts = parse_args()
 
     if opts.config:
         # read_config() returns:
@@ -886,46 +827,12 @@ def run():
 
     # TODO make config file compulsory
 
-    if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
-        parser.error("Coordinates must be provided in the absence of "
-                     "configuration file.")
-
-    if not (opts.xml or opts.scisys or opts.report or opts.metno_xml):
-        parser.error("No output specified, use '--scisys' or '-x/--xml'")
-
     if opts.output_dir is None:
         opts.output_dir = os.path.curdir
     if "dir_output" not in scheduler.patterns:
-        pattern["dir_output"] = opts.output_dir
+        scheduler.patterns["dir_output"] = opts.output_dir
 
-    if opts.log:
-        previous = os.path.exists(opts.log)
-        handler = logging.handlers.RotatingFileHandler(opts.log, backupCount=7)
-        if previous:
-            handler.doRollover()
-    else:
-        handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("[%(levelname)s: %(asctime)s :"
-                                           " %(name)s] %(message)s",
-                                           '%Y-%m-%d %H:%M:%S'))
-    if opts.verbose:
-        loglevel = logging.DEBUG
-    else:
-        loglevel = logging.INFO
-
-    handler.setLevel(loglevel)
-    logging.getLogger('').setLevel(loglevel)
-    logging.getLogger('').addHandler(handler)
-
-    if opts.mail:
-        mhandler = logging.handlers.SMTPHandler("localhost",
-                                                "pytroll-schedule@pytroll.org",
-                                                opts.mail,
-                                                "Scheduler")
-        mhandler.setLevel(logging.WARNING)
-        logging.getLogger('').addHandler(mhandler)
-
-    logger = logging.getLogger("trollsched")
+    setup_logging(opts)
 
     tle_file = opts.tle
     if opts.start_time:
@@ -995,6 +902,109 @@ def run():
 
     if opts.comb:
         combined_stations(scheduler, start_time, graph, allpasses)
+
+
+def setup_logging(opts):
+    global logger
+    if opts.log:
+        previous = os.path.exists(opts.log)
+        handler = logging.handlers.RotatingFileHandler(opts.log, backupCount=7)
+        if previous:
+            handler.doRollover()
+    else:
+        handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("[%(levelname)s: %(asctime)s :"
+                                           " %(name)s] %(message)s",
+                                           '%Y-%m-%d %H:%M:%S'))
+    if opts.verbose:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+    handler.setLevel(loglevel)
+    logging.getLogger('').setLevel(loglevel)
+    logging.getLogger('').addHandler(handler)
+    if opts.mail:
+        mhandler = logging.handlers.SMTPHandler("localhost",
+                                                "pytroll-schedule@pytroll.org",
+                                                opts.mail,
+                                                "Scheduler")
+        mhandler.setLevel(logging.WARNING)
+        logging.getLogger('').addHandler(mhandler)
+    logger = logging.getLogger("trollsched")
+
+
+def parse_args():
+    """Parse arguments from the command line."""
+    parser = argparse.ArgumentParser()
+    # general arguments
+    parser.add_argument("-c", "--config", default=None,
+                        help="configuration file to use")
+    parser.add_argument("-t", "--tle", default=None,
+                        help="tle file to use")
+    parser.add_argument("-l", "--log", default=None,
+                        help="File to log to (defaults to stdout)")
+    parser.add_argument("-m", "--mail", nargs="*", default=None,
+                        help="mail address(es) to send error messages to.")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="print debug messages too")
+    # argument group: coordinates and times
+    group_postim = parser.add_argument_group(title="start-parameter",
+                                             description="(or set values in the configuration file)")
+    group_postim.add_argument("--lat", type=float,
+                              help="Latitude, degrees north")
+    group_postim.add_argument("--lon", type=float,
+                              help="Longitude, degrees east")
+    group_postim.add_argument("--alt", type=float,
+                              help="Altitude, km")
+    group_postim.add_argument("-f", "--forward", type=float,
+                              help="time ahead to compute the schedule")
+    group_postim.add_argument("-s", "--start-time", type=parse_datetime,
+                              help="start time of the schedule to compute")
+    group_postim.add_argument("-d", "--delay", default=60, type=float,
+                              help="delay (in seconds) needed between two " +
+                                   "consecutive passes (60 seconds by default)")
+    # argument group: special behaviour
+    group_spec = parser.add_argument_group(title="special",
+                                           description="(additional parameter changing behaviour)")
+    group_spec.add_argument("-a", "--avoid",
+                            help="xml request file with passes to avoid")
+    group_spec.add_argument("--no-aqua-terra-dump", action="store_false",
+                            help="do not consider Aqua/Terra-dumps")
+    group_spec.add_argument("--multiproc", action="store_true",
+                            help="use multiple parallel processes")
+    # argument group: output-related
+    group_outp = parser.add_argument_group(title="output",
+                                           description="(file pattern are taken from configuration file)")
+    group_outp.add_argument("-o", "--output-dir", default=None,
+                            help="where to put generated files")
+    group_outp.add_argument("-u", "--output-url", default=None,
+                            help="URL where to put generated schedule file(s)" +
+                                 ", otherwise use output-dir")
+    group_outp.add_argument("-x", "--xml", action="store_true",
+                            help="generate an xml request file (schedule)"
+                            )
+    group_outp.add_argument("-r", "--report", action="store_true",
+                            help="generate an xml report file (schedule)")
+    group_outp.add_argument("--scisys", action="store_true",
+                            help="generate a SCISYS schedule file")
+    group_outp.add_argument("-p", "--plot", action="store_true",
+                            help="generate plot images")
+    group_outp.add_argument("-g", "--graph", action="store_true",
+                            help="save graph info")
+    group_outp.add_argument("--meos", action="store_true",
+                            help="generate a MEOS schedule file")
+    group_outp.add_argument("--metno-xml", action="store_true",
+                            help="generate a METNO xml pass data file")
+    opts = parser.parse_args()
+
+    if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
+        parser.error("Coordinates must be provided in the absence of "
+                     "configuration file.")
+
+    if not (opts.xml or opts.scisys or opts.report or opts.metno_xml or opts.meos):
+        parser.error("No output specified, use '--scisys', '-x/--xml', '-r/--report', '--meos', or '--metno-xml'")
+
+    return opts
 
 
 if __name__ == '__main__':
