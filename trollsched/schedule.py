@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2013 - 2019 PyTroll
 
 # Author(s):
@@ -21,8 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Scheduling
-"""
+"""Module and script for pass scheduling."""
 import argparse
 import logging
 import logging.handlers
@@ -33,6 +29,8 @@ from urllib.parse import urlparse
 
 import numpy as np
 from pyorbital import astronomy
+
+from trollsched.writers import generate_metno_xml_file, generate_meos_file, generate_sch_file, generate_xml_file
 
 try:
     from pyresample import parse_area_file
@@ -50,17 +48,13 @@ from trollsched.combine import get_combined_sched
 
 logger = logging.getLogger(__name__)
 
-# name/id for centre/org creating schedules
-CENTER_ID = "SMHI"
 
-
-class Station(object):
+class Station:
 
     """docstring for Station."""
 
     def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None,
                  min_pass=None, local_horizon=0):
-        super(Station, self).__init__()
         self.id = station_id
         self.name = name
         self.longitude = longitude
@@ -100,19 +94,7 @@ class Station(object):
         elif opts.report:
             pattern_args['mode'] = "report"
 
-        logger.info("Computing next satellite passes")
-        allpasses = get_next_passes(self.satellites, start_time,
-                                    sched.forward,
-                                    self.coords, tle_file,
-                                    aqua_terra_dumps=(sched.dump_url or True
-                                                      if opts.no_aqua_terra_dump
-                                                      else None),
-                                    min_pass=self.min_pass,
-                                    local_horizon=self.local_horizon
-                                    )
-        logger.info("Computation of next overpasses done")
-
-        logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
+        allpasses = self.get_next_passes(opts, sched, start_time, tle_file)
 
         area_boundary = AreaDefBoundary(self.area, frequency=500)
         self.area.poly = area_boundary.contour_poly
@@ -165,12 +147,13 @@ class Station(object):
         if opts.metno_xml:
             generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), allpasses,
                                     self.coords, start_time + timedelta(hours=sched.start),
-                                    start_time + timedelta(hours=sched.forward), self.id, sched.center_id, True)
+                                    start_time + timedelta(hours=sched.forward), self.id, sched.center_id,
+                                    report_mode=True)
 
         if opts.xml or opts.report:
             url = urlparse(opts.output_url or opts.output_dir)
             if opts.xml or opts.report:
-                """Allways create xml-file in request-mode"""
+                # Always create xml-file in request-mode
                 pattern_args['mode'] = "request"
                 xmlfile = generate_xml_file(allpasses,
                                             start_time + timedelta(hours=sched.start),
@@ -179,7 +162,7 @@ class Station(object):
                                                 "file_xml", pattern, pattern_args),
                                             self.id,
                                             sched.center_id,
-                                            False
+                                            report_mode=False
                                             )
                 logger.info("Generated " + str(xmlfile))
                 send_file(url, xmlfile)
@@ -212,36 +195,48 @@ class Station(object):
 
         return graph, allpasses
 
+    def get_next_passes(self, opts, sched, start_time, tle_file):
+        logger.info("Computing next satellite passes")
+        allpasses = get_next_passes(self.satellites, start_time,
+                                    sched.forward,
+                                    self.coords, tle_file,
+                                    aqua_terra_dumps=(sched.dump_url or True
+                                                      if opts.no_aqua_terra_dump
+                                                      else None),
+                                    min_pass=self.min_pass,
+                                    local_horizon=self.local_horizon
+                                    )
+        logger.info("Computation of next overpasses done")
+        logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
+        return allpasses
 
-class SatScore(object):
+
+class SatScore:
 
     """docstring for SatScore."""
 
     def __init__(self, day, night):
-        super(SatScore, self).__init__()
         self.day = day
         self.night = night
 
 
-class Satellite(object):
+class Satellite:
 
     """docstring for Satellite."""
 
     def __init__(self, name, day, night,
                  schedule_name=None, international_designator=None):
-        super(Satellite, self).__init__()
         self.name = name
         self.international_designator = international_designator
         self.score = SatScore(day, night)
         self.schedule_name = schedule_name or name
 
 
-class Scheduler(object):
+class Scheduler:
 
     """docstring for Scheduler."""
 
     def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id, plot_parameters, plot_title):
-        super(Scheduler, self).__init__()
         self.stations = stations
         self.min_pass = min_pass
         self.forward = forward
@@ -502,151 +497,13 @@ def get_max(groups, fun):
     return groups[argmax(scores)]
 
 
-def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_name, center_id, report_mode=False):
-    import xml.etree.ElementTree as ET
-
-    reqtime = datetime.utcnow()
-
-    with open(output_file, "w") as out:
-        out.write("<?xml version='1.0' encoding='utf-8'?>")
-
-        root = ET.Element("acquisition-schedule")
-        props = ET.SubElement(root, "properties")
-        proj = ET.SubElement(props, "project")
-        proj.text = "Pytroll"
-        typep = ET.SubElement(props, "type")
-        if report_mode:
-            typep.text = "report"
-        else:
-            typep.text = "request"
-        station = ET.SubElement(props, "station")
-        station.text = station_name
-        file_start = ET.SubElement(props, "file-start")
-        file_start.text = start.strftime("%Y-%m-%dT%H:%M:%S")
-        file_end = ET.SubElement(props, "file-end")
-        file_end.text = end.strftime("%Y-%m-%dT%H:%M:%S")
-        reqby = ET.SubElement(props, "requested-by")
-        reqby.text = center_id
-        reqon = ET.SubElement(props, "requested-on")
-        reqon.text = reqtime.strftime("%Y-%m-%dT%H:%M:%S")
-
-        for overpass in sorted(allpasses, key=lambda x: x.risetime):
-            if (overpass.rec or report_mode) and overpass.risetime > start:
-                overpass.generate_metno_xml(coords, root)
-
-        out.write(ET.tostring(root).decode("utf-8"))
-        out.close()
-    return output_file
-
-
-def generate_meos_file(output_file, allpasses, coords, start, report_mode=False):
-
-    with open(output_file, "w") as out:
-        out.write(" No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)\n")
-        line_no = 1
-        for overpass in sorted(allpasses, key=lambda x: x.risetime):
-            if (overpass.rec or report_mode) and overpass.risetime > start:
-                out.write(overpass.print_meos(coords, line_no) + "\n")
-                line_no += 1
-        out.close()
-    return output_file
-
-
-def generate_sch_file(output_file, overpasses, coords):
-
-    with open(output_file, "w") as out:
-        # create epochs
-        out.write("#Orbital elements\n#\n#SCName           Epochtime\n#\n")
-        satellites = set()
-
-        for overpass in overpasses:
-            epoch = "!{0:<16} {1}".format(overpass.satellite.name.upper(),
-                                          overpass.orb.tle.epoch.strftime("%Y%m%d %H%M%S"))
-            satellites |= set([epoch])
-        sats = "\n".join(satellites) + "\n"
-        out.write(sats)
-        out.write("#\n#\n#Pass List\n#\n")
-
-        out.write(
-            "#SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName        "
-            "OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration\n#\n")
-
-        for overpass in sorted(overpasses):
-            out.write(overpass.print_vcs(coords) + "\n")
-
-
-def generate_xml_requests(sched, start, end, station_name, center_id, report_mode=False):
-    """Create xml requests.
-    """
-    import xml.etree.ElementTree as ET
-
-    reqtime = datetime.utcnow()
-    eum_format = "%Y-%m-%d-%H:%M:%S"
-
-    root = ET.Element("acquisition-schedule")
-    props = ET.SubElement(root, "properties")
-    proj = ET.SubElement(props, "project")
-    proj.text = "Pytroll"
-    typep = ET.SubElement(props, "type")
-    if report_mode:
-        typep.text = "report"
-    else:
-        typep.text = "request"
-    station = ET.SubElement(props, "station")
-    station.text = station_name
-    file_start = ET.SubElement(props, "file-start")
-    file_start.text = start.strftime(eum_format)
-    file_end = ET.SubElement(props, "file-end")
-    file_end.text = end.strftime(eum_format)
-    reqby = ET.SubElement(props, "requested-by")
-    reqby.text = center_id
-    reqon = ET.SubElement(props, "requested-on")
-    reqon.text = reqtime.strftime(eum_format)
-    for overpass in sorted(sched):
-        if (overpass.rec or report_mode) and overpass.risetime > start:
-            ovpass = ET.SubElement(root, "pass")
-            sat_name = overpass.satellite.schedule_name or overpass.satellite.name
-            ovpass.set("satellite", sat_name)
-            ovpass.set("start-time", overpass.risetime.strftime(eum_format))
-            ovpass.set("end-time", overpass.falltime.strftime(eum_format))
-            if report_mode:
-                if overpass.fig is not None:
-                    ovpass.set("img", overpass.fig)
-                ovpass.set("rec", str(overpass.rec))
-
-    return root, reqtime
-
-
-def generate_xml_file(sched, start, end, xml_file, station, center_id, report_mode=False):
-    """Create an xml request file.
-    """
-    import xml.etree.ElementTree as ET
-    tree, reqtime = generate_xml_requests(sched,
-                                          start, end,
-                                          station, center_id, report_mode)
-    filename = xml_file
-    tmp_filename = xml_file + reqtime.strftime("%Y-%m-%d-%H-%M-%S") + ".tmp"
-    with open(tmp_filename, "w") as fp_:
-        if report_mode:
-            fp_.write("<?xml version='1.0' encoding='utf-8'?>"
-                      "<?xml-stylesheet type='text/xsl' href='reqreader.xsl'?>")
-        fp_.write(ET.tostring(tree).decode("utf-8"))
-    os.rename(tmp_filename, filename)
-    return filename
-
-
-def parse_datetime(strtime):
-    """Parse the time string *strtime*
-    """
-    return datetime.strptime(strtime, "%Y%m%d%H%M%S")
-
-
 def save_passes(allpasses, poly, output_dir, plot_parameters=None, plot_title=None):
     """Save overpass plots to png and store in directory *output_dir*
     """
     from trollsched.drawing import save_fig
     for overpass in allpasses:
         save_fig(overpass, poly=poly, directory=output_dir, plot_parameters=plot_parameters, plot_title=plot_title)
+    logger.info("All plots saved!")
 
 
 def get_passes_from_xml_file(filename):
@@ -692,7 +549,6 @@ def send_file(url, file):
 
 
 def combined_stations(scheduler, start_time, graph, allpasses):
-    # opts, pattern, station_list, graph, allpasses, start_time, start, forward, center_id):
     """The works around the combination of schedules for two or more stations."""
 
     logger.info("Generating coordinated schedules ...")
@@ -739,7 +595,6 @@ def combined_stations(scheduler, start_time, graph, allpasses):
         raise
 
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
-#     logger.debug(pformat(schedule))
 
     for opass in schedule:
         for i, ipass in zip(range(len(opass)), opass):
@@ -825,12 +680,10 @@ def run():
         # station_list, forward, start, pattern = utils.read_config(opts.config)
         scheduler = utils.read_config(opts.config)
 
-    # TODO make config file compulsory
-
-    if opts.output_dir is None:
-        opts.output_dir = os.path.curdir
-    if "dir_output" not in scheduler.patterns:
+    if opts.output_dir:
         scheduler.patterns["dir_output"] = opts.output_dir
+    else:
+        scheduler.patterns.setdefault("dir_output", os.path.curdir)
 
     setup_logging(opts)
 
@@ -937,7 +790,7 @@ def parse_args():
     """Parse arguments from the command line."""
     parser = argparse.ArgumentParser()
     # general arguments
-    parser.add_argument("-c", "--config", default=None,
+    parser.add_argument("-c", "--config", required=True, default=None,
                         help="configuration file to use")
     parser.add_argument("-t", "--tle", default=None,
                         help="tle file to use")
@@ -958,7 +811,7 @@ def parse_args():
                               help="Altitude, km")
     group_postim.add_argument("-f", "--forward", type=float,
                               help="time ahead to compute the schedule")
-    group_postim.add_argument("-s", "--start-time", type=parse_datetime,
+    group_postim.add_argument("-s", "--start-time", type=datetime.fromisoformat,
                               help="start time of the schedule to compute")
     group_postim.add_argument("-d", "--delay", default=60, type=float,
                               help="delay (in seconds) needed between two " +

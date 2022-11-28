@@ -104,9 +104,9 @@ class SimplePass:
             return (self.satellite.name == other.satellite.name and
                     self.orb.get_orbit_number(self.risetime) == other.orb.get_orbit_number(other.risetime))
         tol = timedelta(seconds=1)
-        return (other is not None and abs(self.risetime - other.risetime) < tol and
-                abs(self.falltime - other.falltime) < tol and
-                self.satellite == other.satellite)
+        return (other is not None and
+                self.satellite.name == other.satellite.name and
+                self.overlaps(other))
 
     def __str__(self):
         return (self.satellite.name + " " + self.risetime.isoformat() + " " +
