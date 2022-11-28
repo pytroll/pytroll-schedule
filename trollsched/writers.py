@@ -37,6 +37,7 @@ def generate_sch_file(output_file, overpasses, coords):
         for overpass in sorted(overpasses):
             out.write(overpass.print_vcs(coords) + "\n")
 
+
 def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_name, center_id, report_mode=False):
     import xml.etree.ElementTree as ET
 

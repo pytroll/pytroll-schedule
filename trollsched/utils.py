@@ -67,7 +67,7 @@ def read_config(filename):
         return read_config_yaml(filename)
     except yaml.parser.ParserError as e:
         logger.error("INI format for scheduler config is deprecated since v0.3.4, "
-                      "please update your configuration to YAML.")
+                     "please update your configuration to YAML.")
         raise
 
 
