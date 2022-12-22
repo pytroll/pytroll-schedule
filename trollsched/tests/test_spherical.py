@@ -37,7 +37,7 @@ class TestSCoordinate(unittest.TestCase):
         """Test Vincenty formula
         """
         d = SCoordinate(0, 0).distance(SCoordinate(1, 1))
-        self.assertEquals(d, 1.2745557823062943)
+        np.testing.assert_allclose(d, 1.2745557823062943)
 
     def test_hdistance(self):
         """Test Haversine formula
