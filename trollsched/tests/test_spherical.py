@@ -488,7 +488,7 @@ class TestSphericalPolygon(unittest.TestCase):
         self.assertTrue(poly_inter.area() <= poly_union.area())
 
         def normalize(x):
-            return (np.asarray([1,2,3,4]) + np.pi) % (2*np.pi) - np.pi
+            return (np.asarray([1, 2, 3, 4]) + np.pi) % (2*np.pi) - np.pi
 
         np.testing.assert_allclose(
             normalize(poly_inter.vertices),
