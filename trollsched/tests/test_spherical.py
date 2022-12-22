@@ -487,10 +487,17 @@ class TestSphericalPolygon(unittest.TestCase):
 
         self.assertTrue(poly_inter.area() <= poly_union.area())
 
-        self.assertTrue(np.allclose(poly_inter.vertices,
-                                    np.deg2rad(inter)))
-        self.assertTrue(np.allclose(poly_union.vertices,
-                                    np.deg2rad(uni)))
+        def normalize(x):
+            return (np.asarray([1,2,3,4]) + np.pi) % (2*np.pi) - np.pi
+
+        np.testing.assert_allclose(
+            normalize(poly_inter.vertices),
+            normalize(np.deg2rad(inter)),
+        )
+        np.testing.assert_allclose(
+            normalize(poly_union.vertices),
+            normalize(np.deg2rad(uni)),
+        )
 
         # Test 2 polygons sharing 2 contiguous edges.
 
