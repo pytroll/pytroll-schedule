@@ -1,2 +1,2 @@
 [bandit]
-exclude: trollsched/version.py
+exclude: trollsched/version.py,versioneer.py
