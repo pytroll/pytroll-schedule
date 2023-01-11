@@ -26,9 +26,10 @@ base type is a numpy array of size (n, 2) (2 for lon and lats)
 
 """
 
+import logging
+
 import numpy as np
 import pyresample.spherical
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +37,15 @@ EPSILON = 0.0000001
 
 
 def modpi(val, mod=np.pi):
-    """Puts *val* between -*mod* and *mod*.
-    """
+    """Put *val* between -*mod* and *mod*."""
     return (val + mod) % (2 * mod) - mod
 
 
 class SphPolygon(pyresample.spherical.SphPolygon):
+    """A spherical polygon with drawing capabilities."""
 
     def draw(self, mapper, options, **more_options):
+        """Draw the polygon."""
         lons = np.rad2deg(self.lon.take(np.arange(len(self.lon) + 1),
                                         mode="wrap"))
         lats = np.rad2deg(self.lat.take(np.arange(len(self.lat) + 1),
