@@ -129,7 +129,7 @@ class SwathBoundary(Boundary):
                               (overpass.falltime - overpass.risetime).microseconds / 1000000.0)
 
         logger.debug("Instrument = %s", self.overpass.instrument)
-        scan_step, along_scan_reduce_factor, sec_scan_duration = self.get_steps_and_duration()
+        scan_step, along_scan_reduce_factor, sec_scan_duration = self.get_steps_and_duration(scan_step)
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
         scans_nb = scanlength_seconds / sec_scan_duration * along_scan_reduce_factor
@@ -187,7 +187,7 @@ class SwathBoundary(Boundary):
 
         return
 
-    def get_steps_and_duration(self):
+    def get_steps_and_duration(self, scan_step):
         """Get the steps and duration for the instrument."""
         if self.overpass.instrument == 'viirs':
             sec_scan_duration = 1.779166667
