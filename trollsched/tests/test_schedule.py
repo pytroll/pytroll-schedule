@@ -21,62 +21,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test the schedule module.
-"""
+"""Test the schedule module."""
 
-import numpy as np
-from datetime import datetime, timedelta
-
-from trollsched.schedule import fermia, fermib, conflicting_passes
-from trollsched.schedule import parse_datetime, build_filename
-from pyresample.boundary import AreaBoundary
-from trollsched.satpass import get_next_passes
-from trollsched.satpass import get_aqua_terra_dumps
-from trollsched.satpass import get_metopa_passes
-
-import sys
 import unittest
-
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
-
-# class TestPass(unittest.TestCase):
-
-# def test_day(self):
-#     satellite = "noaa 16"
-#     tle1 = "1 26536U 00055A   13076.42963155  .00000201  00000-0  13237-3 0  1369"
-#     tle2 = "2 26536  99.0540 128.2392 0010826  39.9070  85.2960 14.12848373643614"
-#     orb = Orbital(satellite, line1=tle1, line2=tle2)
-#     tstart = datetime(2013, 3, 18, 8, 15, 22, 352000)
-#     tup = datetime(2013, 3, 18, 8, 22, 52, 352000)
-#     tend = datetime(2013, 3, 18, 8, 30, 22, 352000)
-#     overp = Pass(satellite, tstart, tend, orb, tup)
-
-# a little night
-
-#     day = overp.day()
-
-#     self.assertEquals(0.99735685408290298, day)
-
-# on the area of interest there is no night
-
-#     area_of_interest = get_area_def("euron1")
-#     day = overp.day(area_of_interest)
-#     self.assertEquals(1.0, day)
-
-#     tstart = datetime(2013, 3, 18, 8, 16, 22, 352000)
-#     overp = Pass(satellite, tstart, tend, orb, tup)
-
-# an entire pass without night
-
-#     day = overp.day()
-#     self.assertEquals(1.0, day)
+from trollsched.satpass import (get_aqua_terra_dumps, get_metopa_passes,
+                                get_next_passes)
+from trollsched.schedule import (build_filename, conflicting_passes, fermia,
+                                 fermib)
 
 
 class TestTools(unittest.TestCase):
+    """Test the tools."""
 
     def test_conflicting_passes(self):
-
+        """Test conflicting passes."""
         class MyPass(object):
 
             def __init__(self, rise, fall):
@@ -93,71 +54,21 @@ class TestTools(unittest.TestCase):
             len(conflicting_passes(passes, timedelta(seconds=60))), 1)
 
 
-class TestAreaBoundary(unittest.TestCase):
-
-    def test_contour(self):
-
-        side1_lons = np.arange(4)
-        side1_lats = np.arange(4) + 20
-        side2_lons = np.arange(4) + 3
-        side2_lats = np.arange(4) + 20 + 3
-        side3_lons = np.arange(4) + 6
-        side3_lats = np.arange(4) + 20 + 6
-        side4_lons = np.arange(4) + 9
-        side4_lats = np.arange(4) + 20 + 9
-
-        bond = AreaBoundary((side1_lons, side1_lats),
-                            (side2_lons, side2_lats),
-                            (side3_lons, side3_lats),
-                            (side4_lons, side4_lats))
-
-        lons, lats = bond.contour()
-        self.assertTrue(np.allclose(lons, np.arange(12)))
-        self.assertTrue(np.allclose(lats, np.arange(12) + 20))
-
-    def test_decimate(self):
-
-        side1_lons = np.arange(8)
-        side1_lats = np.arange(8) + 30
-        side2_lons = np.arange(8) + 7
-        side2_lats = np.arange(8) + 30 + 7
-        side3_lons = np.arange(8) + 14
-        side3_lats = np.arange(8) + 30 + 14
-        side4_lons = np.arange(8) + 21
-        side4_lats = np.arange(8) + 30 + 21
-
-        bond = AreaBoundary((side1_lons, side1_lats),
-                            (side2_lons, side2_lats),
-                            (side3_lons, side3_lats),
-                            (side4_lons, side4_lats))
-
-        bond.decimate(5)
-        lons, lats = bond.contour()
-
-        self.assertTrue(np.allclose(lons,
-                                    np.array([0, 1, 6, 7, 8,
-                                              13, 14, 15, 20, 21, 22, 27])))
-        self.assertTrue(np.allclose(lats,
-                                    np.array([30, 31, 36, 37, 38, 43, 44, 45,
-                                              50, 51, 52, 57])))
-
-
 class TestUtils(unittest.TestCase):
+    """Test class for utilities."""
 
     def test_fermi(self):
+        """Test the fermi formula."""
         self.assertEquals(fermia(0.25), 0.875)
         self.assertEquals(fermib(0.25), 0.5)
 
-    def test_parse_datetime(self):
-
-        dtobj = parse_datetime('20190104110059')
-        self.assertEqual(dtobj, datetime(2019, 1, 4, 11, 0, 59))
-
     def test_build_filename(self):
-
+        """Test building filename."""
         pattern_name = "dir_output"
-        pattern_dict = {'file_xml': '{dir_output}/{date}-{time}-aquisition-schedule-{mode}-{station}.xml', 'file_sci': '{dir_output}/scisys-schedule-{station}.txt',
-                        'dir_plots': '{dir_output}/plots.{station}', 'dir_output': '/tmp', 'file_graph': '{dir_output}/graph.{station}'}
+        pattern_dict = {'file_xml': '{dir_output}/{date}-{time}-aquisition-schedule-{mode}-{station}.xml',
+                        'file_sci': '{dir_output}/scisys-schedule-{station}.txt',
+                        'dir_plots': '{dir_output}/plots.{station}', 'dir_output': '/tmp',
+                        'file_graph': '{dir_output}/graph.{station}'}
         kwargs = {'date': '20190104', 'output_dir': '.', 'dir_output': '/tmp', 'time': '122023'}
 
         res = build_filename(pattern_name, pattern_dict, kwargs)
@@ -171,10 +82,12 @@ class TestUtils(unittest.TestCase):
 
 
 class TestAll(unittest.TestCase):
+    """The test class."""
 
     def setUp(self):
-        """Set up"""
+        """Set up."""
         from pyorbital import orbital
+
         from trollsched.schedule import Satellite
 
         self.utctime = datetime(2018, 11, 28, 10, 0)
@@ -283,7 +196,7 @@ class TestAll(unittest.TestCase):
 
     @patch('os.path.exists')
     def test_get_next_passes_viirs(self, exists):
-
+        """Test getting the next viirs passes."""
         exists.return_code = True
 
         # mymock:
@@ -314,6 +227,7 @@ class TestAll(unittest.TestCase):
     @patch('os.path.exists')
     @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
     def test_get_next_passes_with_aquadumps(self, dumps_from_ftp, exists):
+        """Test getting the passes with dumps."""
         dumps_from_ftp.return_value = self.dumpdata
         exists.return_code = True
 
@@ -356,6 +270,7 @@ class TestAll(unittest.TestCase):
 
     @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
     def test_get_aqua_terra_dumps(self, dumps_from_ftp):
+        """Test getting the EOS dumps."""
         dumps_from_ftp.return_value = self.dumpdata_terra
 
         # mymock:
@@ -383,7 +298,7 @@ class TestAll(unittest.TestCase):
 
     @patch('os.path.exists')
     def test_get_metopa_passes(self, exists):
-
+        """Test getting metopa passes."""
         exists.return_code = True
 
         # mymock:
@@ -398,19 +313,3 @@ class TestAll(unittest.TestCase):
             self.assertAlmostEqual(metopa_passes[0].seconds(), 487.512589, 5)
             self.assertEqual((metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds, 0)
             self.assertEqual((metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds, 0)
-
-    def tearDown(self):
-        """Clean up"""
-        pass
-
-
-def suite():
-    """The suite for test_schedule
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestUtils))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestAreaBoundary))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestTools))
-
-    return mysuite
