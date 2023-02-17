@@ -33,10 +33,10 @@ from pyresample.boundary import Boundary
 
 logger = logging.getLogger(__name__)
 
-INSTRUMENT = {'avhrr/3': 'avhrr',
-              'avhrr/2': 'avhrr',
-              'avhrr-3': 'avhrr',
-              'mwhs-2': 'mwhs2'}
+INSTRUMENT = {"avhrr/3": "avhrr",
+              "avhrr/2": "avhrr",
+              "avhrr-3": "avhrr",
+              "mwhs-2": "mwhs2"}
 
 
 class SwathBoundary(Boundary):
@@ -94,15 +94,15 @@ class SwathBoundary(Boundary):
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
         elif instrument in ["ascat", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument in ["amsua", 'mhs']:
+        elif instrument in ["amsua", "mhs"]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["mwhs2", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["olci", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument == 'viirs':
+        elif instrument == "viirs":
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
-        elif instrument in ['mhs', 'atms', 'mwhs-2']:
+        elif instrument in ["mhs", "atms", "mwhs-2"]:
             sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             logger.warning("Instrument not tested: %s", instrument)
@@ -129,7 +129,7 @@ class SwathBoundary(Boundary):
                               (overpass.falltime - overpass.risetime).microseconds / 1000000.0)
 
         logger.debug("Instrument = %s", self.overpass.instrument)
-        scan_step, along_scan_reduce_factor, sec_scan_duration = self.get_steps_and_duration(scan_step)
+        scan_step, sec_scan_duration, along_scan_reduce_factor = self.get_steps_and_duration(scan_step)
 
         # From pass length in seconds and the seconds for one scan derive the number of scans in the swath:
         scans_nb = scanlength_seconds / sec_scan_duration * along_scan_reduce_factor
@@ -148,9 +148,9 @@ class SwathBoundary(Boundary):
 
         if side_shape != scans_nb:
             nmod = side_shape // scans_nb
-            logger.debug('Number of scan lines (%d) does not match number of scans (%d)',
+            logger.debug("Number of scan lines (%d) does not match number of scans (%d)",
                          side_shape, scans_nb)
-            logger.info('Take every %d th element on the sides...', nmod)
+            logger.info("Take every %d th element on the sides...", nmod)
 
         self.left_lons = sides_lons[::-1, 0][::nmod]
         self.left_lats = sides_lats[::-1, 0][::nmod]
@@ -166,7 +166,7 @@ class SwathBoundary(Boundary):
         else:
             start_idx = 0
 
-        reduced = np.hstack([0, mid_range[start_idx::], maxval - 1]).astype('int')
+        reduced = np.hstack([0, mid_range[start_idx::], maxval - 1]).astype("int")
 
         lons, lats = self.get_instrument_points(self.overpass,
                                                 overpass.falltime,
@@ -189,39 +189,39 @@ class SwathBoundary(Boundary):
 
     def get_steps_and_duration(self, scan_step):
         """Get the steps and duration for the instrument."""
-        if self.overpass.instrument == 'viirs':
+        if self.overpass.instrument == "viirs":
             sec_scan_duration = 1.779166667
             along_scan_reduce_factor = 1
         elif self.overpass.instrument.startswith("avhrr"):
             sec_scan_duration = 1. / 6.
             along_scan_reduce_factor = 0.1
-        elif self.overpass.instrument == 'ascat':
+        elif self.overpass.instrument == "ascat":
             sec_scan_duration = 3.74747474747
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
-        elif self.overpass.instrument == 'amsua':
+        elif self.overpass.instrument == "amsua":
             sec_scan_duration = 8.
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
-        elif self.overpass.instrument == 'mhs':
+        elif self.overpass.instrument == "mhs":
             sec_scan_duration = 8./3.
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
-        elif self.overpass.instrument == 'mwhs2':
+        elif self.overpass.instrument == "mwhs2":
             sec_scan_duration = 8./3.
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 1
-        elif self.overpass.instrument == 'olci':
+        elif self.overpass.instrument == "olci":
             # 3 minutes of data is 4091 300meter lines:
             sec_scan_duration = 0.04399902224395014
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 100
-        elif self.overpass.instrument == 'atms':
+        elif self.overpass.instrument == "atms":
             sec_scan_duration = 8/3.
             along_scan_reduce_factor = 1
             # Overwrite the scan step
