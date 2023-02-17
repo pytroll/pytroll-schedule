@@ -251,7 +251,7 @@ class Pass(SimplePass):
 
     def generate_metno_xml(self, coords, root):
         """Generate a metno xml schedule."""
-        import defusedxml.ElementTree as ET
+        import xml.etree.ElementTree as ET  # noqa because defusedxml has no SubElement
 
         asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
         pass_direction = self.pass_direction().capitalize()[:1]
