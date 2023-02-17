@@ -22,7 +22,6 @@
 
 """Test the satellite pass and swath boundary classes."""
 
-import unittest
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -389,7 +388,7 @@ class TestPassList:
 
     def test_generate_metno_xml(self):
         """Test generating a metno xml."""
-        import xml.etree.ElementTree as ET
+        import defusedxml.ElementTree as ET
         root = ET.Element("acquisition-schedule")
 
         orig = ('<acquisition-schedule><pass satellite="FENGYUN 3D" aos="20190105010145" los="20190105011715" '

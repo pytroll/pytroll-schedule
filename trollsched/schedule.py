@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 import numpy as np
 from pyorbital import astronomy
 
-from trollsched.writers import generate_metno_xml_file, generate_meos_file, generate_sch_file, generate_xml_file
+from trollsched.writers import generate_meos_file, generate_metno_xml_file, generate_sch_file, generate_xml_file
 
 try:
     from pyresample import parse_area_file
@@ -38,23 +38,23 @@ except ImportError:
     # Older versions of pyresample:
     from pyresample.utils import parse_area_file
 
-from trollsched import utils
-from trollsched.spherical import get_twilight_poly
-from trollsched.graph import Graph
-from trollsched.satpass import get_next_passes, SimplePass
 from pyresample.boundary import AreaDefBoundary
-from trollsched.combine import get_combined_sched
 
+from trollsched import utils
+from trollsched.combine import get_combined_sched
+from trollsched.graph import Graph
+from trollsched.satpass import SimplePass, get_next_passes
+from trollsched.spherical import get_twilight_poly
 
 logger = logging.getLogger(__name__)
 
 
 class Station:
-
     """docstring for Station."""
 
     def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None,
                  min_pass=None, local_horizon=0):
+        """Initialize the station."""
         self.id = station_id
         self.name = name
         self.longitude = longitude
@@ -73,11 +73,11 @@ class Station:
 
     @property
     def coords(self):
+        """Get the coordinates lon, lat, alt."""
         return self.longitude, self.latitude, self.altitude
 
     def single_station(self, sched, start_time, tle_file):
         """Calculate passes, graph, and schedule for one station."""
-
         logger.debug("station: %s coords: %s area: %s scores: %s",
                      self.id, self.coords, self.area.area_id, self.satellites)
 
@@ -90,9 +90,9 @@ class Station:
             "time": start_time.strftime("%H%M%S")
         }
         if opts.xml:
-            pattern_args['mode'] = "request"
+            pattern_args["mode"] = "request"
         elif opts.report:
-            pattern_args['mode'] = "report"
+            pattern_args["mode"] = "report"
 
         allpasses = self.get_next_passes(opts, sched, start_time, tle_file)
 
@@ -154,7 +154,7 @@ class Station:
             url = urlparse(opts.output_url or opts.output_dir)
             if opts.xml or opts.report:
                 # Always create xml-file in request-mode
-                pattern_args['mode'] = "request"
+                pattern_args["mode"] = "request"
                 xmlfile = generate_xml_file(allpasses,
                                             start_time + timedelta(hours=sched.start),
                                             start_time + timedelta(hours=sched.forward),
@@ -168,7 +168,7 @@ class Station:
                 send_file(url, xmlfile)
             if opts.report:
                 """'If report-mode was set"""
-                pattern_args['mode'] = "report"
+                pattern_args["mode"] = "report"
                 xmlfile = generate_xml_file(allpasses,
                                             start_time + timedelta(hours=sched.start),
                                             start_time + timedelta(hours=sched.forward),
@@ -196,6 +196,7 @@ class Station:
         return graph, allpasses
 
     def get_next_passes(self, opts, sched, start_time, tle_file):
+        """Get the next passes."""
         logger.info("Computing next satellite passes")
         allpasses = get_next_passes(self.satellites, start_time,
                                     sched.forward,
@@ -212,20 +213,20 @@ class Station:
 
 
 class SatScore:
-
     """docstring for SatScore."""
 
     def __init__(self, day, night):
+        """Initialize the score."""
         self.day = day
         self.night = night
 
 
 class Satellite:
-
     """docstring for Satellite."""
 
     def __init__(self, name, day, night,
                  schedule_name=None, international_designator=None):
+        """Initialize the satellite."""
         self.name = name
         self.international_designator = international_designator
         self.score = SatScore(day, night)
@@ -233,10 +234,10 @@ class Satellite:
 
 
 class Scheduler:
-
     """docstring for Scheduler."""
 
     def __init__(self, stations, min_pass, forward, start, dump_url, patterns, center_id, plot_parameters, plot_title):
+        """Initialize the scheduler."""
         self.stations = stations
         self.min_pass = min_pass
         self.forward = forward
@@ -249,9 +250,10 @@ class Scheduler:
         self.opts = None
 
 
-def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
-    """Get the passes in groups of conflicting passes.
-    """
+def conflicting_passes(allpasses, delay=None):
+    """Get the passes in groups of conflicting passes."""
+    if delay is None:
+        delay = timedelta(seconds=0)
 
     passes = sorted(allpasses, key=lambda x: x.risetime)
 
@@ -274,11 +276,11 @@ def conflicting_passes(allpasses, delay=timedelta(seconds=0)):
     return groups
 
 
-def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
-    """Get the different non-conflicting solutions in a group of conflicting
-    passes.
-    """
+def get_non_conflicting_groups(passes, delay=None):
+    """Get the different non-conflicting solutions in a group of conflicting passes."""
     # Uses graphs and maximal clique finding with the Bron-Kerbosch algorithm.
+    if delay is None:
+        delay = timedelta(seconds=0)
 
     order = len(passes)
 
@@ -303,6 +305,7 @@ def get_non_conflicting_groups(passes, delay=timedelta(seconds=0)):
 
 
 def fermia(t):
+    """Return the Fermi value a."""
     a = 0.25
     b = a / 4
     k = b * np.log(1 / 3.0) + a
@@ -311,6 +314,7 @@ def fermia(t):
 
 
 def fermib(t):
+    """Return the Fermi value b."""
     a = 0.25
     b = a / 4
     return 1 / (np.exp((t - a) / b) + 1)
@@ -320,9 +324,7 @@ combination = {}
 
 
 def combine(p1, p2, area_of_interest):
-    """Combine passes together.
-    """
-
+    """Combine passes together."""
     try:
         return combination[p1, p2]
     except KeyError:
@@ -429,8 +431,7 @@ def combine(p1, p2, area_of_interest):
 
 
 def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
-    """Get the best schedule based on *area_of_interest*.
-    """
+    """Get the best schedule based on *area_of_interest*."""
     avoid_list = avoid_list or []
     passes = sorted(overpasses, key=lambda x: x.risetime)
     grs = conflicting_passes(passes, delay)
@@ -485,12 +486,12 @@ def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
 
 
 def argmax(iterable):
+    """Find the index of the maximum of an iterable."""
     return max((x, i) for i, x in enumerate(iterable))[1]
 
 
 def get_max(groups, fun):
-    """Get the best group of *groups* using the score function *fun*
-    """
+    """Get the best group of *groups* using the score function *fun*."""
     scores = []
     for grp in groups:
         scores.append(sum([fun(p) for p in grp]))
@@ -498,8 +499,7 @@ def get_max(groups, fun):
 
 
 def save_passes(allpasses, poly, output_dir, plot_parameters=None, plot_title=None):
-    """Save overpass plots to png and store in directory *output_dir*
-    """
+    """Save overpass plots to png and store in directory *output_dir*."""
     from trollsched.drawing import save_fig
     for overpass in allpasses:
         save_fig(overpass, poly=poly, directory=output_dir, plot_parameters=plot_parameters, plot_title=plot_title)
@@ -508,17 +508,17 @@ def save_passes(allpasses, poly, output_dir, plot_parameters=None, plot_title=No
 
 def get_passes_from_xml_file(filename):
     """Read passes from aquisition xml file."""
-    import xml.etree.ElementTree as ET
+    import defusedxml.ElementTree as ET
     tree = ET.parse(filename)
     root = tree.getroot()
     pass_list = []
-    for overpass in root.iter('pass'):
+    for overpass in root.iter("pass"):
         start_time = datetime.strptime(
-            overpass.attrib['start-time'], '%Y-%m-%d-%H:%M:%S')
+            overpass.attrib["start-time"], "%Y-%m-%d-%H:%M:%S")
         end_time = datetime.strptime(
-            overpass.attrib['end-time'], '%Y-%m-%d-%H:%M:%S')
+            overpass.attrib["end-time"], "%Y-%m-%d-%H:%M:%S")
         pass_list.append(SimplePass(
-            overpass.attrib['satellite'], start_time, end_time))
+            overpass.attrib["satellite"], start_time, end_time))
     return pass_list
 
 
@@ -533,6 +533,7 @@ def build_filename(pattern_name, pattern_dict, kwargs):
 
 
 def send_file(url, file):
+    """Send a file through ftp."""
     pathname, filename = os.path.split(file)
     del pathname
     if url.scheme in ["file", ""]:
@@ -541,7 +542,7 @@ def send_file(url, file):
         import ftplib
         session = ftplib.FTP(url.hostname, url.username, url.password)
         with open(file, "rb") as xfile:
-            session.storbinary('STOR ' + str(filename), xfile)
+            session.storbinary("STOR " + str(filename), xfile)
         session.quit()
     else:
         logger.error("Cannot save to %s, but file is there:",
@@ -550,7 +551,6 @@ def send_file(url, file):
 
 def combined_stations(scheduler, start_time, graph, allpasses):
     """The works around the combination of schedules for two or more stations."""
-
     logger.info("Generating coordinated schedules ...")
 
     def collect_labels(newpasses, stats):
@@ -578,9 +578,9 @@ def combined_stations(scheduler, start_time, graph, allpasses):
         "time": start_time.strftime("%H%M%S")
     }
     if scheduler.opts.xml:
-        pattern_args['mode'] = "request"
+        pattern_args["mode"] = "request"
     elif scheduler.opts.report:
-        pattern_args['mode'] = "report"
+        pattern_args["mode"] = "report"
 
     passes = {}
     # reset flag "rec" for all passes.
@@ -597,7 +597,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
     stats, schedule, (newgraph, newpasses) = get_combined_sched(graph, passes)
 
     for opass in schedule:
-        for i, ipass in zip(range(len(opass)), opass):
+        for _i, ipass in zip(range(len(opass)), opass):
             if ipass[0] is None:
                 continue
             ipass[0].rec = True
@@ -622,7 +622,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
                               passes[station_id],
                               [s.coords for s in scheduler.stations if s.id == station_id][0])
         if scheduler.opts.xml or scheduler.opts.report:
-            pattern_args['mode'] = "request"
+            pattern_args["mode"] = "request"
             xmlfile = generate_xml_file(passes[station_id],
                                         start_time + timedelta(hours=scheduler.start),
                                         start_time + timedelta(hours=scheduler.forward),
@@ -635,7 +635,7 @@ def combined_stations(scheduler, start_time, graph, allpasses):
             url = urlparse(scheduler.opts.output_url or scheduler.opts.output_dir)
             send_file(url, xmlfile)
         if scheduler.opts.report:
-            pattern_args['mode'] = "report"
+            pattern_args["mode"] = "report"
             xmlfile = generate_xml_file(passes[station_id],
                                         start_time + timedelta(hours=scheduler.start),
                                         start_time + timedelta(hours=scheduler.forward),
@@ -758,6 +758,7 @@ def run():
 
 
 def setup_logging(opts):
+    """Set up the logging."""
     global logger
     if opts.log:
         previous = os.path.exists(opts.log)
@@ -768,21 +769,21 @@ def setup_logging(opts):
         handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter("[%(levelname)s: %(asctime)s :"
                                            " %(name)s] %(message)s",
-                                           '%Y-%m-%d %H:%M:%S'))
+                                           "%Y-%m-%d %H:%M:%S"))
     if opts.verbose:
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
     handler.setLevel(loglevel)
-    logging.getLogger('').setLevel(loglevel)
-    logging.getLogger('').addHandler(handler)
+    logging.getLogger("").setLevel(loglevel)
+    logging.getLogger("").addHandler(handler)
     if opts.mail:
         mhandler = logging.handlers.SMTPHandler("localhost",
                                                 "pytroll-schedule@pytroll.org",
                                                 opts.mail,
                                                 "Scheduler")
         mhandler.setLevel(logging.WARNING)
-        logging.getLogger('').addHandler(mhandler)
+        logging.getLogger("").addHandler(mhandler)
     logger = logging.getLogger("trollsched")
 
 
@@ -860,7 +861,7 @@ def parse_args():
     return opts
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         run()
     except Exception:

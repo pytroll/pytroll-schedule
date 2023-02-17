@@ -1,6 +1,6 @@
 [tool.ruff]
 select = ["E", "W", "F", "I", "D", "S", "B", "A", "PT", "Q", "TID"]
-ignore = ["F401"]
+ignore = ["B905"]  # only available from python 3.10
 line-length = 120
 
 [tool.ruff.per-file-ignores]

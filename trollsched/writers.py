@@ -1,9 +1,10 @@
+"""Writers for different schedule formats."""
 import os
 from datetime import datetime
 
 
 def generate_meos_file(output_file, allpasses, coords, start, report_mode=False):
-
+    """Generate a meos file."""
     with open(output_file, "w") as out:
         out.write(" No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)\n")
         line_no = 1
@@ -16,7 +17,7 @@ def generate_meos_file(output_file, allpasses, coords, start, report_mode=False)
 
 
 def generate_sch_file(output_file, overpasses, coords):
-
+    """Generate a vcs/scisys/cgi schedule file."""
     with open(output_file, "w") as out:
         # create epochs
         out.write("#Orbital elements\n#\n#SCName           Epochtime\n#\n")
@@ -39,7 +40,8 @@ def generate_sch_file(output_file, overpasses, coords):
 
 
 def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_name, center_id, report_mode=False):
-    import xml.etree.ElementTree as ET
+    """Generate a meto xml file."""
+    import defusedxml.ElementTree as ET
 
     reqtime = datetime.utcnow()
     time_format = "%Y-%m-%dT%H:%M:%S"
@@ -78,7 +80,7 @@ def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_
 
 def generate_xml_requests(sched, start, end, station_name, center_id, report_mode=False):
     """Create xml requests."""
-    import xml.etree.ElementTree as ET
+    import defusedxml.ElementTree as ET
 
     reqtime = datetime.utcnow()
     time_format = "%Y-%m-%d-%H:%M:%S"
@@ -120,7 +122,7 @@ def generate_xml_requests(sched, start, end, station_name, center_id, report_mod
 
 def generate_xml_file(sched, start, end, xml_file, station, center_id, report_mode=False):
     """Create an xml request file."""
-    import xml.etree.ElementTree as ET
+    import defusedxml.ElementTree as ET
     tree, reqtime = generate_xml_requests(sched,
                                           start, end,
                                           station, center_id, report_mode)
