@@ -388,7 +388,7 @@ class TestPassList:
 
     def test_generate_metno_xml(self):
         """Test generating a metno xml."""
-        import defusedxml.ElementTree as ET
+        import xml.etree.ElementTree as ET  # noqa because defusedxml has no Element, see defusedxml#48
         root = ET.Element("acquisition-schedule")
 
         orig = ('<acquisition-schedule><pass satellite="FENGYUN 3D" aos="20190105010145" los="20190105011715" '
