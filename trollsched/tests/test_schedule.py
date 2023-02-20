@@ -293,7 +293,7 @@ class TestAll:
             assert dumps[3].station == "AS2"
             assert dumps[3].max_elev == "23.546"
             assert dumps[3].pass_direction() == "descending"
-            assert(dumps[3].risetime - datetime(2018, 12, 4, 23, 33, 8)).seconds == 0
+            assert (dumps[3].risetime - datetime(2018, 12, 4, 23, 33, 8)).seconds == 0
             assert (dumps[3].falltime - datetime(2018, 12, 4, 23, 43, 5)).seconds == 0
 
     @patch("os.path.exists")
