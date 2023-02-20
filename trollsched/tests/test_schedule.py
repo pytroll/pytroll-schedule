@@ -22,18 +22,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Test the schedule module."""
-
-import unittest
+import os
+import tempfile
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from trollsched.satpass import (get_aqua_terra_dumps, get_metopa_passes,
-                                get_next_passes)
-from trollsched.schedule import (build_filename, conflicting_passes, fermia,
-                                 fermib)
+import pytest
+
+from trollsched.satpass import get_aqua_terra_dumps, get_metopa_passes, get_next_passes
+from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib
 
 
-class TestTools(unittest.TestCase):
+class TestTools:
     """Test the tools."""
 
     def test_conflicting_passes(self):
@@ -48,43 +48,43 @@ class TestTools(unittest.TestCase):
         passes = [MyPass(ref_time, ref_time + timedelta(minutes=10)),
                   MyPass(ref_time + timedelta(minutes=10.01),
                          ref_time + timedelta(minutes=20))]
-        self.assertEquals(
-            len(conflicting_passes(passes, timedelta(seconds=0))), 2)
-        self.assertEquals(
-            len(conflicting_passes(passes, timedelta(seconds=60))), 1)
+        assert len(conflicting_passes(passes, timedelta(seconds=0))) == 2
+        assert len(conflicting_passes(passes, timedelta(seconds=60))) == 1
 
 
-class TestUtils(unittest.TestCase):
+class TestUtils:
     """Test class for utilities."""
 
     def test_fermi(self):
         """Test the fermi formula."""
-        self.assertEquals(fermia(0.25), 0.875)
-        self.assertEquals(fermib(0.25), 0.5)
+        assert fermia(0.25) == 0.875
+        assert fermib(0.25) == 0.5
 
     def test_build_filename(self):
         """Test building filename."""
+        tempdir = tempfile.gettempdir()
         pattern_name = "dir_output"
-        pattern_dict = {'file_xml': '{dir_output}/{date}-{time}-aquisition-schedule-{mode}-{station}.xml',
-                        'file_sci': '{dir_output}/scisys-schedule-{station}.txt',
-                        'dir_plots': '{dir_output}/plots.{station}', 'dir_output': '/tmp',
-                        'file_graph': '{dir_output}/graph.{station}'}
-        kwargs = {'date': '20190104', 'output_dir': '.', 'dir_output': '/tmp', 'time': '122023'}
+        pattern_dict = {"file_xml": os.path.join("{dir_output}",
+                                                 "{date}-{time}-aquisition-schedule-{mode}-{station}.xml"),
+                        "file_sci": os.path.join("{dir_output}", "scisys-schedule-{station}.txt"),
+                        "dir_plots": os.path.join("{dir_output}", "plots.{station}"), "dir_output": tempdir,
+                        "file_graph": os.path.join("{dir_output}", "graph.{station}")}
+        kwargs = {"date": "20190104", "output_dir": ".", "dir_output": tempdir, "time": "122023"}
 
         res = build_filename(pattern_name, pattern_dict, kwargs)
-        self.assertEqual(res, '/tmp')
+        assert res == tempdir
 
         pattern_name = "file_xml"
-        kwargs = {'station': 'nrk', 'mode': 'request', 'time': '125334',
-                  'date': '20190104', 'dir_output': '/tmp', 'output_dir': '.'}
+        kwargs = {"station": "nrk", "mode": "request", "time": "125334",
+                  "date": "20190104", "dir_output": tempdir, "output_dir": "."}
         res = build_filename(pattern_name, pattern_dict, kwargs)
-        self.assertEqual(res, '/tmp/20190104-125334-aquisition-schedule-request-nrk.xml')
+        assert res == os.path.join(tempdir, "20190104-125334-aquisition-schedule-request-nrk.xml")
 
 
-class TestAll(unittest.TestCase):
+class TestAll:
     """The test class."""
 
-    def setUp(self):
+    def setup_method(self):
         """Set up."""
         from pyorbital import orbital
 
@@ -92,37 +92,37 @@ class TestAll(unittest.TestCase):
 
         self.utctime = datetime(2018, 11, 28, 10, 0)
         self.satellites = ["noaa-20", ]
-        self.tles = {'noaa-20': {}}
-        self.tles['noaa-20']['line1'] = "1 43013U 17073A   18331.00000000  .00000048  00000-0  22749-4 0  3056"
-        self.tles['noaa-20']['line2'] = "2 43013 098.7413 267.0121 0001419 108.5818 058.1314 14.19552981053016"
+        self.tles = {"noaa-20": {}}
+        self.tles["noaa-20"]["line1"] = "1 43013U 17073A   18331.00000000  .00000048  00000-0  22749-4 0  3056"
+        self.tles["noaa-20"]["line2"] = "2 43013 098.7413 267.0121 0001419 108.5818 058.1314 14.19552981053016"
 
         self.aquas = ["aqua", ]
         self.terras = ["terra", ]
-        self.terra = Satellite('terra', 0, 0)
-        self.metopa = Satellite('metop-a', 0, 0)
+        self.terra = Satellite("terra", 0, 0)
+        self.metopa = Satellite("metop-a", 0, 0)
 
-        self.tles['aqua'] = {}
-        self.tles['aqua']['line1'] = "1 27424U 02022A   18332.21220389  .00000093  00000-0  30754-4 0  9994"
-        self.tles['aqua']['line2'] = "2 27424  98.2121 270.9368 0001045 343.9225 155.8703 14.57111538881313"
-        self.tles['terra'] = {}
-        self.tles['terra']['line1'] = "1 25994U 99068A   18338.20920286  .00000076  00000-0  26867-4 0  9999"
-        self.tles['terra']['line2'] = "2 25994  98.2142  50.5750 0000577 102.5211 257.6060 14.57132862  8586"
-        self.tles['metop-a'] = {}
-        self.tles['metop-a']['line1'] = "1 29499U 06044A   18338.30873671  .00000000  00000+0  31223-4 0 00013"
-        self.tles['metop-a']['line2'] = "2 29499  98.6045  31.7725 0001942  91.8780 346.4884 14.21536046629175"
+        self.tles["aqua"] = {}
+        self.tles["aqua"]["line1"] = "1 27424U 02022A   18332.21220389  .00000093  00000-0  30754-4 0  9994"
+        self.tles["aqua"]["line2"] = "2 27424  98.2121 270.9368 0001045 343.9225 155.8703 14.57111538881313"
+        self.tles["terra"] = {}
+        self.tles["terra"]["line1"] = "1 25994U 99068A   18338.20920286  .00000076  00000-0  26867-4 0  9999"
+        self.tles["terra"]["line2"] = "2 25994  98.2142  50.5750 0000577 102.5211 257.6060 14.57132862  8586"
+        self.tles["metop-a"] = {}
+        self.tles["metop-a"]["line1"] = "1 29499U 06044A   18338.30873671  .00000000  00000+0  31223-4 0 00013"
+        self.tles["metop-a"]["line2"] = "2 29499  98.6045  31.7725 0001942  91.8780 346.4884 14.21536046629175"
 
-        self.orb = orbital.Orbital('NOAA 20',
-                                   line1=self.tles['noaa-20']['line1'],
-                                   line2=self.tles['noaa-20']['line2'])
-        self.aqua_orb = orbital.Orbital('AQUA',
-                                        line1=self.tles['aqua']['line1'],
-                                        line2=self.tles['aqua']['line2'])
-        self.terra_orb = orbital.Orbital('TERRA',
-                                         line1=self.tles['terra']['line1'],
-                                         line2=self.tles['terra']['line2'])
-        self.metopa_orb = orbital.Orbital('Metop-A',
-                                          line1=self.tles['metop-a']['line1'],
-                                          line2=self.tles['metop-a']['line2'])
+        self.orb = orbital.Orbital("NOAA 20",
+                                   line1=self.tles["noaa-20"]["line1"],
+                                   line2=self.tles["noaa-20"]["line2"])
+        self.aqua_orb = orbital.Orbital("AQUA",
+                                        line1=self.tles["aqua"]["line1"],
+                                        line2=self.tles["aqua"]["line2"])
+        self.terra_orb = orbital.Orbital("TERRA",
+                                         line1=self.tles["terra"]["line1"],
+                                         line2=self.tles["terra"]["line2"])
+        self.metopa_orb = orbital.Orbital("Metop-A",
+                                          line1=self.tles["metop-a"]["line1"],
+                                          line2=self.tles["metop-a"]["line2"])
 
         # These values were used to generate the get_next_passes list mock:
         # utctime = datetime(2018, 12, 4, 9, 0)
@@ -142,72 +142,72 @@ class TestAll(unittest.TestCase):
                                  datetime(2018, 12, 4, 14, 13, 11, 247497))]
 
         self.dumpdata = [
-            {'los': datetime(2018, 11, 28, 10, 0, 30), 'station': 'USAK05',
-             'aos': datetime(2018, 11, 28, 9, 50, 24), 'elev': '11.188'},
-            {'los': datetime(2018, 11, 28, 11, 39, 47), 'station': 'AS2',
-             'aos': datetime(2018, 11, 28, 11, 28, 51), 'elev': '39.235'},
-            {'los': datetime(2018, 11, 28, 13, 19, 8), 'station': 'USAK05',
-             'aos': datetime(2018, 11, 28, 13, 6, 36), 'elev': '58.249'},
-            {'los': datetime(2018, 11, 28, 14, 54, 25), 'station': 'AS2',
-             'aos': datetime(2018, 11, 28, 14, 44, 37), 'elev': '22.403'},
-            {'los': datetime(2018, 11, 28, 16, 27, 22), 'station': 'SG1',
-             'aos': datetime(2018, 11, 28, 16, 16, 58), 'elev': '9.521'}
+            {"los": datetime(2018, 11, 28, 10, 0, 30), "station": "USAK05",
+             "aos": datetime(2018, 11, 28, 9, 50, 24), "elev": "11.188"},
+            {"los": datetime(2018, 11, 28, 11, 39, 47), "station": "AS2",
+             "aos": datetime(2018, 11, 28, 11, 28, 51), "elev": "39.235"},
+            {"los": datetime(2018, 11, 28, 13, 19, 8), "station": "USAK05",
+             "aos": datetime(2018, 11, 28, 13, 6, 36), "elev": "58.249"},
+            {"los": datetime(2018, 11, 28, 14, 54, 25), "station": "AS2",
+             "aos": datetime(2018, 11, 28, 14, 44, 37), "elev": "22.403"},
+            {"los": datetime(2018, 11, 28, 16, 27, 22), "station": "SG1",
+             "aos": datetime(2018, 11, 28, 16, 16, 58), "elev": "9.521"}
         ]
-        self.dumpdata_terra = [{'los': datetime(2018, 11, 20, 23, 24, 41), 'station': 'SG2',
-                                'aos': datetime(2018, 11, 20, 23, 12, 32), 'elev': '17.4526'},
-                               {'los': datetime(2018, 11, 22, 23, 19, 21), 'station': 'AS3',
-                                'aos': datetime(2018, 11, 22, 23, 8, 55), 'elev': '28.9558'},
-                               {'los': datetime(2018, 11, 22, 23, 19, 21), 'station': 'AS3',
-                                'aos': datetime(2018, 11, 22, 23, 8, 55), 'elev': '28.9558'},
-                               {'los': datetime(2018, 11, 26, 22, 47, 34), 'station': 'SG1',
-                                'aos': datetime(2018, 11, 26, 22, 34, 58), 'elev': '21.5694'},
-                               {'los': datetime(2018, 11, 26, 22, 47, 34), 'station': 'SG1',
-                                'aos': datetime(2018, 11, 26, 22, 34, 58), 'elev': '21.5694'},
-                               {'los': datetime(2018, 11, 26, 22, 47, 34), 'station': 'SG1',
-                                'aos': datetime(2018, 11, 26, 22, 34, 58), 'elev': '21.5694'},
-                               {'los': datetime(2018, 11, 27, 23, 30, 44), 'station': 'SG2',
-                                'aos': datetime(2018, 11, 27, 23, 18, 39), 'elev': '16.8795'},
-                               {'los': datetime(2018, 11, 27, 23, 30, 44), 'station': 'SG2',
-                                'aos': datetime(2018, 11, 27, 23, 18, 39), 'elev': '16.8795'},
-                               {'los': datetime(2018, 11, 28, 22, 43, 53), 'station': 'USAK05',
-                                'aos': datetime(2018, 11, 28, 22, 31, 57), 'elev': '40.9264'},
-                               {'los': datetime(2018, 11, 28, 22, 43, 53), 'station': 'USAK05',
-                                'aos': datetime(2018, 11, 28, 22, 31, 57), 'elev': '40.9264'},
-                               {'los': datetime(2018, 11, 29, 23, 25, 11), 'station': 'USAK05',
-                                'aos': datetime(2018, 11, 29, 23, 14, 47), 'elev': '26.9937'},
-                               {'los': datetime(2018, 11, 29, 23, 25, 11), 'station': 'USAK05',
-                                'aos': datetime(2018, 11, 29, 23, 14, 47), 'elev': '26.9937'},
-                               {'los': datetime(2018, 11, 30, 22, 31, 3), 'station': 'AS2',
-                                'aos': datetime(2018, 11, 30, 22, 19, 48), 'elev': '47.8599'},
-                               {'los': datetime(2018, 12, 1, 1, 29, 2), 'station': 'WG1',
-                                'aos': datetime(2018, 12, 1, 1, 21, 11), 'elev': '8.0543'},
-                               {'los': datetime(2018, 11, 30, 22, 31, 3), 'station': 'AS2',
-                                'aos': datetime(2018, 11, 30, 22, 19, 48), 'elev': '47.8599'},
-                               {'los': datetime(2018, 12, 1, 1, 29, 2), 'station': 'WG1',
-                                'aos': datetime(2018, 12, 1, 1, 21, 11), 'elev': '8.0543'},
-                               {'los': datetime(2018, 12, 3, 1, 28, 14), 'station': 'SG2',
-                                'aos': datetime(2018, 12, 3, 1, 17, 53), 'elev': '9.2428'},
-                               {'los': datetime(2018, 12, 3, 22, 53, 35), 'station': 'SG1',
-                                'aos': datetime(2018, 12, 3, 22, 41, 5), 'elev': '20.8371'},
-                               {'los': datetime(2018, 12, 3, 22, 53, 35), 'station': 'SG1',
-                                'aos': datetime(2018, 12, 3, 22, 41, 5), 'elev': '20.8371'},
-                               {'los': datetime(2018, 12, 4, 23, 43, 5), 'station': 'AS2',
-                                'aos': datetime(2018, 12, 4, 23, 33, 8), 'elev': '23.546'}]
+        self.dumpdata_terra = [{"los": datetime(2018, 11, 20, 23, 24, 41), "station": "SG2",
+                                "aos": datetime(2018, 11, 20, 23, 12, 32), "elev": "17.4526"},
+                               {"los": datetime(2018, 11, 22, 23, 19, 21), "station": "AS3",
+                                "aos": datetime(2018, 11, 22, 23, 8, 55), "elev": "28.9558"},
+                               {"los": datetime(2018, 11, 22, 23, 19, 21), "station": "AS3",
+                                "aos": datetime(2018, 11, 22, 23, 8, 55), "elev": "28.9558"},
+                               {"los": datetime(2018, 11, 26, 22, 47, 34), "station": "SG1",
+                                "aos": datetime(2018, 11, 26, 22, 34, 58), "elev": "21.5694"},
+                               {"los": datetime(2018, 11, 26, 22, 47, 34), "station": "SG1",
+                                "aos": datetime(2018, 11, 26, 22, 34, 58), "elev": "21.5694"},
+                               {"los": datetime(2018, 11, 26, 22, 47, 34), "station": "SG1",
+                                "aos": datetime(2018, 11, 26, 22, 34, 58), "elev": "21.5694"},
+                               {"los": datetime(2018, 11, 27, 23, 30, 44), "station": "SG2",
+                                "aos": datetime(2018, 11, 27, 23, 18, 39), "elev": "16.8795"},
+                               {"los": datetime(2018, 11, 27, 23, 30, 44), "station": "SG2",
+                                "aos": datetime(2018, 11, 27, 23, 18, 39), "elev": "16.8795"},
+                               {"los": datetime(2018, 11, 28, 22, 43, 53), "station": "USAK05",
+                                "aos": datetime(2018, 11, 28, 22, 31, 57), "elev": "40.9264"},
+                               {"los": datetime(2018, 11, 28, 22, 43, 53), "station": "USAK05",
+                                "aos": datetime(2018, 11, 28, 22, 31, 57), "elev": "40.9264"},
+                               {"los": datetime(2018, 11, 29, 23, 25, 11), "station": "USAK05",
+                                "aos": datetime(2018, 11, 29, 23, 14, 47), "elev": "26.9937"},
+                               {"los": datetime(2018, 11, 29, 23, 25, 11), "station": "USAK05",
+                                "aos": datetime(2018, 11, 29, 23, 14, 47), "elev": "26.9937"},
+                               {"los": datetime(2018, 11, 30, 22, 31, 3), "station": "AS2",
+                                "aos": datetime(2018, 11, 30, 22, 19, 48), "elev": "47.8599"},
+                               {"los": datetime(2018, 12, 1, 1, 29, 2), "station": "WG1",
+                                "aos": datetime(2018, 12, 1, 1, 21, 11), "elev": "8.0543"},
+                               {"los": datetime(2018, 11, 30, 22, 31, 3), "station": "AS2",
+                                "aos": datetime(2018, 11, 30, 22, 19, 48), "elev": "47.8599"},
+                               {"los": datetime(2018, 12, 1, 1, 29, 2), "station": "WG1",
+                                "aos": datetime(2018, 12, 1, 1, 21, 11), "elev": "8.0543"},
+                               {"los": datetime(2018, 12, 3, 1, 28, 14), "station": "SG2",
+                                "aos": datetime(2018, 12, 3, 1, 17, 53), "elev": "9.2428"},
+                               {"los": datetime(2018, 12, 3, 22, 53, 35), "station": "SG1",
+                                "aos": datetime(2018, 12, 3, 22, 41, 5), "elev": "20.8371"},
+                               {"los": datetime(2018, 12, 3, 22, 53, 35), "station": "SG1",
+                                "aos": datetime(2018, 12, 3, 22, 41, 5), "elev": "20.8371"},
+                               {"los": datetime(2018, 12, 4, 23, 43, 5), "station": "AS2",
+                                "aos": datetime(2018, 12, 4, 23, 33, 8), "elev": "23.546"}]
 
-    @patch('os.path.exists')
+    @patch("os.path.exists")
     def test_get_next_passes_viirs(self, exists):
         """Test getting the next viirs passes."""
         exists.return_code = True
 
         # mymock:
-        with patch('pyorbital.orbital.Orbital') as mymock:
+        with patch("pyorbital.orbital.Orbital") as mymock:
             instance = mymock.return_value
             instance.get_next_passes = self.orb.get_next_passes
 
             allpasses = get_next_passes(self.satellites, self.utctime,
-                                        4, (16, 58, 0), tle_file='nonexisting')
+                                        4, (16, 58, 0), tle_file="nonexisting")
 
-            self.assertEqual(len(allpasses), 2)
+            assert len(allpasses) == 2
 
             rt1 = datetime(2018, 11, 28, 10, 53, 42, 79483)
             ft1 = datetime(2018, 11, 28, 11, 9, 6, 916787)
@@ -222,25 +222,25 @@ class TestAll(unittest.TestCase):
             assert ft1 in fall_times
             assert ft2 in fall_times
 
-            assert all([p.instrument == 'viirs' for p in allpasses])
+            assert all([p.instrument == "viirs" for p in allpasses])
 
-    @patch('os.path.exists')
-    @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
+    @patch("os.path.exists")
+    @patch("trollsched.satpass.get_aqua_terra_dumpdata_from_ftp")
     def test_get_next_passes_with_aquadumps(self, dumps_from_ftp, exists):
         """Test getting the passes with dumps."""
         dumps_from_ftp.return_value = self.dumpdata
         exists.return_code = True
 
         # mymock:
-        with patch('pyorbital.orbital.Orbital') as mymock:
+        with patch("pyorbital.orbital.Orbital") as mymock:
             instance = mymock.return_value
             instance.get_next_passes = self.aqua_orb.get_next_passes
 
             allpasses = get_next_passes(self.aquas, self.utctime,
-                                        6, (16, 58, 0), tle_file='nonexisting',
+                                        6, (16, 58, 0), tle_file="nonexisting",
                                         aqua_terra_dumps=True)
 
-            self.assertEqual(len(allpasses), 3)
+            assert len(allpasses) == 3
 
             rt1 = datetime(2018, 11, 28, 11, 12, 8, 728455)
             ft1 = datetime(2018, 11, 28, 11, 26, 8, 250021)
@@ -256,7 +256,7 @@ class TestAll(unittest.TestCase):
                     if dt_ < dtmin:
                         dtmin = dt_
 
-                self.assertAlmostEqual(dtmin.seconds, 0)
+                assert dtmin.seconds == pytest.approx(0)
 
                 dtmin = timedelta(seconds=10000000)
                 for falltime in [ft1, ft2, ft3]:
@@ -264,17 +264,17 @@ class TestAll(unittest.TestCase):
                     if dt_ < dtmin:
                         dtmin = dt_
 
-                self.assertAlmostEqual(dtmin.seconds, 0)
+                assert dtmin.seconds == pytest.approx(0)
 
-                self.assertEqual(mypass.instrument, 'modis')
+                assert mypass.instrument == "modis"
 
-    @patch('trollsched.satpass.get_aqua_terra_dumpdata_from_ftp')
+    @patch("trollsched.satpass.get_aqua_terra_dumpdata_from_ftp")
     def test_get_aqua_terra_dumps(self, dumps_from_ftp):
         """Test getting the EOS dumps."""
         dumps_from_ftp.return_value = self.dumpdata_terra
 
         # mymock:
-        with patch('pyorbital.orbital.Orbital') as mymock:
+        with patch("pyorbital.orbital.Orbital") as mymock:
             instance = mymock.return_value
             instance.get_next_passes = self.terra_orb.get_next_passes
 
@@ -283,33 +283,32 @@ class TestAll(unittest.TestCase):
                                          self.terra_orb,
                                          self.terra)
 
-            self.assertEqual(len(dumps), 4)
-            self.assertEqual(dumps[0].station, 'SG2')
-            self.assertEqual(dumps[0].max_elev, '9.2428')
-            self.assertEqual(dumps[0].pass_direction(), 'ascending')
-            self.assertEqual((dumps[0].risetime - datetime(2018, 12, 3, 1, 17, 53)).seconds, 0)
-            self.assertEqual((dumps[0].falltime - datetime(2018, 12, 3, 1, 28, 14)).seconds, 0)
+            assert len(dumps) == 4
+            assert dumps[0].station == "SG2"
+            assert dumps[0].max_elev == "9.2428"
+            assert dumps[0].pass_direction() == "ascending"
+            assert (dumps[0].risetime - datetime(2018, 12, 3, 1, 17, 53)).seconds == 0
+            assert (dumps[0].falltime - datetime(2018, 12, 3, 1, 28, 14)).seconds == 0
 
-            self.assertEqual(dumps[3].station, 'AS2')
-            self.assertEqual(dumps[3].max_elev, '23.546')
-            self.assertEqual(dumps[3].pass_direction(), 'descending')
-            self.assertEqual((dumps[3].risetime - datetime(2018, 12, 4, 23, 33, 8)).seconds, 0)
-            self.assertEqual((dumps[3].falltime - datetime(2018, 12, 4, 23, 43, 5)).seconds, 0)
+            assert dumps[3].station == "AS2"
+            assert dumps[3].max_elev == "23.546"
+            assert dumps[3].pass_direction() == "descending"
+            assert(dumps[3].risetime - datetime(2018, 12, 4, 23, 33, 8)).seconds == 0
+            assert (dumps[3].falltime - datetime(2018, 12, 4, 23, 43, 5)).seconds == 0
 
-    @patch('os.path.exists')
+    @patch("os.path.exists")
     def test_get_metopa_passes(self, exists):
         """Test getting metopa passes."""
         exists.return_code = True
 
-        # mymock:
-        with patch('pyorbital.orbital.Orbital') as mymock:
+        with patch("pyorbital.orbital.Orbital") as mymock:
             instance = mymock.return_value
             instance.get_next_passes = self.metopa_orb.get_next_passes
 
             metopa_passes = get_metopa_passes(self.metopa, self.metopa_passlist, self.metopa_orb)
 
-            self.assertEqual(len(metopa_passes), 2)
-            self.assertEqual(metopa_passes[0].pass_direction(), 'descending')
-            self.assertAlmostEqual(metopa_passes[0].seconds(), 487.512589, 5)
-            self.assertEqual((metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds, 0)
-            self.assertEqual((metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds, 0)
+            assert len(metopa_passes) == 2
+            assert metopa_passes[0].pass_direction() == "descending"
+            assert metopa_passes[0].seconds() == pytest.approx(487.512589, 1e-5)
+            assert (metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds == 0
+            assert (metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds == 0
