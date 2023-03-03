@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016, 2018, 2019 Adam.Dybbroe
+# Copyright (c) 2016 - 2023 Pytroll Developers
 
-# Author(s):
-
-#   Adam.Dybbroe <a000680@c20671.ad.smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,8 +26,8 @@ schedule request xml files and then triggers the png and xml output generation.
 import logging
 import sys
 import os
-from six.moves.configparser import RawConfigParser
-from six.moves.urllib.parse import urlparse
+from configparser import RawConfigParser
+from urllib.parse import urlparse
 import posttroll.subscriber
 from posttroll.publisher import Publish
 import xml.etree.ElementTree as ET
@@ -174,7 +171,3 @@ if __name__ == "__main__":
 
     schedule_page_generator(no_sats)
 
-    # uri = "/data/temp/AdamD/xxx/2018-10-22-00-42-28-acquisition-schedule-confirmation-nrk.xml"
-    # urlobj = urlparse(uri)
-    # process_xmlrequest(urlobj.path,
-    #                    OPTIONS['path_plots'], OPTIONS['xmlfilepath'], no_sats)

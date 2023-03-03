@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019 PyTroll Community
+# Copyright (c) 2014 - 2019, 2022 PyTroll Community
 
 # Author(s):
 
@@ -56,6 +56,12 @@ SATELLITE_NAMES = {'npp': 'Suomi NPP',
                    'metopc': 'Metop-C',
                    'metopb': 'Metop-B',
                    'metopa': 'Metop-A',
+                   'metop-c': 'Metop-C',
+                   'metop-b': 'Metop-B',
+                   'metop-a': 'Metop-A',
+                   'aws-1': 'AWS-1',
+                   'aws-2': 'AWS-2',
+                   'aws-3': 'AWS-3',
                    'noaa20': 'NOAA-20',
                    'fengyun3d': 'FY-3D',
                    'fengyun3c': 'FY-3C'
@@ -71,5 +77,8 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-A': 'avhrr',
               'Metop-B': 'avhrr',
               'Metop-C': 'avhrr',
+              'AWS-1': 'mhs',
+              'AWS-2': 'mhs',
+              'AWS-3': 'mhs',
               'FY-3D': 'avhrr',
               'FY-3C': 'avhrr'}
