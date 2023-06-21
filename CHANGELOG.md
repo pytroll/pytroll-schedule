@@ -18,7 +18,7 @@ In this release 7 issues were closed.
 
 * [PR 61](https://github.com/pytroll/pytroll-schedule/pull/61) - Allow `mersi-2` as instrument name ([59](https://github.com/pytroll/pytroll-schedule/issues/59))
 * [PR 56](https://github.com/pytroll/pytroll-schedule/pull/56) - Remove a bug introduced in PR38 ([52](https://github.com/pytroll/pytroll-schedule/issues/52))
-* [PR 51](https://github.com/pytroll/pytroll-schedule/pull/51) - Remove some redundant code and fix a failed unit test. 
+* [PR 51](https://github.com/pytroll/pytroll-schedule/pull/51) - Remove some redundant code and fix a failed unit test.
 * [PR 45](https://github.com/pytroll/pytroll-schedule/pull/45) - Use recent ssl protocol for older python versions
 * [PR 38](https://github.com/pytroll/pytroll-schedule/pull/38) - Fix S3 olci scan duration
 
