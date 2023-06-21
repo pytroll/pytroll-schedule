@@ -20,16 +20,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test the satellite pass and swath boundary classes
-"""
+"""Test the satellite pass and swath boundary classes."""
 
-import unittest
-import numpy as np
 from datetime import datetime, timedelta
-from trollsched.satpass import Pass
-from trollsched.boundary import SwathBoundary
+
+import numpy as np
+import numpy.testing
+import pytest
 from pyorbital.orbital import Orbital
 from pyresample.geometry import AreaDefinition, create_area_def
+
+from trollsched.boundary import SwathBoundary
+from trollsched.satpass import Pass
 
 LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   143.1730880418349, 105.69172088208997, 93.03135571771092,
@@ -57,7 +59,7 @@ LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   -27.993172418988525, -29.79361072725673, -32.11515837055801,
                   -35.36860848223405, -35.38196057933595, -35.96564490844792,
                   -37.14469461070555, -39.34032289002443, -43.49756191648018,
-                  -52.140150361811244, -73.32968630186114], dtype='float64')
+                  -52.140150361811244, -73.32968630186114], dtype="float64")
 
 LATS1 = np.array([84.60636067724808, 86.98555849233523, 88.49911967556697,
                   88.90233393880413, 88.23555365613707, 87.41630911481282,
@@ -85,25 +87,25 @@ LATS1 = np.array([84.60636067724808, 86.98555849233523, 88.49911967556697,
                   41.57136466452366, 41.66608254408796, 41.745942562974314,
                   41.77850750277849, 54.62516158367828, 59.69624962433962,
                   64.7365168572082, 69.72588498397877, 74.61859631181376,
-                  79.2863412851444, 83.25136141880888], dtype='float64')
+                  79.2863412851444, 83.25136141880888], dtype="float64")
 
-LONS2 = np.array([-174.41109502,  167.84584132,  148.24213696,  130.10334782,
-                  115.7074828,  105.07369809,   97.28481583,   91.4618503,
-                  86.98024241,   83.4283141,   80.53652225,   78.1253594,
-                  76.07228855,   74.29143113,   72.72103408,   71.31559576,
-                  70.04080412,   68.87020177,   67.78293355,   66.76218577,
-                  65.79407472,   64.86682945,   63.97016605,   63.09478077,
-                  62.23190558,   61.37287373,   60.50863405,   59.62912286,
-                  58.72232744,   57.77268809,   56.75796498,   55.6419694,
-                  54.36007027,   41.41762911,   41.15660793,   40.9331126,
-                  40.73252665,   40.54677784,   40.37092304,   40.20150965,
-                  40.0358693,   39.87175642,   39.70713409,   39.54002703,
-                  39.36840323,   39.1900621,   39.00251256,   38.80282499,
-                  38.58743647,   38.35188019,   38.09039231,   37.79531831,
-                  37.45618154,   37.05815986,   36.57947382,   35.98665163,
-                  35.22533847,   34.20085643,   32.73220377,   30.42514135,
-                  26.23397747,   16.29417395,  -23.91719576, -102.71481425,
-                  -122.5294795, -129.09284487], dtype='float64')
+LONS2 = np.array([-174.41109502, 167.84584132, 148.24213696, 130.10334782,
+                  115.7074828, 105.07369809, 97.28481583, 91.4618503,
+                  86.98024241, 83.4283141, 80.53652225, 78.1253594,
+                  76.07228855, 74.29143113, 72.72103408, 71.31559576,
+                  70.04080412, 68.87020177, 67.78293355, 66.76218577,
+                  65.79407472, 64.86682945, 63.97016605, 63.09478077,
+                  62.23190558, 61.37287373, 60.50863405, 59.62912286,
+                  58.72232744, 57.77268809, 56.75796498, 55.6419694,
+                  54.36007027, 41.41762911, 41.15660793, 40.9331126,
+                  40.73252665, 40.54677784, 40.37092304, 40.20150965,
+                  40.0358693, 39.87175642, 39.70713409, 39.54002703,
+                  39.36840323, 39.1900621, 39.00251256, 38.80282499,
+                  38.58743647, 38.35188019, 38.09039231, 37.79531831,
+                  37.45618154, 37.05815986, 36.57947382, 35.98665163,
+                  35.22533847, 34.20085643, 32.73220377, 30.42514135,
+                  26.23397747, 16.29417395, -23.91719576, -102.71481425,
+                  -122.5294795, -129.09284487], dtype="float64")
 
 LATS2 = np.array([83.23214786, 84.90973645, 85.62529048, 85.74243351, 85.52147568,
                   85.13874302, 84.69067959, 84.22338069, 83.75720094, 83.30023412,
@@ -118,45 +120,40 @@ LATS2 = np.array([83.23214786, 84.90973645, 85.62529048, 85.74243351, 85.5214756
                   81.74459732, 82.20957417, 82.68298027, 83.16949849, 83.67435372,
                   84.20356848, 84.76429067, 85.36521771, 86.01711637, 86.73327122,
                   87.5286869, 88.40887156, 89.21959299, 88.71884272, 87.09172665,
-                  84.6670132], dtype='float64')
+                  84.6670132], dtype="float64")
 
 LONS3 = np.array([-8.66259458, -6.20984986, 15.99813586, 25.41134052, 33.80598414,
                   48.28641356, 49.55596283, 45.21769275, 43.95449327, 30.04053601,
-                  22.33028017, 13.90584249, -5.59290326, -7.75625031], dtype='float64')
+                  22.33028017, 13.90584249, -5.59290326, -7.75625031], dtype="float64")
 
 LATS3 = np.array([66.94713585, 67.07854554, 66.53108388, 65.27837805, 63.50223596,
                   58.33858588, 57.71210872, 55.14964148, 55.72506407, 60.40889798,
-                  61.99561474, 63.11425455, 63.67173255, 63.56939058], dtype='float64')
+                  61.99561474, 63.11425455, 63.67173255, 63.56939058], dtype="float64")
 
-AREA_DEF_EURON1 = AreaDefinition('euron1', 'Northern Europe - 1km',
-                                 '', {'proj': 'stere', 'ellps': 'WGS84',
-                                      'lat_0': 90.0, 'lon_0': 0.0, 'lat_ts': 60.0},
+AREA_DEF_EURON1 = AreaDefinition("euron1", "Northern Europe - 1km",
+                                 "", {"proj": "stere", "ellps": "WGS84",
+                                      "lat_0": 90.0, "lon_0": 0.0, "lat_ts": 60.0},
                                  3072, 3072, (-1000000.0, -4500000.0, 2072000.0, -1428000.0))
-
-
-def assertNumpyArraysEqual(self, other):
-    if self.shape != other.shape:
-        raise AssertionError("Shapes don't match")
-    if not np.allclose(self, other):
-        raise AssertionError("Elements don't match!")
 
 
 def get_n20_orbital():
     """Return the orbital instance for a given set of TLEs for NOAA-20.
+
     From 16 October 2018.
     """
     tle1 = "1 43013U 17073A   18288.00000000  .00000042  00000-0  20142-4 0  2763"
     tle2 = "2 43013 098.7338 224.5862 0000752 108.7915 035.0971 14.19549169046919"
-    return Orbital('NOAA-20', line1=tle1, line2=tle2)
+    return Orbital("NOAA-20", line1=tle1, line2=tle2)
 
 
 def get_n19_orbital():
     """Return the orbital instance for a given set of TLEs for NOAA-19.
+
     From 16 October 2018.
     """
     tle1 = "1 33591U 09005A   18288.64852564  .00000055  00000-0  55330-4 0  9992"
     tle2 = "2 33591  99.1559 269.1434 0013899 353.0306   7.0669 14.12312703499172"
-    return Orbital('NOAA-19', line1=tle1, line2=tle2)
+    return Orbital("NOAA-19", line1=tle1, line2=tle2)
 
 
 def get_mb_orbital():
@@ -169,190 +166,194 @@ def get_mb_orbital():
     return Orbital("Metop-B", line1=tle1, line2=tle2)
 
 
-class TestPass(unittest.TestCase):
+class TestPass:
+    """Tests for the Pass object."""
 
-    def setUp(self):
-        """Set up"""
+    def setup_method(self):
+        """Set up."""
         self.n20orb = get_n20_orbital()
         self.n19orb = get_n19_orbital()
 
     def test_pass_instrument_interface(self):
-
+        """Test the intrument interface."""
         tstart = datetime(2018, 10, 16, 2, 48, 29)
         tend = datetime(2018, 10, 16, 3, 2, 38)
 
-        instruments = set(('viirs', 'avhrr', 'modis', 'mersi', 'mersi-2'))
+        instruments = set(("viirs", "avhrr", "modis", "mersi", "mersi-2"))
         for instrument in instruments:
-            overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instrument)
-            self.assertEqual(overp.instrument, instrument)
+            overp = Pass("NOAA-20", tstart, tend, orb=self.n20orb, instrument=instrument)
+            assert overp.instrument == instrument
 
-        instruments = set(('viirs', 'avhrr', 'modis'))
-        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
-        self.assertEqual(overp.instrument, 'avhrr')
+        instruments = set(("viirs", "avhrr", "modis"))
+        overp = Pass("NOAA-20", tstart, tend, orb=self.n20orb, instrument=instruments)
+        assert overp.instrument == "avhrr"
 
-        instruments = set(('viirs', 'modis'))
-        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
-        self.assertEqual(overp.instrument, 'viirs')
+        instruments = set(("viirs", "modis"))
+        overp = Pass("NOAA-20", tstart, tend, orb=self.n20orb, instrument=instruments)
+        assert overp.instrument == "viirs"
 
-        instruments = set(('amsu-a', 'mhs'))
-        self.assertRaises(TypeError, Pass, self,
-                          'NOAA-20', tstart, tend, orb=self.n20orb, instrument=instruments)
-
-    def tearDown(self):
-        """Clean up"""
-        pass
+        instruments = set(("amsu-a", "mhs"))
+        with pytest.raises(TypeError):
+            Pass("NOAA-20", tstart, tend, orb=self.n20orb, instrument=instruments)
 
 
-class TestSwathBoundary(unittest.TestCase):
+class TestSwathBoundary:
+    """Test the swath boundary object."""
 
-    def setUp(self):
-        """Set up"""
+    def setup_method(self):
+        """Set up."""
         self.n20orb = get_n20_orbital()
         self.n19orb = get_n19_orbital()
         self.mborb = get_mb_orbital()
         self.euron1 = AREA_DEF_EURON1
         self.antarctica = create_area_def(
             "antarctic",
-            {'ellps': 'WGS84', 'lat_0': '-90', 'lat_ts': '-60',
-             'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
-             'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+            {"ellps": "WGS84", "lat_0": "-90", "lat_ts": "-60",
+             "lon_0": "0", "no_defs": "None", "proj": "stere",
+             "type": "crs", "units": "m", "x_0": "0", "y_0": "0"},
             width=1000, height=1000,
             area_extent=(-4008875.4031, -4000855.294,
                          4000855.9937, 4008874.7048))
         self.arctica = create_area_def(
             "arctic",
-            {'ellps': 'WGS84', 'lat_0': '90', 'lat_ts': '60',
-             'lon_0': '0', 'no_defs': 'None', 'proj': 'stere',
-             'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+            {"ellps": "WGS84", "lat_0": "90", "lat_ts": "60",
+             "lon_0": "0", "no_defs": "None", "proj": "stere",
+             "type": "crs", "units": "m", "x_0": "0", "y_0": "0"},
             width=1000, height=1000,
             area_extent=(-4008875.4031, -4000855.294,
                          4000855.9937, 4008874.7048))
 
     def test_swath_boundary(self):
-
+        """Test generating a swath boundary."""
         tstart = datetime(2018, 10, 16, 2, 48, 29)
         tend = datetime(2018, 10, 16, 3, 2, 38)
 
-        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument='viirs')
+        overp = Pass("NOAA-20", tstart, tend, orb=self.n20orb, instrument="viirs")
         overp_boundary = SwathBoundary(overp)
 
         cont = overp_boundary.contour()
 
-        assertNumpyArraysEqual(cont[0], LONS1)
-        assertNumpyArraysEqual(cont[1], LATS1)
+        numpy.testing.assert_array_almost_equal(cont[0], LONS1)
+        numpy.testing.assert_array_almost_equal(cont[1], LATS1)
 
         tstart = datetime(2018, 10, 16, 4, 29, 4)
         tend = datetime(2018, 10, 16, 4, 30, 29, 400000)
 
-        overp = Pass('NOAA-20', tstart, tend, orb=self.n20orb, instrument='viirs')
+        overp = Pass("NOAA-20", tstart, tend, orb=self.n20orb, instrument="viirs")
         overp_boundary = SwathBoundary(overp, frequency=200)
 
         cont = overp_boundary.contour()
 
-        assertNumpyArraysEqual(cont[0], LONS2)
-        assertNumpyArraysEqual(cont[1], LATS2)
+        numpy.testing.assert_array_almost_equal(cont[0], LONS2)
+        numpy.testing.assert_array_almost_equal(cont[1], LATS2)
 
         # NOAA-19 AVHRR:
-        tstart = datetime.strptime('20181016 04:00:00', '%Y%m%d %H:%M:%S')
-        tend = datetime.strptime('20181016 04:01:00', '%Y%m%d %H:%M:%S')
+        tstart = datetime.strptime("20181016 04:00:00", "%Y%m%d %H:%M:%S")
+        tend = datetime.strptime("20181016 04:01:00", "%Y%m%d %H:%M:%S")
 
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr')
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr")
         overp_boundary = SwathBoundary(overp, frequency=500)
 
         cont = overp_boundary.contour()
 
-        assertNumpyArraysEqual(cont[0], LONS3)
-        assertNumpyArraysEqual(cont[1], LATS3)
+        numpy.testing.assert_array_almost_equal(cont[0], LONS3)
+        numpy.testing.assert_array_almost_equal(cont[1], LATS3)
 
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr/3')
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr/3")
         overp_boundary = SwathBoundary(overp, frequency=500)
 
         cont = overp_boundary.contour()
 
-        assertNumpyArraysEqual(cont[0], LONS3)
-        assertNumpyArraysEqual(cont[1], LATS3)
+        numpy.testing.assert_array_almost_equal(cont[0], LONS3)
+        numpy.testing.assert_array_almost_equal(cont[1], LATS3)
 
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr-3')
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr-3")
         overp_boundary = SwathBoundary(overp, frequency=500)
 
         cont = overp_boundary.contour()
 
-        assertNumpyArraysEqual(cont[0], LONS3)
-        assertNumpyArraysEqual(cont[1], LATS3)
+        numpy.testing.assert_array_almost_equal(cont[0], LONS3)
+        numpy.testing.assert_array_almost_equal(cont[1], LATS3)
 
-    def test_swath_coverage(self):
-
+    def test_swath_coverage_does_not_cover_data_outside_area(self):
+        """Test that swath covergate is 0 when the data is outside the area of interest."""
         # NOAA-19 AVHRR:
-        tstart = datetime.strptime('20181016 03:54:13', '%Y%m%d %H:%M:%S')
-        tend = datetime.strptime('20181016 03:55:13', '%Y%m%d %H:%M:%S')
+        tstart = datetime.strptime("20181016 03:54:13", "%Y%m%d %H:%M:%S")
+        tend = datetime.strptime("20181016 03:55:13", "%Y%m%d %H:%M:%S")
 
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr')
-
-        cov = overp.area_coverage(self.euron1)
-        self.assertEqual(cov, 0)
-
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr', frequency=80)
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr")
 
         cov = overp.area_coverage(self.euron1)
-        self.assertEqual(cov, 0)
+        assert cov == 0
 
-        tstart = datetime.strptime('20181016 04:00:00', '%Y%m%d %H:%M:%S')
-        tend = datetime.strptime('20181016 04:01:00', '%Y%m%d %H:%M:%S')
-
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr')
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr", frequency=80)
 
         cov = overp.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.103526, 5)
+        assert cov == 0
 
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr', frequency=100)
+    def test_swath_coverage_over_area(self):
+        """Test that swath coverage matches when covering a part of the area of interest."""
+        tstart = datetime.strptime("20181016 04:00:00", "%Y%m%d %H:%M:%S")
+        tend = datetime.strptime("20181016 04:01:00", "%Y%m%d %H:%M:%S")
 
-        cov = overp.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.103526, 5)
-
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr/3', frequency=133)
-
-        cov = overp.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.103526, 5)
-
-        overp = Pass('NOAA-19', tstart, tend, orb=self.n19orb, instrument='avhrr', frequency=300)
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr")
 
         cov = overp.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.103526, 5)
+        assert cov == pytest.approx(0.103526, 1e-5)
 
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr", frequency=100)
+
+        cov = overp.area_coverage(self.euron1)
+        assert cov == pytest.approx(0.103526, 1e-5)
+
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr/3", frequency=133)
+
+        cov = overp.area_coverage(self.euron1)
+        assert cov == pytest.approx(0.103526, 1e-5)
+
+        overp = Pass("NOAA-19", tstart, tend, orb=self.n19orb, instrument="avhrr", frequency=300)
+
+        cov = overp.area_coverage(self.euron1)
+        assert cov == pytest.approx(0.103526, 1e-5)
+
+    def test_swath_coverage_metop(self):
+        """Test ascat and avhrr coverages."""
         # ASCAT and AVHRR on Metop-B:
         tstart = datetime.strptime("2019-01-02T10:19:39", "%Y-%m-%dT%H:%M:%S")
         tend = tstart + timedelta(seconds=180)
-        tle1 = '1 38771U 12049A   19002.35527803  .00000000  00000+0  21253-4 0 00017'
-        tle2 = '2 38771  98.7284  63.8171 0002025  96.0390 346.4075 14.21477776326431'
+        tle1 = "1 38771U 12049A   19002.35527803  .00000000  00000+0  21253-4 0 00017"
+        tle2 = "2 38771  98.7284  63.8171 0002025  96.0390 346.4075 14.21477776326431"
 
-        mypass = Pass('Metop-B', tstart, tend, instrument='ascat', tle1=tle1, tle2=tle2)
+        mypass = Pass("Metop-B", tstart, tend, instrument="ascat", tle1=tle1, tle2=tle2)
         cov = mypass.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.322812, 5)
+        assert cov == pytest.approx(0.322812, 1e-5)
 
-        mypass = Pass('Metop-B', tstart, tend, instrument='avhrr', tle1=tle1, tle2=tle2)
+        mypass = Pass("Metop-B", tstart, tend, instrument="avhrr", tle1=tle1, tle2=tle2)
         cov = mypass.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.357324, 5)
+        assert cov == pytest.approx(0.357324, 1e-5)
 
+    def test_swath_coverage_fy3(self):
+        """Test FY3 coverages."""
         tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
         tend = tstart + timedelta(seconds=60*15.5)
 
-        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
-        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+        tle1 = "1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999"
+        tle2 = "2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158"
 
-        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+        mypass = Pass("FENGYUN 3D", tstart, tend, instrument="mersi2", tle1=tle1, tle2=tle2, frequency=100)
         cov = mypass.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.786836, 5)
+        assert cov == pytest.approx(0.786836, 1e-5)
 
-        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi-2', tle1=tle1, tle2=tle2)
+        mypass = Pass("FENGYUN 3D", tstart, tend, instrument="mersi-2", tle1=tle1, tle2=tle2, frequency=100)
         cov = mypass.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.786836, 5)
+        assert cov == pytest.approx(0.786836, 1e-5)
 
     def test_arctic_is_not_antarctic(self):
-
+        """Test that artic and antarctic are not mixed up."""
         tstart = datetime(2021, 2, 3, 16, 28, 3)
         tend = datetime(2021, 2, 3, 16, 31, 3)
 
-        overp = Pass('Metop-B', tstart, tend, orb=self.mborb, instrument='avhrr')
+        overp = Pass("Metop-B", tstart, tend, orb=self.mborb, instrument="avhrr")
 
         cov_south = overp.area_coverage(self.antarctica)
         cov_north = overp.area_coverage(self.arctica)
@@ -360,39 +361,34 @@ class TestSwathBoundary(unittest.TestCase):
         assert cov_north == 0
         assert cov_south != 0
 
-    def tearDown(self):
-        """Clean up"""
-        pass
 
-
-class TestPassList(unittest.TestCase):
-
-    def setUp(self):
-        """Set up"""
-        pass
+class TestPassList:
+    """Tests for the pass list."""
 
     def test_meos_pass_list(self):
+        """Test generating a meos pass list."""
         orig = ("  1 20190105 FENGYUN 3D  5907 52.943  01:01:45 n/a   01:17:15 15:30  18.6 107.4 -- "
                 "Undefined(Scheduling not done 1546650105 ) a3d0df0cd289244e2f39f613f229a5cc D")
 
         tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
         tend = tstart + timedelta(seconds=60 * 15.5)
 
-        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
-        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+        tle1 = "1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999"
+        tle2 = "2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158"
 
-        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+        mypass = Pass("FENGYUN 3D", tstart, tend, instrument="mersi2", tle1=tle1, tle2=tle2)
         coords = (10.72, 59.942, 0.1)
         meos_format_str = mypass.print_meos(coords, line_no=1)
-        self.assertEqual(meos_format_str, orig)
+        assert meos_format_str == orig
 
-        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi-2', tle1=tle1, tle2=tle2)
+        mypass = Pass("FENGYUN 3D", tstart, tend, instrument="mersi-2", tle1=tle1, tle2=tle2)
         coords = (10.72, 59.942, 0.1)
         meos_format_str = mypass.print_meos(coords, line_no=1)
-        self.assertEqual(meos_format_str, orig)
+        assert meos_format_str == orig
 
     def test_generate_metno_xml(self):
-        import xml.etree.ElementTree as ET
+        """Test generating a metno xml."""
+        import xml.etree.ElementTree as ET  # noqa because defusedxml has no Element, see defusedxml#48
         root = ET.Element("acquisition-schedule")
 
         orig = ('<acquisition-schedule><pass satellite="FENGYUN 3D" aos="20190105010145" los="20190105011715" '
@@ -403,30 +399,18 @@ class TestPassList(unittest.TestCase):
         tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
         tend = tstart + timedelta(seconds=60 * 15.5)
 
-        tle1 = '1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999'
-        tle2 = '2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158'
+        tle1 = "1 43010U 17072A   18363.54078832 -.00000045  00000-0 -79715-6 0  9999"
+        tle2 = "2 43010  98.6971 300.6571 0001567 143.5989 216.5282 14.19710974 58158"
 
-        mypass = Pass('FENGYUN 3D', tstart, tend, instrument='mersi2', tle1=tle1, tle2=tle2)
+        mypass = Pass("FENGYUN 3D", tstart, tend, instrument="mersi2", tle1=tle1, tle2=tle2)
 
         coords = (10.72, 59.942, 0.1)
         mypass.generate_metno_xml(coords, root)
 
         # Dictionaries don't have guaranteed ordering in Python 3.7, so convert the strings to sets and compare them
         res = set(ET.tostring(root).decode("utf-8").split())
-        self.assertEqual(res, set(orig.split()))
+        assert res == set(orig.split())
 
     def tearDown(self):
-        """Clean up"""
+        """Clean up."""
         pass
-
-
-def suite():
-    """The suite for test_satpass
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestSwathBoundary))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestPass))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestPassList))
-
-    return mysuite
