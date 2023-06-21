@@ -21,12 +21,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Package file.
-"""
+"""Package file."""
 
-from .version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+from . import version
+
+__version__ = version.get_versions()['version']
 
 
 # shortest allowed pass in minutes

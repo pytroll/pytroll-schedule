@@ -20,8 +20,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Satellite passes.
-"""
+"""Satellite passes."""
 
 import ftplib
 import glob
@@ -30,36 +29,35 @@ import logging.handlers
 import operator
 import os
 import socket
-import sys
 from datetime import datetime, timedelta
 from functools import reduce as fctools_reduce
-from tempfile import mkstemp
-
-import numpy as np
+from tempfile import gettempdir, mkstemp
 from urllib.parse import urlparse
 
+import numpy as np
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
+
 from trollsched import MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS
 from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
 
-VIIRS_PLATFORM_NAMES = ['SUOMI NPP', 'SNPP',
-                        'NOAA-20', 'NOAA 20']
-MERSI_PLATFORM_NAMES = ['FENGYUN 3C', 'FENGYUN-3C', 'FY-3C']
-MERSI2_PLATFORM_NAMES = ['FENGYUN 3D', 'FENGYUN-3D', 'FY-3D',
-                         'FENGYUN 3E', 'FENGYUN-3E', 'FY-3E']
+VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
+                        "NOAA-20", "NOAA 20"]
+MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
+MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
+                         "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
 
 
-class SimplePass(object):
-    """A pass: satellite, risetime, falltime, (orbital)
-    """
+class SimplePass:
+    """A pass: satellite, risetime, falltime, (orbital)."""
 
     buffer = timedelta(minutes=2)
 
     def __init__(self, satellite, risetime, falltime):
-        if not hasattr(satellite, 'name'):
+        """Initialize the simple pass."""
+        if not hasattr(satellite, "name"):
             from trollsched.schedule import Satellite
             self.satellite = Satellite(satellite, 0, 0)
         else:
@@ -72,20 +70,25 @@ class SimplePass(object):
         self.fig = None
 
     def __hash__(self):
+        """Hash the pass."""
         return super.__hash__(self)
 
-    def overlaps(self, other, delay=timedelta(seconds=0)):
-        """Check if two passes overlap in time.
-        """
+    def overlaps(self, other, delay=None):
+        """Check if two passes overlap in time."""
+        if delay is None:
+            delay = timedelta(seconds=0)
         return ((self.risetime < other.falltime + delay) and (self.falltime + delay > other.risetime))
 
     def __lt__(self, other):
+        """Check if this pass starts earlier than the other one."""
         return self.uptime < other.uptime
 
     def __gt__(self, other):
+        """Check if this pass startss later than the other one."""
         return self.uptime > other.uptime
 
     def __cmp__(self, other):
+        """Compare two passes."""
         if self.uptime < other.uptime:
             return -1
         if self.uptime > other.uptime:
@@ -103,70 +106,70 @@ class SimplePass(object):
                 other, Pass):
             return (self.satellite.name == other.satellite.name and
                     self.orb.get_orbit_number(self.risetime) == other.orb.get_orbit_number(other.risetime))
-        tol = timedelta(seconds=1)
-        return (other is not None and abs(self.risetime - other.risetime) < tol and
-                abs(self.falltime - other.falltime) < tol and
-                self.satellite == other.satellite)
+        timedelta(seconds=1)
+        return (other is not None and
+                self.satellite.name == other.satellite.name and
+                self.overlaps(other))
 
     def __str__(self):
+        """Give a string version of the pass."""
         return (self.satellite.name + " " + self.risetime.isoformat() + " " +
                 self.falltime.isoformat())
 
     def __repr__(self):
+        """Represent the pass."""
         return str(self)
 
     def duration(self):
-        """Get the duration of an overpass.
-        """
+        """Get the duration of an overpass."""
         return self.falltime - self.risetime
 
     def seconds(self):
-        """Get the duration of an overpass.
-        """
+        """Get the duration of an overpass."""
         duration = self.duration()
         return (duration.days * 24 * 60 * 60 + duration.seconds +
                 duration.microseconds * 1e-6)
 
 
 class Pass(SimplePass):
-    """A pass: satellite, risetime, falltime, (orbital)
-    """
+    """A pass: satellite, risetime, falltime, (orbital)."""
 
     def __init__(self, satellite, risetime, falltime, **kwargs):
+        """Initialize the pass."""
         SimplePass.__init__(self, satellite, risetime, falltime)
 
         logger.debug("kwargs: %s", str(kwargs))
-        orb = kwargs.get('orb', None)
-        uptime = kwargs.get('uptime', None)
-        instrument = kwargs.get('instrument', None)
-        tle1 = kwargs.get('tle1', None)
-        tle2 = kwargs.get('tle2', None)
+        orb = kwargs.get("orb", None)
+        uptime = kwargs.get("uptime", None)
+        instrument = kwargs.get("instrument", None)
+        tle1 = kwargs.get("tle1", None)
+        tle2 = kwargs.get("tle2", None)
         logger.debug("instrument: %s", str(instrument))
 
         if isinstance(instrument, (list, set)):
-            if 'avhrr' in instrument:
+            if "avhrr" in instrument:
                 logger.warning("Instrument is a sequence! Assume avhrr...")
-                instrument = 'avhrr'
-            elif 'viirs' in instrument:
+                instrument = "avhrr"
+            elif "viirs" in instrument:
                 logger.warning("Instrument is a sequence! Assume viirs...")
-                instrument = 'viirs'
-            elif 'modis' in instrument:
+                instrument = "viirs"
+            elif "modis" in instrument:
                 logger.warning("Instrument is a sequence! Assume modis...")
-                instrument = 'modis'
-            elif 'mersi' in instrument:
+                instrument = "modis"
+            elif "mersi" in instrument:
                 logger.warning("Instrument is a sequence! Assume mersi...")
-                instrument = 'mersi'
-            elif 'mersi-2' in instrument:
+                instrument = "mersi"
+            elif "mersi-2" in instrument:
                 logger.warning("Instrument is a sequence! Assume mersi-2...")
-                instrument = 'mersi-2'
+                instrument = "mersi-2"
             else:
                 raise TypeError("Instrument is a sequence! Don't know which one to choose!")
 
         default = NUMBER_OF_FOVS.get(instrument, 2048)
-        self.number_of_fovs = kwargs.get('number_of_fovs', default)
+        self.number_of_fovs = kwargs.get("number_of_fovs", default)
         # The frequency shouldn't actualy depend on the number of FOVS along a scanline should it!?
         # frequency = kwargs.get('frequency', int(self.number_of_fovs / 4))
-        frequency = kwargs.get('frequency', 300)
+        frequency = kwargs.get("frequency", 300)
 
         self.station = None
         self.max_elev = None
@@ -179,18 +182,19 @@ class Pass(SimplePass):
             try:
                 self.orb = orbital.Orbital(satellite, line1=tle1, line2=tle2)
             except KeyError as err:
-                logger.debug('Failed in PyOrbital: %s', str(err))
+                logger.debug("Failed in PyOrbital: %s", str(err))
                 self.orb = orbital.Orbital(
                     NOAA20_NAME.get(satellite, satellite),
                     line1=tle1,
                     line2=tle2)
-                logger.info('Using satellite name %s instead',
+                logger.info("Using satellite name %s instead",
                             str(NOAA20_NAME.get(satellite, satellite)))
 
         self._boundary = None
 
     @property
     def boundary(self):
+        """Get the boundary of the swath."""
         if not self._boundary:
             self._boundary = SwathBoundary(self, frequency=self.frequency)
         return self._boundary
@@ -200,8 +204,7 @@ class Pass(SimplePass):
         self._boundary = SwathBoundary(self, frequency=self.frequency)
 
     def pass_direction(self):
-        """Get the direction of the pass in (ascending, descending).
-        """
+        """Get the direction of the pass in (ascending, descending)."""
         start_lat = self.orb.get_lonlatalt(self.risetime)[1]
         end_lat = self.orb.get_lonlatalt(self.falltime)[1]
 
@@ -211,8 +214,7 @@ class Pass(SimplePass):
             return "ascending"
 
     def slsearch(self, sublat):
-        """Find sublatitude.
-        """
+        """Find sublatitude."""
 
         def nadirlat(minutes):
             return self.orb.get_lonlatalt(self.risetime + timedelta(
@@ -234,9 +236,7 @@ class Pass(SimplePass):
             return self.risetime + timedelta(minutes=sublat_mins)
 
     def area_coverage(self, area_of_interest):
-        """Get the ratio of coverage (between 0 and 1) of the pass with the area
-        of interest.
-        """
+        """Get the ratio of coverage (between 0 and 1) of the pass with the area of interest."""
         try:
             area_boundary = area_of_interest.poly
         except AttributeError:
@@ -250,7 +250,8 @@ class Pass(SimplePass):
         return inter.area() / area_boundary.area()
 
     def generate_metno_xml(self, coords, root):
-        import xml.etree.ElementTree as ET
+        """Generate a metno xml schedule."""
+        import xml.etree.ElementTree as ET  # noqa because defusedxml has no SubElement
 
         asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
         pass_direction = self.pass_direction().capitalize()[:1]
@@ -278,10 +279,7 @@ class Pass(SimplePass):
         return True
 
     def print_meos(self, coords, line_no):
-        """
-         No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)
-        """
-
+        """No. Date    Satellite  Orbit Max EL  AOS      Ovlp  LOS      Durtn  Az(AOS/MAX)."""
         asimuth_at_max_elevation, max_elevation = self.orb.get_observer_look(self.uptime, *coords)
         pass_direction = self.pass_direction().capitalize()[:1]
         # anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(self.risetime))[0] % 360
@@ -307,13 +305,13 @@ class Pass(SimplePass):
 
         import hashlib
 
-        pass_key = hashlib.md5(("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".
+        pass_key = hashlib.md5(("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".  # noqa : md5 is insecure, but not sensitive here.
                                 format(satellite_meos_translation.get(self.satellite.name.upper(),
                                                                       self.satellite.name.upper()),
                                        int(orbit),
                                        aos_epoch,
                                        sat_lon,
-                                       sat_lat)).encode('utf-8')).hexdigest()
+                                       sat_lat)).encode("utf-8")).hexdigest()
 
         line_list = [" {line_no:>2}",
                      "{date}",
@@ -351,7 +349,9 @@ class Pass(SimplePass):
         return line
 
     def print_vcs(self, coords):
-        """Should look like this::
+        """Print a vcs/scisys/cgi schedule.
+
+        Should look like this::
 
         # SCName          RevNum Risetime        Falltime        Elev Dura ANL   Rec Dir Man Ovl OvlSCName
         #      OvlRev OvlRisetime     OrigRisetime    OrigFalltime    OrigDuration
@@ -360,7 +360,6 @@ class Pass(SimplePass):
 
 
         """
-
         max_elevation = self.orb.get_observer_look(self.uptime, *coords)[1]
         anl = self.orb.get_lonlatalt(self.orb.get_last_an_time(
             self.risetime))[0] % 360
@@ -405,32 +404,29 @@ def get_aqua_terra_dumps(start_time,
                          satorb,
                          sat,
                          dump_url=None):
-    """
-    Get the Terra and Aqua overpasses taking into account the fact that when
-    there are global dumps there is no direct broadcast
-    """
+    """Get the Terra and Aqua overpasses.
 
+     We take into account the fact that when
+    there are global dumps there is no direct broadcast.
+    """
     # Get the list of aqua/terra dump info:
     dump_info_list = get_aqua_terra_dumpdata_from_ftp(sat, dump_url)
 
     dumps = []
     for elem in dump_info_list:
-        if elem['los'] >= start_time and elem['aos'] <= end_time:
-            uptime = elem['aos'] + (elem['los'] - elem['aos']) / 2
-            overpass = Pass(sat, elem['aos'], elem['los'],
+        if elem["los"] >= start_time and elem["aos"] <= end_time:
+            uptime = elem["aos"] + (elem["los"] - elem["aos"]) / 2
+            overpass = Pass(sat, elem["aos"], elem["los"],
                             orb=satorb, uptime=uptime, instrument="modis")
-            overpass.station = elem['station']
-            overpass.max_elev = elem['elev']
+            overpass.station = elem["station"]
+            overpass.max_elev = elem["elev"]
             dumps.append(overpass)
 
     return dumps
 
 
 def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
-    """
-    Get the information on the internet on the actual global dumps of Terra and Aqua
-    """
-
+    """Get the information on the internet on the actual global dumps of Terra and Aqua."""
     logger.info("Fetch %s dump info from internet", str(sat.name))
     if isinstance(dump_url, str):
         url = urlparse(dump_url % sat.name)
@@ -440,15 +436,15 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     try:
         f = ftplib.FTP_TLS(url.netloc)
     except (socket.error, socket.gaierror) as e:
-        logger.error('cannot reach to %s ' % HOST + str(e))
+        logger.error("cannot reach to %s " % HOST + str(e))
         f = None
 
     if f is not None:
         try:
-            f.login('anonymous', 'guest')
+            f.login("anonymous", "guest")
             logger.debug("Logged in")
         except ftplib.error_perm:
-            logger.error('cannot login anonymously')
+            logger.error("cannot login anonymously")
             f.quit()
             f = None
 
@@ -466,7 +462,7 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
 
     if f is None:
         logger.info("Can't access ftp server, using cached data")
-        filenames = glob.glob("/tmp/*.rpt")
+        filenames = glob.glob(os.path.join(gettempdir(), "*.rpt"))
 
     filenames = [
         x for x in filenames if x.startswith("wotis.") and x.endswith(".rpt")
@@ -481,20 +477,20 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
 
     for date in sorted(dates):
         lines = []
-        if not os.path.exists(os.path.join("/tmp", filedates[date])):
+        if not os.path.exists(os.path.join(gettempdir(), filedates[date])):
             try:
                 f.prot_p()  # explicitly call for protected transfer
-                f.retrlines('RETR ' + os.path.join(url.path, filedates[date]),
+                f.retrlines("RETR " + os.path.join(url.path, filedates[date]),
                             lines.append)
             except ftplib.error_perm:
                 logger.info("Permission error (???) on ftp server, skipping.")
                 continue
-            with open(os.path.join("/tmp", filedates[date]), "w") as fd_:
+            with open(os.path.join(gettempdir(), filedates[date]), "w") as fd_:
                 for line in lines:
                     fd_.write(line + "\n")
 
         else:
-            with open(os.path.join("/tmp", filedates[date]), "r") as fd_:
+            with open(os.path.join(gettempdir(), filedates[date]), "r") as fd_:
                 for line in fd_:
                     lines.append(line)
 
@@ -512,12 +508,12 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
         #         dumps.append(overpass)
 
         for line in lines[7::2]:
-            if line.strip() == '':
+            if line.strip() == "":
                 break
             station, aos, elev, los = line.split()[:4]
             aos = datetime.strptime(aos, "%Y:%j:%H:%M:%S")
             los = datetime.strptime(los, "%Y:%j:%H:%M:%S")
-            dumps.append({'station': station, 'aos': aos, 'los': los, 'elev': elev})
+            dumps.append({"station": station, "aos": aos, "los": los, "elev": elev})
 
     if f is not None:
         f.quit()
@@ -532,7 +528,9 @@ def get_next_passes(satellites,
                     aqua_terra_dumps=None,
                     min_pass=MIN_PASS,
                     local_horizon=0):
-    """Get the next passes for *satellites*, starting at *utctime*, for a
+    """Get the next passes for *satellites*.
+
+    Get the next passes for *satellites* , starting at *utctime*, for a
     duration of *forward* hours, with observer at *coords* ie lon (°E), lat
     (°N), altitude (km). Uses *tle_file* if provided, downloads from celestrack
     otherwise.
@@ -541,26 +539,26 @@ def get_next_passes(satellites,
     """
     passes = {}
 
-    if tle_file is None and 'TLES' not in os.environ:
-        fp_, tle_file = mkstemp(prefix="tle", dir="/tmp")
+    if tle_file is None and "TLES" not in os.environ:
+        fp_, tle_file = mkstemp(prefix="tle", dir=gettempdir())
         os.close(fp_)
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
 
-    if not os.path.exists(tle_file) and 'TLES' not in os.environ:
+    if not os.path.exists(tle_file) and "TLES" not in os.environ:
         logger.info("Fetch tle info from internet")
         tlefile.fetch(tle_file)
 
     for sat in satellites:
-        if not hasattr(sat, 'name'):
+        if not hasattr(sat, "name"):
             from trollsched.schedule import Satellite
             sat = Satellite(sat, 0, 0)
 
         satorb = orbital.Orbital(sat.name, tle_file=tle_file)
         passlist = satorb.get_next_passes(utctime,
                                           forward,
+                                          *coords,
                                           horizon=local_horizon,
-                                          *coords
                                           )
 
         if sat.name.lower() == "metop-a":
@@ -587,20 +585,16 @@ def get_next_passes(satellites,
             passes[sat.name] = [
                 Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument=instrument)
                 for rtime, ftime, uptime in passlist
-                if ftime - rtime > timedelta(minutes=MIN_PASS)
+                if ftime - rtime > timedelta(minutes=min_pass)
             ]
 
     return set(fctools_reduce(operator.concat, list(passes.values())))
 
 
 def get_metopa_passes(sat, passlist, satorb):
-    """Get the Metop-A passes, taking care that Metop-A doesn't transmit to ground
-    everywhere
-
-    """
-
+    """Get the Metop-A passes, taking care that Metop-A doesn't transmit to ground everywhere."""
     metop_passes = [
-        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument='avhrr')
+        Pass(sat, rtime, ftime, orb=satorb, uptime=uptime, instrument="avhrr")
         for rtime, ftime, uptime in passlist if rtime < ftime
     ]
 
@@ -619,28 +613,29 @@ def get_metopa_passes(sat, passlist, satorb):
 
 
 def get_terra_aqua_passes(passes, utctime, forward, sat, passlist, satorb, aqua_terra_dumps):
-    """Get the Terra/Aqua passes, taking care that Terra and Aqua do not have
-       direct broadcast when there are global dumps
+    """Get the Terra/Aqua passes.
 
-    passes: The dictionary of satellite passes which is being built
+    We take care that Terra and Aqua do not have direct broadcast when there are global dumps.
 
-    utctime: The start time (datetime object)
+    Args:
+        passes: The dictionary of satellite passes which is being built
 
-    forward: The number of hours ahead for which we will get the coming passes
+        utctime: The start time (datetime object)
 
-    sat: The Satellite platform considered
+        forward: The number of hours ahead for which we will get the coming passes
 
-    passlist: List of Pass objects
+        sat: The Satellite platform considered
 
-    satorb: Orbital instance for the actual satellite and tles considered
+        passlist: List of Pass objects
 
-    aqua_terra_dumps: True or False or the actual URL to get info on Terra/Aqua
-       dumps.  If True, the default URL will be used. If False or None, no dump
-       info will be considered.
+        satorb: Orbital instance for the actual satellite and tles considered
+
+        aqua_terra_dumps: True or False or the actual URL to get info on Terra/Aqua
+           dumps.  If True, the default URL will be used. If False or None, no dump
+           info will be considered.
 
     """
-
-    instrument = 'modis'
+    instrument = "modis"
 
     wpcoords = (-75.457222, 37.938611, 0)
     passlist_wp = satorb.get_next_passes(
