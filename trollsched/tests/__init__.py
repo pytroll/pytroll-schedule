@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2014 - 2018 PyTroll Community
+# Copyright (c) 2014 - 2022 PyTroll Community
 
 # Author(s):
 
@@ -21,20 +18,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Tests for scheduler.
-"""
-
-from trollsched.tests import (test_schedule, test_spherical, test_satpass)
-
-import unittest
-
-
-def suite():
-    """The global test suite.
-    """
-    mysuite = unittest.TestSuite()
-    mysuite.addTests(test_schedule.suite())
-    mysuite.addTests(test_spherical.suite())
-    mysuite.addTests(test_satpass.suite())
-
-    return mysuite
+"""Tests for scheduler."""
