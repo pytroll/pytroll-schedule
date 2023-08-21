@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019 PyTroll Community
+# Copyright (c) 2014 - 2019, 2023 PyTroll Community
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
@@ -38,7 +38,7 @@ import numpy as np
 from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 
-from trollsched import MIN_PASS, NOAA20_NAME, NUMBER_OF_FOVS
+from trollsched import MIN_PASS, JPSS_TLE_NAMES, NUMBER_OF_FOVS
 from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
@@ -184,11 +184,11 @@ class Pass(SimplePass):
             except KeyError as err:
                 logger.debug("Failed in PyOrbital: %s", str(err))
                 self.orb = orbital.Orbital(
-                    NOAA20_NAME.get(satellite, satellite),
+                    JPSS_TLE_NAMES.get(satellite, satellite),
                     line1=tle1,
                     line2=tle2)
                 logger.info("Using satellite name %s instead",
-                            str(NOAA20_NAME.get(satellite, satellite)))
+                            str(JPSS_TLE_NAMES.get(satellite, satellite)))
 
         self._boundary = None
 
