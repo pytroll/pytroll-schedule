@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 - 2020 Pytroll Community
+# Copyright (c) 2018 - 2021 Pytroll Community
 
 # Author(s):
 
@@ -28,6 +28,9 @@ import logging
 import logging.handlers
 import numpy as np
 import matplotlib as mpl
+from cartopy.feature import ShapelyFeature
+import cartopy.io.shapereader as shpreader
+
 MPL_BACKEND = mpl.get_backend()
 
 logger = logging.getLogger(__name__)
@@ -101,8 +104,8 @@ class MapperCartopy(object):
 
         fig = plt.figure(figsize=(8, 6))
 
-        self._ax = fig.add_subplot(
-            1, 1, 1, projection=ccrs.NearsidePerspective(**proj_info))
+        crs = ccrs.NearsidePerspective(**proj_info)
+        self._ax = fig.add_subplot(1, 1, 1, projection=crs)
 
         self._ax.add_feature(cfeature.OCEAN, zorder=0)
         self._ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
@@ -110,6 +113,22 @@ class MapperCartopy(object):
 
         self._ax.set_global()
         self._ax.gridlines()
+
+        # countries = shpreader.Reader('/home/a000680/data/shapes/10m_admin_0_countries/ne_10m_admin_0_countries.shp')
+        # CONT = [c for c in countries.records() if c.attributes['CONTINENT'] == 'Europe']
+        # MY_STATES = ['Sweden']
+
+        # #import ipdb
+        # # ipdb.set_trace()
+
+        # cmap = plt.cm.get_cmap('Reds')
+        # for c__ in CONT:
+        #     if c__.attributes['ADMIN'] not in MY_STATES:
+        #         continue
+        #     if c__.attributes['ADMIN'] in ['Sweden']:
+        #         sp_ = ShapelyFeature(c__.geometry, crs, edgecolor='k', facecolor=cmap(0.5))
+        #         self._ax.add_feature(sp_, zorder=0)
+        #         print("Adding colors to Sweden...")
 
     def plot(self, *args, **kwargs):
         mpl.use(MPL_BACKEND)
@@ -186,7 +205,7 @@ def save_fig(pass_obj,
     logger.debug("Filename = <%s>", filepath)
     plot_parameters = plot_parameters or {}
     with Mapper(**plot_parameters) as mapper:
-        mapper.nightshade(pass_obj.uptime, alpha=0.2)
+        #mapper.nightshade(pass_obj.uptime, alpha=0.2)
         for i, polygon in enumerate(poly):
             try:
                 col = poly_color[i]
@@ -195,6 +214,16 @@ def save_fig(pass_obj,
             draw(polygon, mapper, col)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
+
+    # from matplotlib import pyplot, lines
+    # import numpy as np
+
+    # # new clear axis overlay with 0-1 limits
+    # _ax2 = pyplot.axes([0, 0, 1, 1])
+
+    # x, y = np.array([[0.05, 0.1, 0.9], [0.05, 0.05, 0.05]])
+    # line = lines.Line2D(x, y, lw=5., color='b', alpha=0.4)
+    # _ax2.add_line(line)
 
     logger.debug("Title = %s", str(pass_obj))
     if not plot_title:

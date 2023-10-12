@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 Martin Raspaud
+# Copyright (c) 2014, 2023 Martin Raspaud
 
 # Author(s):
 
@@ -31,8 +31,8 @@ class Graph(object):
         if n_vertices is not None:
             self.order = n_vertices
             self.vertices = np.arange(self.order)
-            self.adj_matrix = np.zeros((self.order, self.order), np.bool)
-            self.weight_matrix = np.zeros((self.order, self.order), np.float)
+            self.adj_matrix = np.zeros((self.order, self.order), bool)
+            self.weight_matrix = np.zeros((self.order, self.order), float)
         elif adj_matrix is not None:
             self.order = adj_matrix.shape[0]
             self.vertices = np.arange(self.order)
