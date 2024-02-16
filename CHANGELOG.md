@@ -1,3 +1,16 @@
+###############################################################################
+## Version 0.7.1 (2024/02/16)
+
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 85](https://github.com/pytroll/pytroll-schedule/pull/85) - Update CI Python versions
+* [PR 84](https://github.com/pytroll/pytroll-schedule/pull/84) - Update versioneer
+
+In this release 2 pull requests were closed.
+
 ## Version 0.7.0 (2023/06/21)
 
 ### Issues Closed
