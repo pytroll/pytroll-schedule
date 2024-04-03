@@ -38,9 +38,8 @@ except ImportError:
     # Older versions of pyresample:
     from pyresample.utils import parse_area_file
 
-from pyresample.boundary import AreaDefBoundary
 
-from trollsched import utils
+from trollsched import MIN_PASS, utils
 from trollsched.combine import get_combined_sched
 from trollsched.graph import Graph
 from trollsched.satpass import SimplePass, get_next_passes
@@ -53,7 +52,7 @@ class Station:
     """docstring for Station."""
 
     def __init__(self, station_id, name, longitude, latitude, altitude, area, satellites, area_file=None,
-                 min_pass=None, local_horizon=0):
+                 min_pass=MIN_PASS, local_horizon=0):
         """Initialize the station."""
         self.id = station_id
         self.name = name
@@ -96,7 +95,7 @@ class Station:
 
         allpasses = self.get_next_passes(opts, sched, start_time, tle_file)
 
-        area_boundary = AreaDefBoundary(self.area, frequency=500)
+        area_boundary = self.area.boundary(8)
         self.area.poly = area_boundary.contour_poly
 
         if opts.plot:
@@ -538,7 +537,7 @@ def send_file(url, file):
     del pathname
     if url.scheme in ["file", ""]:
         pass
-    elif url.scheme == "ftp":
+    elif url.scheme in ["ftp", b"ftp"]:
         import ftplib
         session = ftplib.FTP(url.hostname, url.username, url.password)
         with open(file, "rb") as xfile:
@@ -546,7 +545,7 @@ def send_file(url, file):
         session.quit()
     else:
         logger.error("Cannot save to %s, but file is there:",
-                     str(url.scheme), str(file))
+                     (str(url.scheme), str(file)))
 
 
 def combined_stations(scheduler, start_time, graph, allpasses):
@@ -668,11 +667,11 @@ def combined_stations(scheduler, start_time, graph, allpasses):
     logger.info("Finished coordinated schedules.")
 
 
-def run():
+def run(args=None):
     """The schedule command."""
     global logger
 
-    opts = parse_args()
+    opts = parse_args(args)
 
     if opts.config:
         # read_config() returns:
@@ -787,7 +786,7 @@ def setup_logging(opts):
     logger = logging.getLogger("trollsched")
 
 
-def parse_args():
+def parse_args(args=None):
     """Parse arguments from the command line."""
     parser = argparse.ArgumentParser()
     # general arguments
@@ -849,7 +848,7 @@ def parse_args():
                             help="generate a MEOS schedule file")
     group_outp.add_argument("--metno-xml", action="store_true",
                             help="generate a METNO xml pass data file")
-    opts = parser.parse_args()
+    opts = parser.parse_args(args)
 
     if (not opts.config) and (not (opts.lon or opts.lat or opts.alt)):
         parser.error("Coordinates must be provided in the absence of "
