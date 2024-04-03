@@ -72,3 +72,6 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-C': 'avhrr',
               'FY-3D': 'avhrr',
               'FY-3C': 'avhrr'}
+
+from . import version
+__version__ = version.get_versions()['version']
