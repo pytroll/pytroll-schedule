@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018 - 2020 Pytroll Community
 
 # Author(s):
 
-#   Adam.Dybbroe <a000680@c20671.ad.smhi.se>
+#   Adam.Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,6 +39,11 @@ try:
 except ImportError:
     logger.warning("Failed loading Cartopy, will try Basemap instead")
     BASEMAP_NOT_CARTOPY = True
+
+if not BASEMAP_NOT_CARTOPY:
+    import cartopy
+    cartopy.config['pre_existing_data_dir'] = os.environ.get(
+        "CARTOPY_PRE_EXISTING_DATA_DIR", cartopy.config['pre_existing_data_dir'])
 
 
 class MapperBasemap(object):
@@ -143,9 +148,19 @@ def save_fig(pass_obj,
              overwrite=False,
              labels=None,
              extension=".png",
-             outline='-r'):
+             outline='-r',
+             plot_parameters=None,
+             plot_title=None,
+             poly_color=None):
     """Save the pass as a figure. Filename is automatically generated.
     """
+    poly = poly or []
+    poly_color = poly_color or []
+    if not isinstance(poly, (list, tuple)):
+        poly = [poly]
+    if not isinstance(poly_color, (list, tuple)):
+        poly_color = [poly_color]
+
     mpl.use('Agg')
     import matplotlib.pyplot as plt
     plt.clf()
@@ -156,30 +171,42 @@ def save_fig(pass_obj,
     if not os.path.exists(directory):
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
-    filename = os.path.join(
-        directory,
-        (rise + pass_obj.satellite.name.replace(" ", "_") + fall + extension))
 
-    pass_obj.fig = filename
-    if not overwrite and os.path.exists(filename):
-        return filename
+    filename = '{rise}_{satname}_{instrument}_{fall}{extension}'.format(rise=rise,
+                                                                        satname=pass_obj.satellite.name.replace(
+                                                                            " ", "_"),
+                                                                        instrument=pass_obj.instrument.replace(
+                                                                            "/", "-"),
+                                                                        fall=fall, extension=extension)
+    filepath = os.path.join(directory, filename)
+    pass_obj.fig = filepath
+    if not overwrite and os.path.exists(filepath):
+        return filepath
 
-    logger.debug("Filename = <%s>", filename)
-    with Mapper() as mapper:
+    logger.debug("Filename = <%s>", filepath)
+    plot_parameters = plot_parameters or {}
+    with Mapper(**plot_parameters) as mapper:
         mapper.nightshade(pass_obj.uptime, alpha=0.2)
+        for i, polygon in enumerate(poly):
+            try:
+                col = poly_color[i]
+            except IndexError:
+                col = '-b'
+            draw(polygon, mapper, col)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
-        if poly is not None:
-            draw(poly, mapper, "-b")
 
     logger.debug("Title = %s", str(pass_obj))
-    plt.title(str(pass_obj))
+    if not plot_title:
+        plt.title(str(pass_obj))
+    else:
+        plt.title(plot_title)
     for label in labels or []:
         plt.figtext(*label[0], **label[1])
     logger.debug("Save plot...")
-    plt.savefig(filename)
+    plt.savefig(filepath)
     logger.debug("Return...")
-    return filename
+    return filepath
 
 
 def show(pass_obj,

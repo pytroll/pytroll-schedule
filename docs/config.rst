@@ -153,7 +153,7 @@ Stations
 	described below. If no sub-keys are given, the scores from the section
 	``satellites`` are used.
 
-	Alternativly the satellites can be listed as a list, as shown in the
+	Alternatively the satellites can be listed as a list, as shown in the
 	following example for station "nrk". In this case all names refer to the
 	section ``satellites``.
 

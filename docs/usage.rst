@@ -1,6 +1,10 @@
 Usage
 =====
 
+To run the schedule script, it is now compulsory to provide a configuration file
+(see the config section on how these are formed). Command line arguments
+override what is provided in the configuration file.
+
 Usage of the schedule script::
 
 	usage: schedule [-h] [-c CONFIG] [-t TLE] [-l LOG] [-m [MAIL [MAIL ...]]] [-v]
@@ -8,7 +12,7 @@ Usage of the schedule script::
 	                [-s START_TIME] [-d DELAY] [-a AVOID] [--no-aqua-terra-dump]
 	                [--multiproc] [-o OUTPUT_DIR] [-u OUTPUT_URL] [-x] [-r]
 	                [--scisys] [-p] [-g]
-	
+
 	optional arguments:
 	  -h, --help            show this help message and exit
 	  -c CONFIG, --config CONFIG
@@ -18,10 +22,10 @@ Usage of the schedule script::
 	  -m [MAIL [MAIL ...]], --mail [MAIL [MAIL ...]]
 	                        mail address(es) to send error messages to.
 	  -v, --verbose         print debug messages too
-	
+
 	start-parameter:
 	  (or set values in the configuration file)
-	
+
 	  --lat LAT             Latitude, degrees north
 	  --lon LON             Longitude, degrees east
 	  --alt ALT             Altitude, km
@@ -32,18 +36,18 @@ Usage of the schedule script::
 	  -d DELAY, --delay DELAY
 	                        delay (in seconds) needed between two consecutive
 	                        passes (60 seconds by default)
-	
+
 	special:
 	  (additional parameter changing behaviour)
-	
+
 	  -a AVOID, --avoid AVOID
 	                        xml request file with passes to avoid
 	  --no-aqua-terra-dump  do not consider Aqua/Terra-dumps
 	  --multiproc           use multiple parallel processes
-	
+
 	output:
 	  (file pattern are taken from configuration file)
-	
+
 	  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
 	                        where to put generated files
 	  -u OUTPUT_URL, --output-url OUTPUT_URL

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016, 2018 Adam.Dybbroe
+# Copyright (c) 2016, 2018, 2019 Adam.Dybbroe
 
 # Author(s):
 
@@ -20,38 +20,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""From a schedule request xml file generate png's with swath coverage outline
-and an xml page for visualisation. It uses posttroll to listen for incoming
-schedule request xml files and then triggers the png and xml output generation.
+"""From a schedule request xml file generate png's with swath coverage outline and an xml page for visualisation.
 
+It uses posttroll to listen for incoming schedule request xml files and then triggers the png and xml output generation.
 """
 
-import os
-from six.moves.configparser import RawConfigParser
 import logging
+import os.path
 import sys
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
+from datetime import datetime
+
+import defusedxml.ElementTree as ET
 import posttroll.subscriber
 from posttroll.publisher import Publish
-import xml.etree.ElementTree as ET
-from datetime import datetime
-import os.path
+from six.moves.configparser import RawConfigParser
+from six.moves.urllib.parse import urlparse
 
-from trollsched.satpass import Pass
+from trollsched import INSTRUMENT, SATELLITE_NAMES
 from trollsched.drawing import save_fig
-from trollsched import (SATELLITE_NAMES, INSTRUMENT)
+from trollsched.satpass import Pass
 
 LOG = logging.getLogger(__name__)
 
-CFG_DIR = os.environ.get('PYTROLL_SCHEDULE_CONFIG_DIR', './')
+CFG_DIR = os.environ.get("PYTROLL_SCHEDULE_CONFIG_DIR", "./")
 CONF = RawConfigParser()
 CFG_FILE = os.path.join(CFG_DIR, "pytroll_schedule_config.cfg")
 LOG.debug("Config file = " + str(CFG_FILE))
 if not os.path.exists(CFG_FILE):
-    raise IOError('Config file %s does not exist!' % CFG_FILE)
+    raise IOError("Config file %s does not exist!" % CFG_FILE)
 
 CONF.read(CFG_FILE)
 OPTIONS = {}
@@ -60,85 +56,85 @@ for option, value in CONF.items("DEFAULT"):
 
 
 #: Default time format
-_DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+_DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 #: Default log format
-_DEFAULT_LOG_FORMAT = '[%(levelname)s: %(asctime)s : %(name)s] %(message)s'
+_DEFAULT_LOG_FORMAT = "[%(levelname)s: %(asctime)s : %(name)s] %(message)s"
 
 
 def process_xmlrequest(filename, plotdir, output_file, excluded_satellites):
-
+    """Process the xml request."""
     tree = ET.parse(filename)
     root = tree.getroot()
 
     for child in root:
-        if child.tag == 'pass':
+        if child.tag == "pass":
             LOG.debug("Pass: %s", str(child.attrib))
-            platform_name = SATELLITE_NAMES.get(child.attrib['satellite'], child.attrib['satellite'])
+            platform_name = SATELLITE_NAMES.get(child.attrib["satellite"], child.attrib["satellite"])
             instrument = INSTRUMENT.get(platform_name)
             if not instrument:
-                LOG.error('Instrument unknown! Platform = %s', platform_name)
+                LOG.error("Instrument unknown! Platform = %s", platform_name)
                 continue
 
             if platform_name in excluded_satellites:
-                LOG.debug('Platform name excluded: %s', platform_name)
+                LOG.debug("Platform name excluded: %s", platform_name)
                 continue
             try:
                 overpass = Pass(platform_name,
-                                datetime.strptime(child.attrib['start-time'],
-                                                  '%Y-%m-%d-%H:%M:%S'),
-                                datetime.strptime(child.attrib['end-time'],
-                                                  '%Y-%m-%d-%H:%M:%S'),
+                                datetime.strptime(child.attrib["start-time"],
+                                                  "%Y-%m-%d-%H:%M:%S"),
+                                datetime.strptime(child.attrib["end-time"],
+                                                  "%Y-%m-%d-%H:%M:%S"),
                                 instrument=instrument)
             except KeyError as err:
-                LOG.warning('Failed on satellite %s: %s', platform_name, str(err))
+                LOG.warning("Failed on satellite %s: %s", platform_name, str(err))
                 continue
 
             save_fig(overpass, directory=plotdir)
-            child.set('img', overpass.fig)
-            child.set('rec', 'True')
+            child.set("img", overpass.fig)
+            child.set("rec", "True")
             LOG.debug("Plot saved - plotdir = %s, platform_name = %s", plotdir, platform_name)
 
-    tree.write(output_file, encoding='utf-8', xml_declaration=True)
+    tree.write(output_file, encoding="utf-8", xml_declaration=True)
 
     with open(output_file) as fpt:
         lines = fpt.readlines()
         lines.insert(
             1, "<?xml-stylesheet type='text/xsl' href='reqreader.xsl'?>")
 
-    with open(output_file, 'w') as fpt:
+    with open(output_file, "w") as fpt:
         fpt.writelines(lines)
 
 
 def start_plotting(jobreg, message, **kwargs):
-    """Read the xmlschedule request file and make the png images of swath outlines
-    and generate the output xml file for web publication
+    """Make a web-publishable version of the xml schedule.
 
+    Read the xmlschedule request file and make the png images of swath outlines
+    and generate the output xml file for web publication.
     """
-    excluded_satellites = kwargs.get('excluded_satellites', [])
+    excluded_satellites = kwargs.get("excluded_satellites", [])
 
     LOG.info("")
     LOG.info("job-registry dict: " + str(jobreg))
     LOG.info("\tMessage:")
     LOG.info(message)
-    urlobj = urlparse(message.data['uri'])
+    urlobj = urlparse(message.data["uri"])
     # path, fname = os.path.split(urlobj.path)
 
     process_xmlrequest(urlobj.path,
-                       OPTIONS['path_plots'], OPTIONS['xmlfilepath'],
+                       OPTIONS["path_plots"], OPTIONS["xmlfilepath"],
                        excluded_satellites)
 
     return jobreg
 
 
 def schedule_page_generator(excluded_satellite_list=None):
-    """Listens and triggers processing"""
-
+    """Listens and triggers processing."""
     LOG.info(
         "*** Start the generation of the schedule xml page with swath outline plots")
-    with posttroll.subscriber.Subscribe('', [OPTIONS['posttroll_topic'], ],
+    with posttroll.subscriber.Subscribe("", [OPTIONS["posttroll_topic"], ],
                                         True) as subscr:
-        with Publish('schedule_page_generator', 0) as publisher:
+        with Publish("schedule_page_generator", 0) as publisher:
             job_registry = {}
             for msg in subscr.recv():
                 job_registry = start_plotting(
@@ -155,7 +151,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-x", "--excluded_satellites", nargs='*',
+    parser.add_argument("-x", "--excluded_satellites", nargs="*",
                         help="List of platform names to exclude",
                         default=[])
     opts = parser.parse_args()
@@ -168,11 +164,11 @@ if __name__ == "__main__":
     formatter = logging.Formatter(fmt=_DEFAULT_LOG_FORMAT,
                                   datefmt=_DEFAULT_TIME_FORMAT)
     handler.setFormatter(formatter)
-    logging.getLogger('').addHandler(handler)
-    logging.getLogger('').setLevel(logging.DEBUG)
-    logging.getLogger('posttroll').setLevel(logging.INFO)
+    logging.getLogger("").addHandler(handler)
+    logging.getLogger("").setLevel(logging.DEBUG)
+    logging.getLogger("posttroll").setLevel(logging.INFO)
 
-    LOG = logging.getLogger('schedule_page_generator')
+    LOG = logging.getLogger("schedule_page_generator")
     LOG.info("Exclude the following satellite platforms: %s", str(no_sats))
 
     schedule_page_generator(no_sats)

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, 2018 PyTroll Community
+# Copyright (c) 2014 - 2019 PyTroll Community
 
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
+#   Adam Dybbroe <adam.dybbroe@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,12 +21,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Package file.
-"""
+"""Package file."""
 
-from .version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+from . import version
+
+__version__ = version.get_versions()['version']
 
 
 # shortest allowed pass in minutes
@@ -38,8 +38,12 @@ NUMBER_OF_FOVS = {
     'avhrr': 2048,
     'mhs': 90,
     'amsua': 30,
+    'mwhs2': 98,
+    'atms': 96,
     'ascat': 42,
-    'viirs': 6400
+    'viirs': 6400,
+    'atms': 96,
+    'mwhs-2': 98
 }
 
 SATELLITE_NAMES = {'npp': 'Suomi NPP',
@@ -52,7 +56,8 @@ SATELLITE_NAMES = {'npp': 'Suomi NPP',
                    'metopb': 'Metop-B',
                    'metopa': 'Metop-A',
                    'noaa20': 'NOAA-20',
-                   'fengyun3d': 'FY-3D'
+                   'fengyun3d': 'FY-3D',
+                   'fengyun3c': 'FY-3C'
                    }
 
 INSTRUMENT = {'Suomi NPP': 'viirs',
@@ -65,4 +70,8 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'Metop-A': 'avhrr',
               'Metop-B': 'avhrr',
               'Metop-C': 'avhrr',
-              'FY-3D': 'avhrr'}
+              'FY-3D': 'avhrr',
+              'FY-3C': 'avhrr'}
+
+from . import version
+__version__ = version.get_versions()['version']

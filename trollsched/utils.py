@@ -22,16 +22,14 @@
 
 """Utility functions and config reading for the pytroll-scheduler
 """
+import warnings
 
 import yaml
 import logging
-from collections import Mapping
-from six.moves.configparser import ConfigParser
+from collections.abc import Mapping
+from configparser import ConfigParser
 
-try:
-    from trollsched import schedule
-except ImportError:
-    import schedule
+from trollsched import schedule
 
 
 logger = logging.getLogger("trollsched")
@@ -44,13 +42,14 @@ def read_yaml_file(file_name):
     conf_dict = {}
     for file_obj in file_name:
         with open(file_obj) as fp:
-            tmp_dict = yaml.load(fp)
+            tmp_dict = yaml.safe_load(fp)
         conf_dict = recursive_dict_update(conf_dict, tmp_dict)
     return conf_dict
 
 
 def recursive_dict_update(d, u):
     """Recursive dictionary update.
+
     Copied from:
         http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
     """
@@ -67,55 +66,9 @@ def read_config(filename):
     try:
         return read_config_yaml(filename)
     except yaml.parser.ParserError as e:
-        return read_config_cfg(filename)
-
-
-def read_config_cfg(filename):
-    """Read the config file *filename* and replace the values in global
-    variables.
-    """
-    cfg = ConfigParser()
-    cfg.read(filename)
-
-    def read_cfg_opts(section):
-        """Read the option:value pairs in one section,
-        converting value to int/float if applicable.
-        """
-        kv_dict = {}
-        for k, v in cfg.items(section):
-            try:
-                kv_dict[k] = int(v)
-            except:
-                try:
-                    kv_dict[k] = float(v)
-                except:
-                    kv_dict[k] = v
-        return kv_dict
-
-    default_params = read_cfg_opts("default")
-    pattern = {}
-    for k, v in cfg.items("pattern"):
-        pattern[k] = v
-    station_list = []
-    for station_id in default_params["station"].split(","):
-        station_params = read_cfg_opts(station_id)
-        satellites = cfg.get(station_id, "satellites").split(",")
-        sat_list = []
-        for sat_name in satellites:
-            sat_list.append(schedule.Satellite(sat_name,
-                                               **read_cfg_opts(sat_name)
-                                               ))
-        new_station = schedule.Station(station_id, **station_params)
-        new_station.satellites = sat_list
-        station_list.append(new_station)
-    scheduler = schedule.Scheduler(stations=station_list,
-                                   min_pass=default_params.get("min_pass", 4),
-                                   forward=default_params.get("forward"),
-                                   start=default_params.get("start"),
-                                   dump_url=default_params.get("dump_url", None),
-                                   patterns=pattern,
-                                   center_id=default_params.get("center_id", "unknown"))
-    return scheduler
+        logger.error("INI format for scheduler config is deprecated since v0.3.4, "
+                     "please update your configuration to YAML.")
+        raise
 
 
 def read_config_yaml(filename):
@@ -145,6 +98,9 @@ def read_config_yaml(filename):
         pattern[k] = v
 
     sched_params = cfg['default']
+    plot_parameters = sched_params.get('plot_parameters', {})
+    plot_title = sched_params.get('plot_title', None)
+
     scheduler = schedule.Scheduler(stations=[stations[st_id]
                                              for st_id in sched_params['station']],
                                    min_pass=sched_params.get('min_pass', 4),
@@ -152,6 +108,8 @@ def read_config_yaml(filename):
                                    start=sched_params['start'],
                                    dump_url=sched_params.get('dump_url'),
                                    patterns=pattern,
-                                   center_id=sched_params.get('center_id', 'unknown'))
+                                   center_id=sched_params.get('center_id', 'unknown'),
+                                   plot_parameters=plot_parameters,
+                                   plot_title=plot_title)
 
     return scheduler
