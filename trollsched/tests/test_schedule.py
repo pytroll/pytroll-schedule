@@ -28,9 +28,10 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from trollsched.satpass import get_aqua_terra_dumps, get_metopa_passes, get_next_passes
-from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib
+from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib, run
 
 
 class TestTools:
@@ -312,3 +313,67 @@ class TestAll:
             assert metopa_passes[0].seconds() == pytest.approx(487.512589, 1e-5)
             assert (metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds == 0
             assert (metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds == 0
+
+
+euron1 = """euron1:
+  description: Northern Europe - 1km
+  projection:
+    proj: stere
+    ellps: WGS84
+    lat_0: 90.0
+    lon_0: 0.0
+    lat_ts: 60.0
+  shape:
+    height: 3072
+    width: 3072
+  area_extent:
+    lower_left_xy: [-1000000.0, -4500000.0]
+    upper_right_xy: [2072000.0, -1428000.0]
+"""
+
+
+
+def test_pyorbitals_platform_name(tmp_path):
+    """Test that using pyorbital's platform name allows spurious names in the TLE data."""
+    spurious_tle = ("NOAA 20 (JPSS-1)\n"
+                    "1 43013U 17073A   24093.57357837  .00000145  00000+0  86604-4 0  9999\n"
+                    "2 43013  98.7039  32.7741 0007542 324.8026  35.2652 14.21254587330172\n")
+
+
+    config_file = tmp_path / "config.yaml"
+    tle_file = tmp_path / "test.tle"
+    area_file = tmp_path / "areas.yaml"
+    sched_file = tmp_path / "mysched.xml"
+
+    with open(area_file, "w") as fd:
+        fd.write(euron1)
+
+    with open(tle_file, "w") as fd:
+        fd.write(spurious_tle)
+
+
+    config = dict(default=dict(station=["nrk"],
+                               forward=12,
+                               start=0,
+                               center_id="SMHI"),
+                  stations=dict(nrk=dict(name="nrk",
+                                         longitude=16,
+                                         latitude=58,
+                                         altitude=0,
+                                         satellites=["noaa-20"],
+                                         area="euron1",
+                                         area_file=os.fspath(area_file))),
+
+                  pattern=dict(dir_output=os.fspath(tmp_path),
+                               file_xml=os.fspath(sched_file)),
+                  satellites={"noaa-20": dict(schedule_name="noaa20",
+                                                       international_designator="43013",
+                                                       night=0.4,
+                                                       day=0.9)}
+                   )
+
+    with open(config_file, "w") as fd:
+        fd.write(yaml.dump(config))
+
+    run(["-c", os.fspath(config_file), "-x", "-t", os.fspath(tle_file)])
+    assert sched_file in tmp_path.iterdir()
