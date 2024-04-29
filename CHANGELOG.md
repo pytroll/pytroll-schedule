@@ -1,3 +1,35 @@
+###############################################################################
+## Version 0.7.1 (2024/02/16)
+
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 85](https://github.com/pytroll/pytroll-schedule/pull/85) - Update CI Python versions
+* [PR 84](https://github.com/pytroll/pytroll-schedule/pull/84) - Update versioneer
+
+In this release 2 pull requests were closed.
+
+## Version 0.7.0 (2023/06/21)
+
+### Issues Closed
+
+* [Issue 74](https://github.com/pytroll/pytroll-schedule/issues/74) - numpy 1.24.0 np.bool removed needs cleanup ([PR 72](https://github.com/pytroll/pytroll-schedule/pull/72) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 68](https://github.com/pytroll/pytroll-schedule/issues/68) - Test failure with PyResample 1.23 ([PR 72](https://github.com/pytroll/pytroll-schedule/pull/72) by [@mraspaud](https://github.com/mraspaud))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 72](https://github.com/pytroll/pytroll-schedule/pull/72) - Start refactoring pytroll schedule ([74](https://github.com/pytroll/pytroll-schedule/issues/74), [68](https://github.com/pytroll/pytroll-schedule/issues/68))
+* [PR 71](https://github.com/pytroll/pytroll-schedule/pull/71) - Create dependabot.yml
+
+In this release 2 pull requests were closed.
+
+
 ## Version 0.6.0 (2021/12/09)
 
 ### Issues Closed
@@ -18,7 +50,7 @@ In this release 7 issues were closed.
 
 * [PR 61](https://github.com/pytroll/pytroll-schedule/pull/61) - Allow `mersi-2` as instrument name ([59](https://github.com/pytroll/pytroll-schedule/issues/59))
 * [PR 56](https://github.com/pytroll/pytroll-schedule/pull/56) - Remove a bug introduced in PR38 ([52](https://github.com/pytroll/pytroll-schedule/issues/52))
-* [PR 51](https://github.com/pytroll/pytroll-schedule/pull/51) - Remove some redundant code and fix a failed unit test. 
+* [PR 51](https://github.com/pytroll/pytroll-schedule/pull/51) - Remove some redundant code and fix a failed unit test.
 * [PR 45](https://github.com/pytroll/pytroll-schedule/pull/45) - Use recent ssl protocol for older python versions
 * [PR 38](https://github.com/pytroll/pytroll-schedule/pull/38) - Fix S3 olci scan duration
 

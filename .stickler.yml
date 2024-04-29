@@ -10,4 +10,4 @@ files:
     ignore:
         - 'docs/Makefile'
         - 'docs/make.bat'
-        
+
