@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019 PyTroll Community
+# Copyright (c) 2014 - 2019, 2022, 2023 PyTroll Community
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
@@ -43,11 +43,12 @@ from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
 
-VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
-                        "NOAA-20", "NOAA 20"]
-MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
-MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
-                         "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
+VIIRS_PLATFORM_NAMES = ['SUOMI NPP', 'SNPP',
+                        'NOAA-20', 'NOAA 20']
+MERSI_PLATFORM_NAMES = ['FENGYUN 3C', 'FENGYUN-3C', 'FY-3C']
+MERSI2_PLATFORM_NAMES = ['FENGYUN 3D', 'FENGYUN-3D', 'FY-3D',
+                         'FENGYUN 3E', 'FENGYUN-3E', 'FY-3E']
+AWS_PLATFORM_NAMES = ['AWS-1', 'AWS-2', 'AWS-3', 'AWS-4']
 
 
 class SimplePass:
@@ -579,6 +580,8 @@ def get_next_passes(satellites,
                 instrument = "mersi"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
                 instrument = "mersi-2"
+            elif sat.name.upper() in AWS_PLATFORM_NAMES:
+                instrument = "mhs"  # Choose MHS for the AWS instrument for now. FIXME!
             else:
                 instrument = "unknown"
 
