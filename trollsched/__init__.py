@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019 PyTroll Community
+# Copyright (c) 2014 - 2023 PyTroll Community
 
 # Author(s):
 
@@ -31,8 +31,10 @@ __version__ = version.get_versions()['version']
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
-# DRL still use the name JPSS-1 in the TLEs:
-NOAA20_NAME = {'NOAA-20': 'JPSS-1'}
+# DRL still use the name JPSS-1 (etc) instead of NOAA-20 in the TLEs:
+JPSS_TLE_NAMES = {'NOAA-20': 'JPSS-1',
+                  'NOAA-21': 'JPSS-2',
+                  'NOAA-22': 'JPSS-3'}
 
 NUMBER_OF_FOVS = {
     'avhrr': 2048,
@@ -56,12 +58,16 @@ SATELLITE_NAMES = {'npp': 'Suomi NPP',
                    'metopb': 'Metop-B',
                    'metopa': 'Metop-A',
                    'noaa20': 'NOAA-20',
+                   'noaa21': 'NOAA-21',
+                   'noaa22': 'NOAA-22',
                    'fengyun3d': 'FY-3D',
                    'fengyun3c': 'FY-3C'
                    }
 
 INSTRUMENT = {'Suomi NPP': 'viirs',
               'NOAA-20': 'viirs',
+              'NOAA-21': 'viirs',
+              'NOAA-22': 'viirs',
               'Aqua': 'modis',
               'Terra': 'modis',
               'NOAA 19': 'avhrr',

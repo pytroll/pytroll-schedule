@@ -20,19 +20,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Graph manipulation.
-"""
+"""Graph manipulation."""
 import numpy as np
 
 
-class Graph(object):
+class Graph():
+    """A graph class."""
 
     def __init__(self, n_vertices=None, adj_matrix=None):
+        """Set up the graph."""
         if n_vertices is not None:
             self.order = n_vertices
             self.vertices = np.arange(self.order)
-            self.adj_matrix = np.zeros((self.order, self.order), np.bool)
-            self.weight_matrix = np.zeros((self.order, self.order), np.float)
+            self.adj_matrix = np.zeros((self.order, self.order), bool)
+            self.weight_matrix = np.zeros((self.order, self.order), float)
         elif adj_matrix is not None:
             self.order = adj_matrix.shape[0]
             self.vertices = np.arange(self.order)
@@ -40,26 +41,27 @@ class Graph(object):
             self.weight_matrix = np.zeros_like(adj_matrix)
 
     def weight(self, u, v):
-        """weight of the *u*-*v* edge.
-        """
+        """Weight of the *u*-*v* edge."""
         return self.weight_matrix[u, v]
 
     def neighbours(self, v):
+        """Find neighbours."""
         return self.vertices[self.adj_matrix[v, :] != 0]
 
     def add_edge(self, v1, v2, weight=1):
+        """Add an edge."""
         self.weight_matrix[v1, v2] = weight
         self.weight_matrix[v2, v1] = weight
         self.adj_matrix[v1, v2] = True
         self.adj_matrix[v2, v1] = True
 
     def add_arc(self, v1, v2, weight=1):
+        """Add an arc."""
         self.adj_matrix[v1, v2] = True
         self.weight_matrix[v1, v2] = weight
 
     def bron_kerbosch(self, r, p, x):
-        """Get the maximal cliques.
-        """
+        """Get the maximal cliques."""
         if len(p) == 0 and len(x) == 0:
             yield r
         for v in p:
@@ -71,7 +73,9 @@ class Graph(object):
             x = x | set((v, ))
 
     def dag_longest_path(self, v1, v2=None):
-        """Give the longest path from *v1* to all other vertices or *v2* if
+        """Find the longest path between v1 and v2.
+
+        Give the longest path from *v1* to all other vertices or *v2* if
         specified. Assumes the vertices are sorted topologically and that the
         graph is directed and acyclic (DAG).
         """
@@ -81,7 +85,9 @@ class Graph(object):
         return dist, path
 
     def dag_shortest_path(self, v1, v2=None):
-        """Give the sortest path from *v1* to all other vertices or *v2* if
+        """Find the shortest path between v1 and v2.
+
+        Give the shortest path from *v1* to all other vertices or *v2* if
         specified. Assumes the vertices are sorted topologically and that the
         graph is directed and acyclic (DAG). *v1* and *v2* are the indices of
         the vertices in the vertice list.
@@ -111,11 +117,13 @@ class Graph(object):
             return dists[v2], path
 
     def save(self, filename):
+        """Save a file."""
         np.savez_compressed(filename,
                             adj=self.adj_matrix,
                             weights=self.weight_matrix)
 
     def load(self, filename):
+        """Load a file."""
         stuff = np.load(filename)
         self.adj_matrix = stuff["adj"]
         self.weight_matrix = stuff["weights"]
@@ -123,10 +131,9 @@ class Graph(object):
         self.vertices = np.arange(self.order)
 
     def export(self, filename="./sched.gv", labels=None):
-        """dot sched.gv -Tpdf -otruc.pdf
-        """
+        """dot sched.gv -Tpdf -otruc.pdf."""
         with open(filename, "w") as fd_:
-            fd_.write("digraph schedule { \n size=\"80, 10\";\n center=\"1\";\n")
+            fd_.write('digraph schedule { \n size="80, 10";\n center="1";\n')
             for v1 in range(1, self.order - 1):
                 for v2 in range(1, self.order - 1):
                     if self.adj_matrix[v1, v2]:

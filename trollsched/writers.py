@@ -80,7 +80,8 @@ def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_
 
 def generate_xml_requests(sched, start, end, station_name, center_id, report_mode=False):
     """Create xml requests."""
-    import defusedxml.ElementTree as ET
+    # defusedxml is not needed here as we only generate an xml file (ie no reading of potentially harmful data)
+    from xml.etree import ElementTree as ET  # noqa
 
     reqtime = datetime.utcnow()
     time_format = "%Y-%m-%d-%H:%M:%S"
