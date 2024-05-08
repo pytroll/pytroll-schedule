@@ -31,7 +31,7 @@ import pytest
 import yaml
 
 from trollsched.satpass import get_aqua_terra_dumps, get_metopa_passes, get_next_passes
-from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib, run
+from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib, run, get_passes_from_xml_file
 
 
 class TestTools:
@@ -377,3 +377,64 @@ def test_pyorbitals_platform_name(tmp_path):
 
     run(["-c", os.fspath(config_file), "-x", "-t", os.fspath(tle_file)])
     assert sched_file in tmp_path.iterdir()
+
+avoid="""<?xml version="1.0"?>
+<acquisition-schedule>
+  <pass satellite="noaa-20" start-time="2024-05-08-05:05:17" end-time="2024-05-08-05:14:57"/>
+</acquisition-schedule>
+"""
+#  <pass satellite="noaa-20" start-time="2024-05-08-22:05:40" end-time="2024-05-08-22:13:31"/>
+
+def test_schedule_avoid(tmp_path):
+    """Test that schedule can handle avoid list."""
+    tle = ("NOAA 20\n"
+           "1 43013U 17073A   24093.57357837  .00000145  00000+0  86604-4 0  9999\n"
+           "2 43013  98.7039  32.7741 0007542 324.8026  35.2652 14.21254587330172\n")
+
+    config_file = tmp_path / "config.yaml"
+    tle_file = tmp_path / "test.tle"
+    area_file = tmp_path / "areas.yaml"
+    sched_file = tmp_path / "sched-with-avoid.xml"
+    avoid_file = tmp_path / "avoid.xml"
+
+    with open(area_file, "w") as fd:
+        fd.write(euron1)
+
+    with open(tle_file, "w") as fd:
+        fd.write(tle)
+
+    with open(avoid_file, "w") as fd:
+        fd.write(avoid)
+
+    config = dict(default=dict(station=["nrk"],
+                               forward=12,
+                               start=0,
+                               center_id="SMHI"),
+                  stations=dict(nrk=dict(name="nrk",
+                                         longitude=16,
+                                         latitude=58,
+                                         altitude=0,
+                                         satellites=["noaa-20"],
+                                         area="euron1",
+                                         area_file=os.fspath(area_file))),
+
+                  pattern=dict(dir_output=os.fspath(tmp_path),
+                               file_xml=os.fspath(sched_file)),
+                  satellites={"noaa-20": dict(schedule_name="noaa-20",
+                                                       international_designator="43013",
+                                                       night=0.4,
+                                                       day=0.9)}
+                   )
+
+    with open(config_file, "w") as fd:
+        fd.write(yaml.dump(config))
+
+    start_time = datetime(2024,5,8,0,0,0)
+    run(["-c", os.fspath(config_file), "-x", "-v", "-t", os.fspath(tle_file),
+         "--start-time", start_time.strftime("%Y-%m-%dT%H:%M:%S"), "--avoid", os.fspath(avoid_file)])
+    assert sched_file in tmp_path.iterdir()
+
+    sched_file_passes = get_passes_from_xml_file([sched_file])
+    avoid_file_passes = get_passes_from_xml_file([avoid_file])
+    for avoid_pass in avoid_file_passes:
+        assert avoid_pass not in sched_file_passes
