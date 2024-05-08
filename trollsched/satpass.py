@@ -113,8 +113,8 @@ class SimplePass:
 
     def __str__(self):
         """Give a string version of the pass."""
-        return (self.satellite.name + " " + self.risetime.isoformat() + " " +
-                self.falltime.isoformat())
+        return (self.satellite.name + " " + self.risetime.isoformat(timespec='seconds') + " " +
+                self.falltime.isoformat(timespec='seconds'))
 
     def __repr__(self):
         """Represent the pass."""
