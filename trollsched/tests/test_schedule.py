@@ -380,16 +380,18 @@ def test_pyorbitals_platform_name(tmp_path):
 
 avoid="""<?xml version="1.0"?>
 <acquisition-schedule>
-  <pass satellite="noaa-20" start-time="2024-05-08-05:05:17" end-time="2024-05-08-05:14:57"/>
+  <pass satellite="suomi npp" start-time="2024-05-08-03:57:01" end-time="2024-05-08-04:09:35"/>
 </acquisition-schedule>
 """
-#  <pass satellite="noaa-20" start-time="2024-05-08-22:05:40" end-time="2024-05-08-22:13:31"/>
 
 def test_schedule_avoid(tmp_path):
     """Test that schedule can handle avoid list."""
-    tle = ("NOAA 20\n"
-           "1 43013U 17073A   24093.57357837  .00000145  00000+0  86604-4 0  9999\n"
-           "2 43013  98.7039  32.7741 0007542 324.8026  35.2652 14.21254587330172\n")
+    tle = ("SUOMI NPP\n"
+           "1 37849U 11061A   24128.72979065  .00000000  00000+0  12832-3 0 00014\n"
+           "2 37849  98.7205  67.3215 0001498  76.6175 303.3589 14.19560637649138\n"
+           "NOAA 20\n"
+           "1 37849U 11061A   24128.72979065  .00000000  00000+0  12832-3 0 00014\n"
+           "2 37849  98.7205  67.3215 0001498  76.6175 303.3589 14.19560637649138\n")
 
     config_file = tmp_path / "config.yaml"
     tle_file = tmp_path / "test.tle"
@@ -414,16 +416,20 @@ def test_schedule_avoid(tmp_path):
                                          longitude=16,
                                          latitude=58,
                                          altitude=0,
-                                         satellites=["noaa-20"],
+                                         satellites=["suomi npp","noaa 20"],
                                          area="euron1",
                                          area_file=os.fspath(area_file))),
 
                   pattern=dict(dir_output=os.fspath(tmp_path),
                                file_xml=os.fspath(sched_file)),
-                  satellites={"noaa-20": dict(schedule_name="noaa-20",
-                                                       international_designator="43013",
-                                                       night=0.4,
-                                                       day=0.9)}
+                  satellites={"suomi npp": dict(schedule_name="suomi npp",
+                                              international_designator="37849",
+                                              night=0.4,
+                                              day=0.9),
+                              "noaa 20": dict(schedule_name="noaa 20",
+                                           international_designator="99999",
+                                           night=0.4,
+                                           day=0.9)}
                    )
 
     with open(config_file, "w") as fd:
