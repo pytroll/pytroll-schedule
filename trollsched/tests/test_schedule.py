@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019 PyTroll
+# Copyright (c) 2014 - 2024 Pytroll
 
 # Author(s):
 
@@ -89,7 +89,7 @@ class TestAll:
         """Set up."""
         from pyorbital import orbital
 
-        from trollsched.schedule import Satellite
+        from trollsched.pass_scheduling_utils import Satellite
 
         self.utctime = datetime(2018, 11, 28, 10, 0)
         self.satellites = ["noaa-20", ]

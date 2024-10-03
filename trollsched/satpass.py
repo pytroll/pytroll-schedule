@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019, 2023 PyTroll Community
+# Copyright (c) 2014 - 2024 Pytroll Community
 # Author(s):
 
 #   Martin Raspaud <martin.raspaud@smhi.se>
@@ -35,20 +35,26 @@ from tempfile import gettempdir, mkstemp
 from urllib.parse import urlparse
 
 import numpy as np
-from pyorbital import orbital, tlefile
+from pyorbital import orbital
+from pyorbital import tlefile
 from pyresample.boundary import AreaDefBoundary
 
+from trollsched.pass_scheduling_utils import Satellite
 from trollsched import MIN_PASS, JPSS_TLE_NAMES, NUMBER_OF_FOVS
+from trollsched import (VIIRS_PLATFORM_NAMES, MERSI_PLATFORM_NAMES,
+                        MERSI2_PLATFORM_NAMES)
+from trollsched import SATELLITE_MEOS_TRANSLATION
+
 from trollsched.boundary import SwathBoundary
 
 logger = logging.getLogger(__name__)
 
-VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
-                        "NOAA-20", "NOAA 20"]
-MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
-MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
-                         "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
 
+def create_pass(satname, instrument, starttime, endtime, tle_filename=None):
+    """Create a satellite pass given a start and an endtime."""
+    tle = tlefile.Tle(satname, tle_file=tle_filename)
+    cpass = Pass(satname, starttime, endtime, instrument=instrument, tle1=tle.line1, tle2=tle.line2)
+    return cpass
 
 class SimplePass:
     """A pass: satellite, risetime, falltime, (orbital)."""
@@ -58,7 +64,6 @@ class SimplePass:
     def __init__(self, satellite, risetime, falltime):
         """Initialize the simple pass."""
         if not hasattr(satellite, "name"):
-            from trollsched.schedule import Satellite
             self.satellite = Satellite(satellite, 0, 0)
         else:
             self.satellite = satellite
@@ -293,20 +298,11 @@ class Pass(SimplePass):
         dur_minutes, dur_seconds = divmod(dur_reminder, 60)
         duration = "{:0>2}:{:0>2}".format(dur_minutes, dur_seconds)
 
-        satellite_meos_translation = {"NOAA 19": "NOAA_19",
-                                      "NOAA 18": "NOAA_18",
-                                      "NOAA 15": "NOAA_15",
-                                      "METOP-A": "M02",
-                                      "METOP-B": "M01",
-                                      "FENGYUN 3A": "FENGYUN-3A",
-                                      "FENGYUN 3B": "FENGYUN-3B",
-                                      "FENGYUN 3C": "FENGYUN-3C",
-                                      "SUOMI NPP": "NPP"}
 
         import hashlib
 
         pass_key = hashlib.md5(("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".  # noqa : md5 is insecure, but not sensitive here.
-                                format(satellite_meos_translation.get(self.satellite.name.upper(),
+                                format(SATELLITE_MEOS_TRANSLATION.get(self.satellite.name.upper(),
                                                                       self.satellite.name.upper()),
                                        int(orbit),
                                        aos_epoch,
@@ -333,7 +329,7 @@ class Pass(SimplePass):
             # line_no=line_no,
             line_no=1,
             date=self.risetime.strftime("%Y%m%d"),
-            satellite=satellite_meos_translation.get(self.satellite.name.upper(),
+            satellite=SATELLITE_MEOS_TRANSLATION.get(self.satellite.name.upper(),
                                                      self.satellite.name.upper()),
             orbit=orbit,
             elevation=max_elevation,
@@ -551,7 +547,6 @@ def get_next_passes(satellites,
 
     for sat in satellites:
         if not hasattr(sat, "name"):
-            from trollsched.schedule import Satellite
             sat = Satellite(sat, 0, 0)
 
         satorb = orbital.Orbital(sat.name, tle_file=tle_file)

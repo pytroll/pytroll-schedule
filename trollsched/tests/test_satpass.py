@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 - 2021 Pytroll-schedule developers
+# Copyright (c) 2018 - 2024 Pytroll-schedule developers
 
 # Author(s):
 
@@ -22,16 +22,17 @@
 
 """Test the satellite pass and swath boundary classes."""
 
-from datetime import datetime, timedelta
-
-import numpy as np
 import numpy.testing
 import pytest
+from datetime import datetime, timedelta
+import numpy as np
 from pyorbital.orbital import Orbital
 from pyresample.geometry import AreaDefinition, create_area_def
 
 from trollsched.boundary import SwathBoundary
 from trollsched.satpass import Pass
+from trollsched.satpass import create_pass
+
 
 LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   143.1730880418349, 105.69172088208997, 93.03135571771092,
@@ -414,3 +415,49 @@ class TestPassList:
     def tearDown(self):
         """Clean up."""
         pass
+
+
+@pytest.mark.usefixtures("fake_tle_file")
+def test_create_pass(fake_tle_file):
+    """Test creating a pass given a start and an end-time, platform, instrument and TLE-filepath."""
+    starttime = datetime(2024, 9, 17, 1, 25, 52)
+    endtime = starttime + timedelta(minutes=15)
+    apass = create_pass("NOAA-20", "viirs", starttime, endtime, str(fake_tle_file))
+
+    assert isinstance(apass, Pass)
+    assert apass.risetime == datetime(2024, 9, 17, 1, 25, 52)
+    assert apass.falltime == datetime(2024, 9, 17, 1, 40, 52)
+    contours = apass.boundary.contour()
+
+    np.testing.assert_array_almost_equal(contours[0], np.array([
+        -70.36110203, -67.46084331, -37.31525344,  15.33742429,
+        45.70673859,  58.20758754,  64.53232683,  68.33939709,
+        70.91122142,  72.79385654,  74.25646605,  75.44689972,
+        76.45347206,  77.33271412,  78.12312657,  78.85259555,
+        79.5427448 ,  80.21178505,  80.87674043,  81.55576564,
+        82.27163678,  83.05937724,  83.99111296,  84.1678927 ,
+        71.14095118,  59.65602344,  50.0921629 ,  42.33689333,
+        36.07906912,  30.99289682,  26.80566985,  23.30761782,
+        17.5195915 ,  16.76660935,  13.3562137 ,  11.05669417,
+         9.31517975,   7.90416741,   6.70609822,   5.65154688,
+         4.69542071,   3.80603134,   2.95939777,   2.13592964,
+         1.31825077,   0.48953714,  -0.3680201 ,  -1.27496102,
+        -2.25693369,  -3.34841058,  -4.59918301,  -6.08698296,
+        -7.94529693, -10.43647307, -14.21005445, -15.07433768,
+       -14.49280142, -14.53229624, -14.87821968, -15.67970647,
+        -17.21558546, -20.06333116, -25.60407459, -37.83432182], dtype='float64'))
+
+    np.testing.assert_array_almost_equal(contours[1], np.array([
+        84.33463271, 84.996855  , 87.51595932, 87.91311185, 87.0788011 ,
+        86.08609579, 85.16108707, 84.31800847, 83.54109034, 82.81224557,
+        82.11521918, 81.4355823 , 80.75994129, 80.07498982, 79.36644307,
+        78.61771056, 77.80801807, 76.90942731, 75.88160126, 74.66160838,
+        73.14141261, 71.10852475, 68.03499509, 67.34603232, 66.29582898,
+        64.22360654, 61.34855651, 57.88332007, 53.99536906, 49.80456636,
+        45.39366513, 40.81954787, 30.76199763, 30.98222964, 31.91529108,
+        32.48607791, 32.88793494, 33.1947272 , 33.44223661, 33.65034541,
+        33.8311831 , 33.99269414, 34.14039982, 34.27835064, 34.40968082,
+        34.53695383, 34.66239272, 34.78804435, 34.91590262, 35.047996  ,
+        35.18641366, 35.33315856, 35.48940778, 35.65238903, 35.79943487,
+        35.81635723, 46.51491314, 51.61438345, 56.69722991, 61.75596299,
+        66.7771717 , 71.73310959, 76.55555826, 81.03181048], dtype='float64'))

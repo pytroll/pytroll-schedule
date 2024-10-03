@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2017, 2018 Alexander Maul
+# Copyright (c) 2017, 2018, 2024 Alexander Maul
 #
 # Author(s):
 #
@@ -30,6 +30,7 @@ from collections.abc import Mapping
 from configparser import ConfigParser
 
 from trollsched import schedule
+from trollsched.pass_scheduling_utils import Satellite
 
 
 logger = logging.getLogger("trollsched")
@@ -73,9 +74,8 @@ def read_config(filename):
 
 def read_config_yaml(filename):
     """Read the yaml file *filename* and create a scheduler."""
-
     cfg = read_yaml_file(filename)
-    satellites = {sat_name: schedule.Satellite(sat_name, **sat_params)
+    satellites = {sat_name: Satellite(sat_name, **sat_params)
                   for (sat_name, sat_params) in cfg["satellites"].items()}
 
     stations = {}
@@ -86,7 +86,7 @@ def read_config_yaml(filename):
                 if sat_params is None:
                     sat_list.append(satellites[sat_name])
                 else:
-                    sat_list.append(schedule.Satellite(sat_name, **sat_params))
+                    sat_list.append(Satellite(sat_name, **sat_params))
         else:
             sat_list = [satellites[sat_name] for sat_name in station['satellites']]
         new_station = schedule.Station(station_id, **station)

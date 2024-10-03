@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2023 PyTroll Community
+# Copyright (c) 2014 - 2024 PyTroll Community
 
 # Author(s):
 
@@ -22,10 +22,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Package file."""
-
-from . import version
-
-__version__ = version.get_versions()['version']
 
 
 # shortest allowed pass in minutes
@@ -79,5 +75,18 @@ INSTRUMENT = {'Suomi NPP': 'viirs',
               'FY-3D': 'avhrr',
               'FY-3C': 'avhrr'}
 
-from . import version
-__version__ = version.get_versions()['version']
+VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
+                        "NOAA-20", "NOAA 20"]
+MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
+MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
+                         "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
+
+SATELLITE_MEOS_TRANSLATION = {"NOAA 19": "NOAA_19",
+                              "NOAA 18": "NOAA_18",
+                              "NOAA 15": "NOAA_15",
+                              "METOP-A": "M02",
+                              "METOP-B": "M01",
+                              "FENGYUN 3A": "FENGYUN-3A",
+                              "FENGYUN 3B": "FENGYUN-3B",
+                              "FENGYUN 3C": "FENGYUN-3C",
+                              "SUOMI NPP": "NPP"}

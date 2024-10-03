@@ -1,4 +1,4 @@
-# Copyright (c) 2013 - 2019 PyTroll
+# Copyright (c) 2013 - 2024 Pytroll community
 
 # Author(s):
 
@@ -30,14 +30,11 @@ from urllib.parse import urlparse
 import numpy as np
 from pyorbital import astronomy
 
-from trollsched.writers import generate_meos_file, generate_metno_xml_file, generate_sch_file, generate_xml_file
-
-try:
-    from pyresample import parse_area_file
-except ImportError:
-    # Older versions of pyresample:
-    from pyresample.utils import parse_area_file
-
+from trollsched.writers import (generate_meos_file,
+                                generate_metno_xml_file,
+                                generate_sch_file,
+                                generate_xml_file)
+from pyresample import parse_area_file
 
 from trollsched import MIN_PASS, utils
 from trollsched.combine import get_combined_sched
@@ -210,26 +207,6 @@ class Station:
         logger.debug(str(sorted(allpasses, key=lambda x: x.risetime)))
         return allpasses
 
-
-class SatScore:
-    """docstring for SatScore."""
-
-    def __init__(self, day, night):
-        """Initialize the score."""
-        self.day = day
-        self.night = night
-
-
-class Satellite:
-    """docstring for Satellite."""
-
-    def __init__(self, name, day, night,
-                 schedule_name=None, international_designator=None):
-        """Initialize the satellite."""
-        self.name = name
-        self.international_designator = international_designator
-        self.score = SatScore(day, night)
-        self.schedule_name = schedule_name or name
 
 
 class Scheduler:
