@@ -25,6 +25,7 @@ classifiers = [
 
 [project.scripts]
 schedule = "trollsched.schedule:run"
+create_shapefiles_from_schedule = "trollsched.shapefiles_from_schedule:run"
 compare_scheds = "trollsched.compare:run"
 
 
