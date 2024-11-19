@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014-2019 PyTroll community
+# Copyright (c) 2014-2024 PyTroll community
 
 # Author(s):
 
@@ -37,6 +37,9 @@ INSTRUMENT = {"avhrr/3": "avhrr",
               "avhrr/2": "avhrr",
               "avhrr-3": "avhrr",
               "mwhs-2": "mwhs2"}
+
+class InstrumentNotSupported(Exception):
+    """Exception to capture cases when instrument are (yet) not supported."""
 
 
 class SwathBoundary(Boundary):
@@ -79,7 +82,7 @@ class SwathBoundary(Boundary):
             scan_angle = 55.4
             instrument = "avhrr"
         elif instrument.startswith("slstr"):
-            instrument = "slstr"
+            raise InstrumentNotSupported("SLSTR is a conical scanner, and currently not supported!")
         elif overpass.satellite.name.startswith("aws"):
             scan_angle = 55.25
             instrument = "avhrr"

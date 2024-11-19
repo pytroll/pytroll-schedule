@@ -505,19 +505,20 @@ def save_passes(allpasses, poly, output_dir, plot_parameters=None, plot_title=No
     logger.info("All plots saved!")
 
 
-def get_passes_from_xml_file(filename):
-    """Read passes from aquisition xml file."""
+def get_passes_from_xml_file(filenames):
+    """Read passes from aquisition xml files."""
     import defusedxml.ElementTree as ET
-    tree = ET.parse(filename)
-    root = tree.getroot()
     pass_list = []
-    for overpass in root.iter("pass"):
-        start_time = datetime.strptime(
-            overpass.attrib["start-time"], "%Y-%m-%d-%H:%M:%S")
-        end_time = datetime.strptime(
-            overpass.attrib["end-time"], "%Y-%m-%d-%H:%M:%S")
-        pass_list.append(SimplePass(
-            overpass.attrib["satellite"], start_time, end_time))
+    for filename in filenames:
+        tree = ET.parse(filename)
+        root = tree.getroot()
+        for overpass in root.iter("pass"):
+            start_time = datetime.strptime(
+                overpass.attrib["start-time"], "%Y-%m-%d-%H:%M:%S")
+            end_time = datetime.strptime(
+                overpass.attrib["end-time"], "%Y-%m-%d-%H:%M:%S")
+            pass_list.append(SimplePass(
+                overpass.attrib["satellite"], start_time, end_time))
     return pass_list
 
 
@@ -535,7 +536,7 @@ def send_file(url, file):
     """Send a file through ftp."""
     pathname, filename = os.path.split(file)
     del pathname
-    if url.scheme in ["file", ""]:
+    if url.scheme in ["file", "", b""]:
         pass
     elif url.scheme in ["ftp", b"ftp"]:
         import ftplib
@@ -820,7 +821,9 @@ def parse_args(args=None):
     group_spec = parser.add_argument_group(title="special",
                                            description="(additional parameter changing behaviour)")
     group_spec.add_argument("-a", "--avoid",
-                            help="xml request file with passes to avoid")
+                            default=[],
+                            nargs='*',
+                            help="xml request file(s) with passes to avoid")
     group_spec.add_argument("--no-aqua-terra-dump", action="store_false",
                             help="do not consider Aqua/Terra-dumps")
     group_spec.add_argument("--multiproc", action="store_true",
