@@ -30,6 +30,7 @@ from pyorbital.orbital import Orbital
 from pyresample.geometry import AreaDefinition, create_area_def
 
 from trollsched.boundary import SwathBoundary
+from trollsched.boundary import InstrumentNotSupported
 from trollsched.satpass import Pass
 from trollsched.satpass import create_pass
 
@@ -343,6 +344,22 @@ class TestSwathBoundary:
         cov = mypass.area_coverage(self.euron1)
         assert cov == pytest.approx(0.357324, 1e-5)
 
+    def test_swath_coverage_slstr_not_supported(self):
+        """Test Sentinel-3 SLSTR swath coverage - SLSTR is currently not supported!"""
+        # Sentinel 3A slstr
+        tstart = datetime(2022, 6, 6, 19, 58, 0)
+        tend = tstart + timedelta(seconds=60)
+
+        tle1 = "1 41335U 16011A   22156.83983125  .00000043  00000-0  35700-4 0  9996"
+        tle2 = "2 41335  98.6228 224.3150 0001264  95.7697 264.3627 14.26738650328113"
+        mypass = Pass('SENTINEL 3A', tstart, tend, instrument='slstr', tle1=tle1, tle2=tle2)
+
+        with pytest.raises(InstrumentNotSupported) as exec_info:
+            cov = mypass.area_coverage(self.euron1)
+
+        assert str(exec_info.value) == "SLSTR is a conical scanner, and currently not supported!"
+
+
     def test_swath_coverage_fy3(self):
         """Test FY3 coverages."""
         tstart = datetime.strptime("2019-01-05T01:01:45", "%Y-%m-%dT%H:%M:%S")
@@ -359,15 +376,6 @@ class TestSwathBoundary:
         cov = mypass.area_coverage(self.euron1)
         assert cov == pytest.approx(0.786836, 1e-5)
 
-        # Sentinel 3A slstr
-        tstart = datetime(2022, 6, 6, 19, 58, 0)
-        tend = tstart + timedelta(seconds=60)
-
-        tle1 = "1 41335U 16011A   22156.83983125  .00000043  00000-0  35700-4 0  9996"
-        tle2 = "2 41335  98.6228 224.3150 0001264  95.7697 264.3627 14.26738650328113"
-        mypass = Pass('SENTINEL 3A', tstart, tend, instrument='slstr', tle1=tle1, tle2=tle2)
-        cov = mypass.area_coverage(self.euron1)
-        self.assertAlmostEqual(cov, 0.05305641490480109, 6)
 
     def test_arctic_is_not_antarctic(self):
         """Test that artic and antarctic are not mixed up."""
