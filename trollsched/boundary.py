@@ -78,6 +78,8 @@ class SwathBoundary(Boundary):
         elif instrument.startswith("mersi"):
             scan_angle = 55.4
             instrument = "avhrr"
+        elif instrument.startswith("slstr"):
+            instrument = "slstr"
         elif overpass.satellite.name.startswith("aws"):
             scan_angle = 55.25
             instrument = "avhrr"
@@ -103,6 +105,8 @@ class SwathBoundary(Boundary):
         elif instrument == "viirs":
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
         elif instrument in ["mhs", "atms", "mwhs-2"]:
+            sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument.startswith("slstr"):
             sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             logger.warning("Instrument not tested: %s", instrument)
