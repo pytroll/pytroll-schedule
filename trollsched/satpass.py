@@ -29,6 +29,8 @@ import logging.handlers
 import operator
 import os
 import socket
+import ssl
+import sys
 from datetime import datetime, timedelta
 from functools import reduce as fctools_reduce
 from tempfile import gettempdir, mkstemp
@@ -432,11 +434,13 @@ def get_aqua_terra_dumpdata_from_ftp(sat, dump_url):
     try:
         f = ftplib.FTP_TLS(url.netloc)
     except (socket.error, socket.gaierror) as e:
-        logger.error("cannot reach to %s " % HOST + str(e))
+        logger.error("cannot reach to %s " % url.netloc + str(e))
         f = None
 
     if f is not None:
         try:
+            if sys.version_info < (2, 7, 10):
+                f.ssl_version = ssl.PROTOCOL_SSLv23
             f.login("anonymous", "guest")
             logger.debug("Logged in")
         except ftplib.error_perm:
