@@ -40,7 +40,6 @@ INSTRUMENT = {"avhrr/3": "avhrr",
 
 class InstrumentNotSupported(Exception):
     """Exception to capture cases when instrument are (yet) not supported."""
-    pass
 
 
 class SwathBoundary(Boundary):
