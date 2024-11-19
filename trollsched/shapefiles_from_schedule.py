@@ -25,23 +25,20 @@
 
 import argparse
 import logging
-from trollsched.logger import setup_logging
-
 from datetime import datetime
-import defusedxml.ElementTree as ET
 from pathlib import Path
 
-from trollsched import INSTRUMENT, SATELLITE_NAMES
-from trollsched.satpass import create_pass
-from pyorbital import tlefile
-
-import numpy as np
+import defusedxml.ElementTree as ET
 import geopandas as gpd
+import numpy as np
 import pandas as pd
-from shapely.geometry import Polygon
 import pyproj
+from shapely.geometry import Polygon
 from shapely.ops import transform
 
+from trollsched import INSTRUMENT, SATELLITE_NAMES
+from trollsched.logger import setup_logging
+from trollsched.satpass import create_pass
 
 logger = logging.getLogger(__name__)
 
@@ -56,18 +53,18 @@ def create_shapefile_from_pass(sat_pass, outpath):
     """From a satellite overpass (instrument scanning outline) create a shapefile and save."""
     sat_poly = get_polygon_from_contour(sat_pass.boundary.contour_poly)
 
-    wgs84 = pyproj.CRS('EPSG:4326')  # WGS 84
-    mycrs = {'init': 'epsg:4326'}
+    wgs84 = pyproj.CRS("EPSG:4326")  # WGS 84
+    mycrs = {"init": "epsg:4326"}
 
     project = pyproj.Transformer.from_crs(wgs84, mycrs, always_xy=True).transform
     new_shapes = transform(project, sat_poly)
 
-    satname = sat_pass.satellite.name.replace(' ', '-')
-    prefix = f'{sat_pass.instrument}_{satname}'
-    outname = f'{precix}_{sat_pass.risetime:%Y%m%d%H%M}_{sat_pass.falltime:%Y%m%d%H%M}_outline.shp'
+    satname = sat_pass.satellite.name.replace(" ", "-")
+    prefix = f"{sat_pass.instrument}_{satname}"
+    outname = f"{prefix}_{sat_pass.risetime:%Y%m%d%H%M}_{sat_pass.falltime:%Y%m%d%H%M}_outline.shp"
     output_filepath = Path(outpath) / outname
 
-    gpd.GeoDataFrame(pd.DataFrame(['p1'], columns=['geom']),
+    gpd.GeoDataFrame(pd.DataFrame(["p1"], columns=["geom"]),
                      crs=mycrs,
                      geometry=[new_shapes]).to_file(output_filepath)
 
@@ -110,30 +107,31 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
 
 
 def parse_args(args):
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--log-config",
-                        dest='log_config',
+                        dest="log_config",
                         default=None,
                         required=False,
                         help="Log config file to use instead of the standard logging.")
-    parser.add_argument("-l", "--satellites",
-                        dest='list_of_satellites',
+    parser.add_argument("-s", "--satellites",
+                        dest="list_of_satellites",
                         nargs="*",
                         default=[],
                         help="Complete file path to the TLE file to use.",
                         required=True)
     parser.add_argument("-t", "--tle_filename",
-                        dest='tle_filepath',
+                        dest="tle_filepath",
                         help="Complete file path to the TLE file to use.",
                         required=True)
     parser.add_argument("-x", "--xml_filename",
-                        dest='xml_filepath',
+                        dest="xml_filepath",
                         help="Complete path to the XML satellite schedule file.",
                         required=True)
     parser.add_argument("-o", "--output_dir",
-                        dest='output_dir',
+                        dest="output_dir",
                         help="Complete path to the XML satellite schedule file.",
-                        default='./')
+                        default="./")
     parser.add_argument("-v", "--verbose",
                         dest="verbosity",
                         action="count",
@@ -146,7 +144,7 @@ def parse_args(args):
 
 
 def run(args=None):
-    """The script to create shapefiles from an XML schedule of satellite passes."""
+    """Create shapefiles from an XML schedule of satellite passes."""
     opts = parse_args(args)
 
     setup_logging(opts)
