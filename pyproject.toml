@@ -67,7 +67,7 @@ sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 profile = "black"
 skip_gitignore = true
 default_section = "THIRDPARTY"
-known_first_party = "satpy"
+known_first_party = "pytroll-schedule"
 line_length = 120
 
 [tool.ruff]
