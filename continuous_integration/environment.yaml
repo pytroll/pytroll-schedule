@@ -8,7 +8,6 @@ dependencies:
   - toolz
   - sphinx
   - matplotlib
-  - mpl_toolkits
   - cartopy
   - scipy
   - pyyaml
