@@ -3,7 +3,7 @@ name = "pytroll-schedule"
 dynamic = ["version"]
 description = "Scheduling satellite passes in Python"
 authors = [
-    { name = "Martin Raspaud", email = "martin.raspaud@smhi.se" }
+    { name = "The Pytroll Team", email = "pytroll@googlegroups.com" }
 ]
 dependencies = ["numpy",
                 "pyresample >= 1.22",
@@ -11,7 +11,7 @@ dependencies = ["numpy",
                 "pyyaml",
                 "defusedxml"]
 readme = "README.md"
-requires-python = ">= 3.10"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,16 +46,11 @@ selector = ["redis"]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
-dev-dependencies = []
-
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["trollsched"]
-
 
 [tool.hatch.version]
 source = "vcs"
