@@ -1,0 +1,26 @@
+name: readthedocs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - defusedxml
+  - numpy
+  - scipy
+  - pandas
+  - geopandas
+  - shapely
+  - pyresample
+  - requests
+  - pytest
+  - pyproj
+  - setuptools
+  - setuptools_scm
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinxcontrib-apidoc
+  - trollsift
+  - xarray
+  - pip:
+    - graphviz
+    - ..  # relative path to the pytroll-schedule project
