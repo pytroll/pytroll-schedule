@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016, 2018 Martin Raspaud
+# Copyright (c) 2016, 2018, 2024 Martin Raspaud
 #
 # Author(s):
 #
@@ -20,17 +20,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Combine several graphs.
-"""
+"""Combine several graphs."""
 import logging
+import sys
 from datetime import datetime, timedelta
+
 from trollsched.graph import Graph
 
 logger = logging.getLogger("trollsched")
 
 
 def add_graphs(graphs, passes, delay=timedelta(seconds=0)):
-    """Add all graphs to one combined graph. """
+    """Add all graphs to one combined graph."""
     statlst = graphs.keys()
 
     def count_neq_passes(pl):
@@ -200,9 +201,6 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         try:
             gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
         except Exception:
-            print("len(passes_list)", len(passes_list), "   len(graph_set)",
-                  len(graph_set), "   statnr", statnr, "   p", p)
-            print("passes_list", passes_list)
             raise
 
         if gn[0] > len(passes_list[statnr]):
@@ -280,14 +278,11 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             bufflist.append(cc)
 
                         else:
-                            print("uh-oh, something curious happened ...")
+                            pass
 
                 except Exception:
-                    print("\nCATCH\ngn:", gn, "-> n", n, " col:", col,
-                          "-> cx", cx, "statnr", statnr, "statnr+i", statnr + 1)
-                    print("len(passes_list -n -cx)", len(passes_list[statnr]), len(passes_list[statnr + 1]))
                     for s in range(statnr, len(passes_list)):
-                        print("passes_list[", s, "] =>", passes_list[s])
+                        pass
                     raise
 
     return bufflist
@@ -318,21 +313,21 @@ def get_combined_sched(allgraphs, allpasses, delay_sec=60):
 
 
 def print_matrix(m, ly=-1, lx=-1):
-    """For DEBUG: Prints one of the graphs' backing matrix without
-    flooding the screen.
+    """For DEBUG: Prints one of the graphs' backing matrix without flooding the screen.
 
     It'll print the first lx columns from the first ly rows, then
     the last lx columns from the last ly rows.
     """
     for i, l in zip(range(ly), m[0:ly]):
-        print(i, ":", l[:lx], "...")
-    print("[..., ...]")
+        pass
     for i, l in zip(range(len(m) - ly - 1, len(m) - 1), m[-ly:]):
-        print(i, ": ...", l[-lx:])
+        pass
 
 
 def test_folding(g):
-    """Test if the graphs could be "folded", or better "squished", to reduce
+    """Test if the graphs could be "folded".
+
+    Test if the graphs could be "folded", or better "squished", to reduce
     size on cost of calculating the real x',y' from the x,y of the "unfolded"
     graph.
     """
@@ -340,22 +335,23 @@ def test_folding(g):
     for u in range(g.order):
         for n in g.neighbours(u):
             if n < u:
-                print(n, "<", u)
                 r = True
     return r
 
 
 def main():
+    """The main script."""
     import logging
     import logging.handlers
     import os
     import pickle
-    from trollsched.schedule import parse_datetime
-    from trollsched.schedule import combined_stations, build_filename
+
+    from trollsched.schedule import build_filename, combined_stations, parse_datetime
 
     try:
-        from trollsched.schedule import read_config
         import argparse
+
+        from trollsched.schedule import read_config
         logger = logging.getLogger("trollsched")
         parser = argparse.ArgumentParser()
         parser.add_argument("-c", "--config", default=None,
@@ -394,7 +390,6 @@ def main():
         }
         dir_output = build_filename("dir_output", pattern, pattern_args)
         if not os.path.exists(dir_output):
-            print(dir_output, "does not exist!")
             sys.exit(1)
         ph = open(os.path.join(dir_output, "opts.pkl"), "rb")
         opts = pickle.load(ph)
@@ -426,14 +421,9 @@ def main():
         from trollsched.schedule import conflicting_passes
         totpas = []
         for s, sp in allpasses.items():
-            print("len(sp)", s, len(sp))
             totpas.extend(list(sp))
         passes = sorted(totpas, key=lambda x: x.risetime)
-        cpg = conflicting_passes(passes, timedelta(seconds=600))
-        print("ALLPASSES", len(allpasses))  # ,allpasses
-        print("PASSES", len(passes))  # ,passes
-        print("CONFLGRPS", len(cpg))  # ,cpg
-        print("MAX", max([len(g) for g in cpg]))
+        conflicting_passes(passes, timedelta(seconds=600))
 
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
 
@@ -442,5 +432,5 @@ def main():
         raise
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

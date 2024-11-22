@@ -37,17 +37,20 @@ from tempfile import gettempdir, mkstemp
 from urllib.parse import urlparse
 
 import numpy as np
-from pyorbital import orbital
-from pyorbital import tlefile
+from pyorbital import orbital, tlefile
 from pyresample.boundary import AreaDefBoundary
 
-from trollsched.pass_scheduling_utils import Satellite
-from trollsched import MIN_PASS, JPSS_TLE_NAMES, NUMBER_OF_FOVS
-from trollsched import (VIIRS_PLATFORM_NAMES, MERSI_PLATFORM_NAMES,
-                        MERSI2_PLATFORM_NAMES)
-from trollsched import SATELLITE_MEOS_TRANSLATION
-
+from trollsched import (
+    JPSS_TLE_NAMES,
+    MERSI2_PLATFORM_NAMES,
+    MERSI_PLATFORM_NAMES,
+    MIN_PASS,
+    NUMBER_OF_FOVS,
+    SATELLITE_MEOS_TRANSLATION,
+    VIIRS_PLATFORM_NAMES,
+)
 from trollsched.boundary import SwathBoundary
+from trollsched.pass_scheduling_utils import Satellite
 
 logger = logging.getLogger(__name__)
 

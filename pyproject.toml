@@ -8,6 +8,9 @@ authors = [
 dependencies = ["numpy",
                 "pyresample >= 1.22",
                 "pyorbital",
+                "shapely",
+                "geopandas",
+                "pandas",
                 "pyyaml",
                 "defusedxml"]
 readme = "README.md"

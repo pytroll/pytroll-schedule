@@ -80,4 +80,3 @@ A is respected.
 
 This operation can be extended to more than two stations, all receiving a
 single-operation schedule and an individual cooperating-schedule.
-

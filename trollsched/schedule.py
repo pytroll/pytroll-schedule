@@ -29,11 +29,6 @@ from urllib.parse import urlparse
 
 import numpy as np
 from pyorbital import astronomy
-
-from trollsched.writers import (generate_meos_file,
-                                generate_metno_xml_file,
-                                generate_sch_file,
-                                generate_xml_file)
 from pyresample import parse_area_file
 
 from trollsched import MIN_PASS, utils
@@ -41,6 +36,7 @@ from trollsched.combine import get_combined_sched
 from trollsched.graph import Graph
 from trollsched.satpass import SimplePass, get_next_passes
 from trollsched.spherical import get_twilight_poly
+from trollsched.writers import generate_meos_file, generate_metno_xml_file, generate_sch_file, generate_xml_file
 
 logger = logging.getLogger(__name__)
 
@@ -296,7 +292,7 @@ def fermib(t):
     return 1 / (np.exp((t - a) / b) + 1)
 
 
-combination = {}
+combination: dict[SimplePass, SimplePass] = {}
 
 
 def combine(p1, p2, area_of_interest):
@@ -799,7 +795,7 @@ def parse_args(args=None):
                                            description="(additional parameter changing behaviour)")
     group_spec.add_argument("-a", "--avoid",
                             default=[],
-                            nargs='*',
+                            nargs="*",
                             help="xml request file(s) with passes to avoid")
     group_spec.add_argument("--no-aqua-terra-dump", action="store_false",
                             help="do not consider Aqua/Terra-dumps")

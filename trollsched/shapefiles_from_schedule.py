@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Script to create shapefiles of satellite instrument swath outlines from an XML pass plan."""
+"""Create shapefiles of satellite instrument swath outlines from an XML pass reception plan."""
 
 
 import argparse
@@ -43,29 +43,29 @@ from trollsched.satpass import create_pass
 logger = logging.getLogger(__name__)
 
 
-def get_polygon_from_contour(contour_poly):
-    """From a pytroll-schedule contour-poly return a shapely Polygon."""
-    geodata = np.vstack((contour_poly.lon, contour_poly.lat)).T
+def get_shapely_polygon_from_lonlat(lons, lats):
+    """From a arrays of lons and lats return a shapely Polygon."""
+    geodata = np.vstack((lons, lats)).T
     return Polygon(np.rad2deg(geodata))
 
+def create_shapefile_filename(satellite_pass_obj):
+    """From a trollsched.satpass instance create the shapefile filename."""
+    satname = satellite_pass_obj.satellite.name.replace(" ", "-")
+    prefix = f"{satellite_pass_obj.instrument}_{satname}"
+    return f"{prefix}_{satellite_pass_obj.risetime:%Y%m%d%H%M}_{satellite_pass_obj.falltime:%Y%m%d%H%M}_outline.shp"
 
-def create_shapefile_from_pass(sat_pass, outpath):
+def create_shapefile_from_pass(sat_pass, output_filepath):
     """From a satellite overpass (instrument scanning outline) create a shapefile and save."""
-    sat_poly = get_polygon_from_contour(sat_pass.boundary.contour_poly)
+    sat_poly = get_shapely_polygon_from_lonlat(sat_pass.boundary.contour_poly.lon,
+                                               sat_pass.boundary.contour_poly.lat)
 
     wgs84 = pyproj.CRS("EPSG:4326")  # WGS 84
-    mycrs = {"init": "epsg:4326"}
+    a_crs = {"init": "epsg:4326"}
 
-    project = pyproj.Transformer.from_crs(wgs84, mycrs, always_xy=True).transform
+    project = pyproj.Transformer.from_crs(wgs84, a_crs, always_xy=True).transform
     new_shapes = transform(project, sat_poly)
 
-    satname = sat_pass.satellite.name.replace(" ", "-")
-    prefix = f"{sat_pass.instrument}_{satname}"
-    outname = f"{prefix}_{sat_pass.risetime:%Y%m%d%H%M}_{sat_pass.falltime:%Y%m%d%H%M}_outline.shp"
-    output_filepath = Path(outpath) / outname
-
-    gpd.GeoDataFrame(pd.DataFrame(["p1"], columns=["geom"]),
-                     crs=mycrs,
+    gpd.GeoDataFrame(pd.DataFrame(["p1"], columns=["geom"]), crs=a_crs,
                      geometry=[new_shapes]).to_file(output_filepath)
 
 
@@ -81,15 +81,12 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
 
     for child in root:
         if child.tag == "pass":
-            print("Pass: %s" % str(child.attrib))
             platform_name = SATELLITE_NAMES.get(child.attrib["satellite"], child.attrib["satellite"])
             instrument = INSTRUMENT.get(platform_name)
             if not instrument:
-                print("Instrument unknown! Platform = %s" % platform_name)
                 continue
 
             if platform_name not in satellites:
-                print("Platform name not considered: %s" % platform_name)
                 continue
             try:
                 overpass = create_pass(platform_name, instrument,
@@ -98,11 +95,11 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
                                        datetime.strptime(child.attrib["end-time"],
                                                          "%Y-%m-%d-%H:%M:%S"),
                                        tle_filename=tle_file)
-            except KeyError as err:
-                print("Failed on satellite %s: %s" % (platform_name, str(err)))
+            except KeyError:
                 continue
 
-            create_shapefile_from_pass(overpass, output_dir)
+            output_filepath = Path(outpath) / create_shapefile_filename(overpass)
+            create_shapefile_from_pass(overpass, output_filepath)
 
 
 
@@ -154,7 +151,7 @@ def run(args=None):
     outdir = opts.output_dir
 
     shapefiles_from_schedule_xml_requests(filename,
-                                          satellites, # ['Suomi NPP', 'NOAA-20', 'NOAA-21'],
+                                          satellites,
                                           tle_filename,
                                           outdir)
 

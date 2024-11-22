@@ -23,7 +23,11 @@
 """Fixtures for unit testing."""
 
 
+from datetime import datetime, timedelta
+
 import pytest
+
+from trollsched.satpass import create_pass
 
 # Create a fake TLE file for testing.
 TEST_TLEFILE1 = """NOAA-20
@@ -34,8 +38,15 @@ TEST_TLEFILE1 = """NOAA-20
 @pytest.fixture
 def fake_tle_file(tmp_path):
     """Write fake TLE file."""
-    file_path = tmp_path / 'sometles.txt'
-    with open(file_path, 'w') as fpt:
+    file_path = tmp_path / "sometles.txt"
+    with open(file_path, "w") as fpt:
         fpt.write(TEST_TLEFILE1)
 
-    yield file_path
+    return file_path
+
+@pytest.fixture
+def fake_noaa20_viirs_pass_instance(fake_tle_file):
+    """Create a fake trollsched.,satpass instance for NOAA-20 VIIRS."""
+    starttime = datetime(2024, 9, 17, 1, 25, 52)
+    endtime = starttime + timedelta(minutes=15)
+    return create_pass("NOAA-20", "viirs", starttime, endtime, str(fake_tle_file))

@@ -22,18 +22,16 @@
 
 """Test the satellite pass and swath boundary classes."""
 
+from datetime import datetime, timedelta
+
+import numpy as np
 import numpy.testing
 import pytest
-from datetime import datetime, timedelta
-import numpy as np
 from pyorbital.orbital import Orbital
 from pyresample.geometry import AreaDefinition, create_area_def
 
-from trollsched.boundary import SwathBoundary
-from trollsched.boundary import InstrumentNotSupported
-from trollsched.satpass import Pass
-from trollsched.satpass import create_pass
-
+from trollsched.boundary import InstrumentNotSupported, SwathBoundary
+from trollsched.satpass import Pass, create_pass
 
 LONS1 = np.array([-122.29913729160562, -131.54385362589042, -155.788034272281,
                   143.1730880418349, 105.69172088208997, 93.03135571771092,
@@ -169,9 +167,7 @@ def get_mb_orbital():
 
 
 def get_s3a_orbital():
-    """
-    From 2022-06-06
-    """
+    """From 2022-06-06."""
     tle1 = "1 41335U 16011A   22157.82164820  .00000041  00000-0  34834-4 0  9994"
     tle2 = "2 41335  98.6228 225.2825 0001265  95.7364 264.3961 14.26738817328255"
     return Orbital("Sentinel-3A", line1=tle1, line2=tle2)
@@ -352,10 +348,10 @@ class TestSwathBoundary:
 
         tle1 = "1 41335U 16011A   22156.83983125  .00000043  00000-0  35700-4 0  9996"
         tle2 = "2 41335  98.6228 224.3150 0001264  95.7697 264.3627 14.26738650328113"
-        mypass = Pass('SENTINEL 3A', tstart, tend, instrument='slstr', tle1=tle1, tle2=tle2)
+        mypass = Pass("SENTINEL 3A", tstart, tend, instrument="slstr", tle1=tle1, tle2=tle2)
 
         with pytest.raises(InstrumentNotSupported) as exec_info:
-            cov = mypass.area_coverage(self.euron1)
+            mypass.area_coverage(self.euron1)
 
         assert str(exec_info.value) == "SLSTR is a conical scanner, and currently not supported!"
 
@@ -473,7 +469,7 @@ def test_create_pass(fake_tle_file):
         -2.25693369, -3.34841058, -4.59918301, -6.08698296,
         -7.94529693, -10.43647307, -14.21005445, -15.07433768,
        -14.49280142, -14.53229624, -14.87821968, -15.67970647,
-        -17.21558546, -20.06333116, -25.60407459, -37.83432182], dtype='float64'))
+        -17.21558546, -20.06333116, -25.60407459, -37.83432182], dtype="float64"))
 
     np.testing.assert_array_almost_equal(contours[1], np.array([
         84.33463271, 84.996855, 87.51595932, 87.91311185, 87.0788011 ,
@@ -488,4 +484,4 @@ def test_create_pass(fake_tle_file):
         34.53695383, 34.66239272, 34.78804435, 34.91590262, 35.047996  ,
         35.18641366, 35.33315856, 35.48940778, 35.65238903, 35.79943487,
         35.81635723, 46.51491314, 51.61438345, 56.69722991, 61.75596299,
-        66.7771717 , 71.73310959, 76.55555826, 81.03181048], dtype='float64'))
+        66.7771717 , 71.73310959, 76.55555826, 81.03181048], dtype="float64"))

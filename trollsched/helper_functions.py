@@ -21,12 +21,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Helper functions for the pytroll-schedule methods. E.g. nightshade method
-for Cartopy as available in Basemap
+for Cartopy as available in Basemap.
 
 """
 
-import numpy as np
 from datetime import datetime
+
+import numpy as np
 
 
 def sun_pos(dt=None):
@@ -47,7 +48,7 @@ def sun_pos(dt=None):
     dt: datetime
         Defaults to datetime.utcnow()
 
-    Returns
+    Returns:
     -------
     lat, lng: tuple of floats
         Approximate coordinates of the point where the sun is
@@ -70,8 +71,7 @@ def sun_pos(dt=None):
 
 
 def fill_dark_side(ax, time=None, **kwargs):
-    """
-    Plot a fill on the dark side of the planet (without refraction).
+    """Plot a fill on the dark side of the planet (without refraction).
 
     Parameters
     ----------
@@ -83,7 +83,6 @@ def fill_dark_side(ax, time=None, **kwargs):
             Passed on to Matplotlib's ax.fill()
 
     """
-
     import cartopy.crs as ccrs
 
     lat, lng = sun_pos(time)

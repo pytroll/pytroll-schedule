@@ -131,7 +131,7 @@ class Graph():
         self.vertices = np.arange(self.order)
 
     def export(self, filename="./sched.gv", labels=None):
-        """dot sched.gv -Tpdf -otruc.pdf."""
+        """Dot sched.gv -Tpdf -otruc.pdf."""
         with open(filename, "w") as fd_:
             fd_.write('digraph schedule { \n size="80, 10";\n center="1";\n')
             for v1 in range(1, self.order - 1):

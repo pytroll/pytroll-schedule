@@ -20,18 +20,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Utility functions and config reading for the pytroll-scheduler
-"""
-import warnings
-
-import yaml
+"""Utility functions and config reading for the pytroll-scheduler."""
 import logging
 from collections.abc import Mapping
-from configparser import ConfigParser
+
+import yaml
 
 from trollsched import schedule
 from trollsched.pass_scheduling_utils import Satellite
-
 
 logger = logging.getLogger("trollsched")
 
@@ -66,7 +62,7 @@ def recursive_dict_update(d, u):
 def read_config(filename):
     try:
         return read_config_yaml(filename)
-    except yaml.parser.ParserError as e:
+    except yaml.parser.ParserError:
         logger.error("INI format for scheduler config is deprecated since v0.3.4, "
                      "please update your configuration to YAML.")
         raise
@@ -80,7 +76,7 @@ def read_config_yaml(filename):
 
     stations = {}
     for station_id, station in cfg["stations"].items():
-        if isinstance(station['satellites'], dict):
+        if isinstance(station["satellites"], dict):
             sat_list = []
             for (sat_name, sat_params) in station["satellites"].items():
                 if sat_params is None:
@@ -88,7 +84,7 @@ def read_config_yaml(filename):
                 else:
                     sat_list.append(Satellite(sat_name, **sat_params))
         else:
-            sat_list = [satellites[sat_name] for sat_name in station['satellites']]
+            sat_list = [satellites[sat_name] for sat_name in station["satellites"]]
         new_station = schedule.Station(station_id, **station)
         new_station.satellites = sat_list
         stations[station_id] = new_station
@@ -97,18 +93,18 @@ def read_config_yaml(filename):
     for k, v in cfg["pattern"].items():
         pattern[k] = v
 
-    sched_params = cfg['default']
-    plot_parameters = sched_params.get('plot_parameters', {})
-    plot_title = sched_params.get('plot_title', None)
+    sched_params = cfg["default"]
+    plot_parameters = sched_params.get("plot_parameters", {})
+    plot_title = sched_params.get("plot_title", None)
 
     scheduler = schedule.Scheduler(stations=[stations[st_id]
-                                             for st_id in sched_params['station']],
-                                   min_pass=sched_params.get('min_pass', 4),
-                                   forward=sched_params['forward'],
-                                   start=sched_params['start'],
-                                   dump_url=sched_params.get('dump_url'),
+                                             for st_id in sched_params["station"]],
+                                   min_pass=sched_params.get("min_pass", 4),
+                                   forward=sched_params["forward"],
+                                   start=sched_params["start"],
+                                   dump_url=sched_params.get("dump_url"),
                                    patterns=pattern,
-                                   center_id=sched_params.get('center_id', 'unknown'),
+                                   center_id=sched_params.get("center_id", "unknown"),
                                    plot_parameters=plot_parameters,
                                    plot_title=plot_title)
 
