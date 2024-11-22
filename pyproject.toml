@@ -36,14 +36,7 @@ compare_scheds = "trollsched.compare:run"
 "Documentation" = "https://pytroll-schedule.readthedocs.io/en/latest/"
 
 [project.optional-dependencies]
-minio = ["minio", "s3fs"]
-local = ["watchdog"]
-publishing = ["posttroll"]
-ssh = ["paramiko"]
-dataspace = ["oauthlib", "requests_oauthlib", "s3fs"]
-datastore = ["oauthlib", "requests_oauthlib"]
-dhus = ["defusedxml"]
-selector = ["redis"]
+doc = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-apidoc"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
