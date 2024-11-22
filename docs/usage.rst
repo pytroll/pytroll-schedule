@@ -64,7 +64,7 @@ Usage of the schedule script::
 
 
 Script to create instrument swath outlines in shapefile format for all passes scheduled
-------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
 
 Usage of the script to create swath outlines in shapefile format::
 
