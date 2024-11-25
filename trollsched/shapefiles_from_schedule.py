@@ -98,7 +98,7 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
             except KeyError:
                 continue
 
-            output_filepath = Path(outpath) / create_shapefile_filename(overpass)
+            output_filepath = Path(output_dir) / create_shapefile_filename(overpass)
             create_shapefile_from_pass(overpass, output_filepath)
 
 

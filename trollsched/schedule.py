@@ -415,8 +415,7 @@ def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
     graph = Graph(n_vertices=n_vertices + 2)
 
     def add_arc(graph, p1, p2, hook=None):
-        logger.debug("Adding arc between " + str(p1) +
-                     " and " + str(p2) + "...")
+        logger.debug("Adding arc between %s and %s...", str(p1), str(p2))
         if p1 in avoid_list or p2 in avoid_list:
             w = 0
             logger.debug("...0 because in the avoid_list!")
@@ -424,12 +423,7 @@ def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
             w = combine(p1, p2, area_of_interest)
         logger.debug("...with weight " + str(w))
 
-#         with open("/tmp/schedule.gv", "a") as fp_:
-#             fp_.write('        "' + str(p1) + '" -> "' + str(p2) +
-#                       '" [ label = "' + str(w) + '" ];\n')
-
-        graph.add_arc(passes.index(p1) + 1,
-                      passes.index(p2) + 1, w)
+        graph.add_arc(passes.index(p1) + 1, passes.index(p2) + 1, w)
         if hook is not None:
             hook()
 
