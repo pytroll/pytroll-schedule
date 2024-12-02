@@ -28,6 +28,7 @@ from trollsched.shapefiles_from_schedule import (
     create_shapefile_filename,
     create_shapefile_from_pass,
     get_shapely_polygon_from_lonlat,
+    shapefiles_from_schedule_xml_requests,
 )
 
 CONT_POLY_LON = np.array([-2.13452262, -2.29587336, -2.71901413, 2.49884179, 1.84466852,
@@ -92,3 +93,21 @@ def test_create_shapefile_from_pass(fake_noaa20_viirs_pass_instance, tmp_path):
     assert tmp_filename.exists()
     nfiles = len([f for f in tmp_filename.parent.glob("fake_noaa20_viirs_shapefile.*")])
     assert nfiles == 5
+
+
+@pytest.mark.usefixtures("fake_long_tle_file")
+@pytest.mark.usefixtures("fake_xml_schedule_file")
+def test_shapefiles_from_schedule_xml_requests(fake_xml_schedule_file, fake_long_tle_file, tmp_path):
+    """Test create shapefiles from an xml schedule request file."""
+    output_dir = tmp_path / "results"
+    output_dir.mkdir()
+    satellites = ["Suomi NPP", "NOAA 18", "NOAA-20"]
+    shapefiles_from_schedule_xml_requests(str(fake_xml_schedule_file), satellites,
+                                          str(fake_long_tle_file), str(output_dir))
+
+    n18files = [str(name) for name in output_dir.glob("avhrr_NOAA-18_202412022201_202412022216_outline.*")]
+    assert len(n18files) == 5
+    nppfiles = [str(name) for name in output_dir.glob("viirs_Suomi-NPP_202412022238_202412022249_outline.*")]
+    assert len(nppfiles) == 5
+    n20files = [str(name) for name in output_dir.glob("viirs_NOAA-20_202412022301_202412022314_outline.*")]
+    assert len(n20files) == 5
