@@ -48,11 +48,13 @@ def get_shapely_polygon_from_lonlat(lons, lats):
     geodata = np.vstack((lons, lats)).T
     return Polygon(np.rad2deg(geodata))
 
+
 def create_shapefile_filename(satellite_pass_obj):
     """From a trollsched.satpass instance create the shapefile filename."""
     satname = satellite_pass_obj.satellite.name.replace(" ", "-")
     prefix = f"{satellite_pass_obj.instrument}_{satname}"
     return f"{prefix}_{satellite_pass_obj.risetime:%Y%m%d%H%M}_{satellite_pass_obj.falltime:%Y%m%d%H%M}_outline.shp"
+
 
 def create_shapefile_from_pass(sat_pass, output_filepath):
     """From a satellite overpass (instrument scanning outline) create a shapefile and save."""
@@ -100,7 +102,6 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
 
             output_filepath = Path(output_dir) / create_shapefile_filename(overpass)
             create_shapefile_from_pass(overpass, output_filepath)
-
 
 
 def parse_args(args):
