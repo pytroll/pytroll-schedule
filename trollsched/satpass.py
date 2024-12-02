@@ -58,8 +58,7 @@ logger = logging.getLogger(__name__)
 def create_pass(satname, instrument, starttime, endtime, tle_filename=None):
     """Create a satellite pass given a start and an endtime."""
     tle = tlefile.Tle(satname, tle_file=tle_filename)
-    cpass = Pass(satname, starttime, endtime, instrument=instrument, tle1=tle.line1, tle2=tle.line2)
-    return cpass
+    return Pass(satname, starttime, endtime, instrument=instrument, tle1=tle.line1, tle2=tle.line2)
 
 class SimplePass:
     """A pass: satellite, risetime, falltime, (orbital)."""
