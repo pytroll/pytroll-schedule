@@ -24,7 +24,7 @@
 
 
 class SatScore:
-    """docstring for SatScore."""
+    """Container for the score parameter desciding which satellite pass to take."""
 
     def __init__(self, day, night):
         """Initialize the score."""
@@ -33,7 +33,7 @@ class SatScore:
 
 
 class Satellite:
-    """docstring for Satellite."""
+    """The Satellite class holding information on its score, name and designator."""
 
     def __init__(self, name, day, night,
                  schedule_name=None, international_designator=None):
