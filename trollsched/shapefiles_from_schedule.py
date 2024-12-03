@@ -155,11 +155,3 @@ def run(args=None):
                                           satellites,
                                           tle_filename,
                                           outdir)
-
-
-if __name__ == "__main__":
-    try:
-        run()
-    except Exception:
-        logger.exception("Something wrong happened!")
-        raise
