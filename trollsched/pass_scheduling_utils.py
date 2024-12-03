@@ -24,7 +24,7 @@
 
 
 class SatScore:
-    """Container for the score parameter desciding which satellite pass to take."""
+    """Container for the score parameter deciding which satellite pass to take."""
 
     def __init__(self, day, night):
         """Initialize the score."""
