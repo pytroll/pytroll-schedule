@@ -40,14 +40,14 @@ stations:
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
         satellites:
-            - metop-a
             - metop-b
             - noaa 19
             - noaa 18
             - noaa 15
             - aqua
-            - terra
             - suomi npp
+            - NOAA-20
+            - NOAA-21
 
     nrk-test:
         name: nrk
@@ -60,18 +60,19 @@ stations:
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
         satellites:
-            metop-a :
-        		night: 0.1
-        		day: 0.6
             metop-b :
         		night: 0.1
 		        day: 0.6
+            metop-c :
+                        night: 0.1
+                        day: 0.6
             noaa 19 :
             noaa 18 :
             noaa 15 :
             aqua :
-            terra :
             suomi npp :
+            NOAA-20 :
+            NOAA-21 :
 
     bch:
         name: bch
@@ -84,21 +85,22 @@ stations:
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
         satellites:
-            - metop-a
             - metop-b
+            - metop-c
             - noaa 19
             - noaa 18
             - noaa 15
             - aqua
-            - terra
             - suomi npp
+            - NOAA-20
+            - NOAA-21
 
 satellites:
-    metop-a:
+    metop-b:
         night: 0.1
         day: 0.6
 
-    metop-b:
+    metop-c:
         night: 0.1
         day: 0.6
 
@@ -110,10 +112,6 @@ satellites:
         night: 0.1
         day: 0.6
 
-    noaa 16:
-        night: 0.1
-        day: 0.6
-
     noaa 15:
         night: 0.05
         day: 0.3
@@ -122,10 +120,14 @@ satellites:
         night: 0.2
         day: 0.8
 
-    terra:
-        night: 0.2
-        day: 0.8
-
     suomi npp:
+        night: 0.25
+        day: 0.9
+
+    NOAA-20:
+        night: 0.25
+        day: 0.9
+
+    NOAA-21:
         night: 0.25
         day: 0.9
