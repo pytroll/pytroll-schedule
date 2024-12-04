@@ -1,2 +1,3 @@
 [bandit]
-exclude: trollsched/version.py,versioneer.py,trollsched/tests
+skips: B506
+exclude: trollsched/tests

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 - 2020 Pytroll Community
+# Copyright (c) 2018 - 2020, 2024 Pytroll Community
 
 # Author(s):
 
@@ -20,14 +20,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Drawing satellite overpass outlines on maps
-"""
+"""Drawing satellite overpass outlines on maps."""
 
-import os
 import logging
 import logging.handlers
-import numpy as np
+import os
+
 import matplotlib as mpl
+import numpy as np
+
 MPL_BACKEND = mpl.get_backend()
 
 logger = logging.getLogger(__name__)
@@ -42,25 +43,24 @@ except ImportError:
 
 if not BASEMAP_NOT_CARTOPY:
     import cartopy
-    cartopy.config['pre_existing_data_dir'] = os.environ.get(
-        "CARTOPY_PRE_EXISTING_DATA_DIR", cartopy.config['pre_existing_data_dir'])
+    cartopy.config["pre_existing_data_dir"] = os.environ.get(
+        "CARTOPY_PRE_EXISTING_DATA_DIR", cartopy.config["pre_existing_data_dir"])
 
 
 class MapperBasemap(object):
-    """A class to generate nice plots with basemap.
-    """
+    """A class to generate nice plots with basemap."""
 
     def __init__(self, **proj_info):
-
+        """Initialize the class object."""
         from mpl_toolkits.basemap import Basemap
 
         if not proj_info:
             proj_info = {
-                'projection': 'nsper',
-                'lat_0': 58,
-                'lon_0': 16,
-                'resolution': 'l',
-                'area_thresh': 1000.
+                "projection": "nsper",
+                "lat_0": 58,
+                "lon_0": 16,
+                "resolution": "l",
+                "area_thresh": 1000.
             }
 
         self.map = Basemap(**proj_info)
@@ -68,7 +68,7 @@ class MapperBasemap(object):
         self.map.drawcoastlines()
         self.map.drawcountries()
 
-        self.map.drawmapboundary(fill_color='white')
+        self.map.drawmapboundary(fill_color="white")
 
         self.map.drawmeridians(np.arange(0, 360, 30))
         self.map.drawparallels(np.arange(-90, 90, 30))
@@ -81,22 +81,21 @@ class MapperBasemap(object):
 
 
 class MapperCartopy(object):
-    """A class to generate nice plots with Cartopy.
-    """
+    """A class to generate nice plots with Cartopy."""
 
     def __init__(self, **proj_info):
-
+        """Initialize the Cartopy Mapper object."""
         mpl.use(MPL_BACKEND)
         import matplotlib.pyplot as plt
 
         if not proj_info:
             proj_info = {
-                'central_latitude': 58,
-                'central_longitude': 16,
-                'satellite_height': 35785831,
-                'false_easting': 0,
-                'false_northing': 0,
-                'globe': None
+                "central_latitude": 58,
+                "central_longitude": 16,
+                "satellite_height": 35785831,
+                "false_easting": 0,
+                "false_northing": 0,
+                "globe": None
             }
 
         fig = plt.figure(figsize=(8, 6))
@@ -105,25 +104,26 @@ class MapperCartopy(object):
             1, 1, 1, projection=ccrs.NearsidePerspective(**proj_info))
 
         self._ax.add_feature(cfeature.OCEAN, zorder=0)
-        self._ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
+        self._ax.add_feature(cfeature.LAND, zorder=0, edgecolor="black")
         self._ax.add_feature(cfeature.BORDERS, zorder=0)
 
         self._ax.set_global()
         self._ax.gridlines()
 
     def plot(self, *args, **kwargs):
+        """Make the matplotlib plot."""
         mpl.use(MPL_BACKEND)
         import matplotlib.pyplot as plt
 
-        kwargs['transform'] = ccrs.Geodetic()
+        kwargs["transform"] = ccrs.Geodetic()
         return plt.plot(*args, **kwargs)
 
     def nightshade(self, utctime, **kwargs):
-
+        """Create a night shade to the map."""
         from trollsched.helper_functions import fill_dark_side
 
-        color = kwargs.get('color', 'black')
-        alpha = kwargs.get('alpha', 0.4)
+        color = kwargs.get("color", "black")
+        alpha = kwargs.get("alpha", 0.4)
         fill_dark_side(self._ax, time=utctime, color=color, alpha=alpha)
 
     def __call__(self, *args):
@@ -148,12 +148,11 @@ def save_fig(pass_obj,
              overwrite=False,
              labels=None,
              extension=".png",
-             outline='-r',
+             outline="-r",
              plot_parameters=None,
              plot_title=None,
              poly_color=None):
-    """Save the pass as a figure. Filename is automatically generated.
-    """
+    """Save the pass as a figure. Filename is automatically generated."""
     poly = poly or []
     poly_color = poly_color or []
     if not isinstance(poly, (list, tuple)):
@@ -161,7 +160,7 @@ def save_fig(pass_obj,
     if not isinstance(poly_color, (list, tuple)):
         poly_color = [poly_color]
 
-    mpl.use('Agg')
+    mpl.use("Agg")
     import matplotlib.pyplot as plt
     plt.clf()
 
@@ -172,7 +171,7 @@ def save_fig(pass_obj,
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
 
-    filename = '{rise}_{satname}_{instrument}_{fall}{extension}'.format(rise=rise,
+    filename = "{rise}_{satname}_{instrument}_{fall}{extension}".format(rise=rise,
                                                                         satname=pass_obj.satellite.name.replace(
                                                                             " ", "_"),
                                                                         instrument=pass_obj.instrument.replace(
@@ -191,7 +190,7 @@ def save_fig(pass_obj,
             try:
                 col = poly_color[i]
             except IndexError:
-                col = '-b'
+                col = "-b"
             draw(polygon, mapper, col)
         logger.debug("Draw: outline = <%s>", outline)
         draw(pass_obj.boundary.contour_poly, mapper, outline)
@@ -214,9 +213,8 @@ def show(pass_obj,
          labels=None,
          other_poly=None,
          proj=None,
-         outline='-r'):
-    """Show the current pass on screen (matplotlib, basemap).
-    """
+         outline="-r"):
+    """Show the current pass on screen (matplotlib, basemap)."""
     mpl.use(MPL_BACKEND)
     import matplotlib.pyplot as plt
 
@@ -235,6 +233,7 @@ def show(pass_obj,
 
 
 def draw(poly, mapper, options, **more_options):
+    """Draw the polygon onto the mapper object."""
     lons = np.rad2deg(poly.lon.take(np.arange(len(poly.lon) + 1), mode="wrap"))
     lats = np.rad2deg(poly.lat.take(np.arange(len(poly.lat) + 1), mode="wrap"))
     rx, ry = mapper(lons, lats)
@@ -242,13 +241,15 @@ def draw(poly, mapper, options, **more_options):
 
 
 def main():
-    from trollsched.satpass import get_next_passes
+    """A main function as a how-to example."""
     from datetime import datetime
+
+    from trollsched.satpass import get_next_passes
 
     passes = get_next_passes(["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))
     for p in passes:
         save_fig(p, directory="/tmp/plots/")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

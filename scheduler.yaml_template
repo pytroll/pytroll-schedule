@@ -4,22 +4,22 @@ default:
     station:
         - nrk
         - bch
-        
+
     # schedule starts in 2 hours and covers 7 days
     forward: 168
     start: 2
-    
+
     # minimum observable pass length [minutes]
     min_pass: 4
-    
+
     # URL for Aqua/Terra dump information
     dump_url: "ftp://is.sci.gsfc.nasa.gov/ancillary/ephemeris/schedule/%s/downlink/"
 
 pattern:
     # dir/file pattern, follows rules of str.format()
     # pre-set names:
-    #   {date}, {time} : date+time 
-    #   {station} : as in station->name, for combined schedules ".comb" is appended, 
+    #   {date}, {time} : date+time
+    #   {station} : as in station->name, for combined schedules ".comb" is appended,
     #   {mode} : request|report,
     #   {output_dir} : as in cmd-param --output-dir
     dir_output: "{output_dir}/{date}-{time}"
@@ -27,8 +27,8 @@ pattern:
     file_xml:   "{dir_output}/aquisition-schedule-{mode}_{station}.xml"
     file_sci:   "{dir_output}/scisys-schedule-{station}.txt"
     file_graph: "{dir_output}/graph"
-    
-stations:    
+
+stations:
     nrk:
         name: nrk
         # degrees east
@@ -39,16 +39,16 @@ stations:
         altitude: 0.052765
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
-        satellites: 
-            - metop-a 
-            - metop-b 
-            - noaa 19 
-            - noaa 18 
-            - noaa 15 
-            - aqua 
-            - terra 
+        satellites:
+            - metop-b
+            - noaa 19
+            - noaa 18
+            - noaa 15
+            - aqua
             - suomi npp
-    
+            - NOAA-20
+            - NOAA-21
+
     nrk-test:
         name: nrk
         # degrees east
@@ -59,20 +59,21 @@ stations:
         altitude: 0.052765
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
-        satellites: 
-            metop-a :
-        		night: 0.1
-        		day: 0.6
+        satellites:
             metop-b :
         		night: 0.1
 		        day: 0.6
+            metop-c :
+                        night: 0.1
+                        day: 0.6
             noaa 19 :
             noaa 18 :
             noaa 15 :
             aqua :
-            terra :
             suomi npp :
-    
+            NOAA-20 :
+            NOAA-21 :
+
     bch:
         name: bch
         # degrees east
@@ -83,49 +84,50 @@ stations:
         altitude: 0.14
         area_file: /home/amaul/PyTROLL/etc/areas.def
         area: euron1
-        satellites: 
-            - metop-a
-            - metop-b 
-            - noaa 19 
-            - noaa 18 
-            - noaa 15 
-            - aqua 
-            - terra 
+        satellites:
+            - metop-b
+            - metop-c
+            - noaa 19
+            - noaa 18
+            - noaa 15
+            - aqua
             - suomi npp
+            - NOAA-20
+            - NOAA-21
 
 satellites:
-    metop-a:
-        night: 0.1
-        day: 0.6
-        
     metop-b:
         night: 0.1
         day: 0.6
-        
+
+    metop-c:
+        night: 0.1
+        day: 0.6
+
     noaa 19:
         night: 0.05
         day: 0.3
-        
+
     noaa 18:
         night: 0.1
         day: 0.6
-        
-    noaa 16:
-        night: 0.1
-        day: 0.6
-        
+
     noaa 15:
         night: 0.05
         day: 0.3
-        
+
     aqua:
         night: 0.2
         day: 0.8
-        
-    terra:
-        night: 0.2
-        day: 0.8
-        
+
     suomi npp:
+        night: 0.25
+        day: 0.9
+
+    NOAA-20:
+        night: 0.25
+        day: 0.9
+
+    NOAA-21:
         night: 0.25
         day: 0.9

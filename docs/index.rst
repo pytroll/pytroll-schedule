@@ -12,13 +12,13 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   
+
    about
    miscellaneous
-   
+
 .. toctree::
    :maxdepth: 1
-   
+
    usage
    config
    example
@@ -29,4 +29,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

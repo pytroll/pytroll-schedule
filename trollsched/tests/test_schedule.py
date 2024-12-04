@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2019 PyTroll
+# Copyright (c) 2014 - 2024 Pytroll
 
 # Author(s):
 
@@ -31,7 +31,7 @@ import pytest
 import yaml
 
 from trollsched.satpass import get_aqua_terra_dumps, get_metopa_passes, get_next_passes
-from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib, run, get_passes_from_xml_file
+from trollsched.schedule import build_filename, conflicting_passes, fermia, fermib, get_passes_from_xml_file, run
 
 
 class TestTools:
@@ -89,7 +89,7 @@ class TestAll:
         """Set up."""
         from pyorbital import orbital
 
-        from trollsched.schedule import Satellite
+        from trollsched.pass_scheduling_utils import Satellite
 
         self.utctime = datetime(2018, 11, 28, 10, 0)
         self.satellites = ["noaa-20", ]

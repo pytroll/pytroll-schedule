@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2023 PyTroll Community
+# Copyright (c) 2014 - 2024 PyTroll Community
 
 # Author(s):
 
@@ -23,61 +23,69 @@
 
 """Package file."""
 
-from . import version
-
-__version__ = version.get_versions()['version']
-
 
 # shortest allowed pass in minutes
 MIN_PASS = 4
 
 # DRL still use the name JPSS-1 (etc) instead of NOAA-20 in the TLEs:
-JPSS_TLE_NAMES = {'NOAA-20': 'JPSS-1',
-                  'NOAA-21': 'JPSS-2',
-                  'NOAA-22': 'JPSS-3'}
+JPSS_TLE_NAMES = {"NOAA-20": "JPSS-1",
+                  "NOAA-21": "JPSS-2",
+                  "NOAA-22": "JPSS-3"}
 
 NUMBER_OF_FOVS = {
-    'avhrr': 2048,
-    'mhs': 90,
-    'amsua': 30,
-    'mwhs2': 98,
-    'atms': 96,
-    'ascat': 42,
-    'viirs': 6400,
-    'atms': 96,
-    'mwhs-2': 98
+    "avhrr": 2048,
+    "mhs": 90,
+    "amsua": 30,
+    "mwhs2": 98,
+    "atms": 96,
+    "ascat": 42,
+    "viirs": 6400,
+    "mwhs-2": 98
 }
 
-SATELLITE_NAMES = {'npp': 'Suomi NPP',
-                   'noaa19': 'NOAA 19',
-                   'noaa18': 'NOAA 18',
-                   'noaa15': 'NOAA 15',
-                   'aqua': 'Aqua',
-                   'terra': 'Terra',
-                   'metopc': 'Metop-C',
-                   'metopb': 'Metop-B',
-                   'metopa': 'Metop-A',
-                   'noaa20': 'NOAA-20',
-                   'noaa21': 'NOAA-21',
-                   'noaa22': 'NOAA-22',
-                   'fengyun3d': 'FY-3D',
-                   'fengyun3c': 'FY-3C'
+SATELLITE_NAMES = {"npp": "Suomi NPP",
+                   "noaa19": "NOAA 19",
+                   "noaa18": "NOAA 18",
+                   "noaa15": "NOAA 15",
+                   "aqua": "Aqua",
+                   "terra": "Terra",
+                   "metopc": "Metop-C",
+                   "metopb": "Metop-B",
+                   "metopa": "Metop-A",
+                   "noaa20": "NOAA-20",
+                   "noaa21": "NOAA-21",
+                   "noaa22": "NOAA-22",
+                   "fengyun3d": "FY-3D",
+                   "fengyun3c": "FY-3C"
                    }
 
-INSTRUMENT = {'Suomi NPP': 'viirs',
-              'NOAA-20': 'viirs',
-              'NOAA-21': 'viirs',
-              'NOAA-22': 'viirs',
-              'Aqua': 'modis',
-              'Terra': 'modis',
-              'NOAA 19': 'avhrr',
-              'NOAA 18': 'avhrr',
-              'NOAA 15': 'avhrr',
-              'Metop-A': 'avhrr',
-              'Metop-B': 'avhrr',
-              'Metop-C': 'avhrr',
-              'FY-3D': 'avhrr',
-              'FY-3C': 'avhrr'}
+INSTRUMENT = {"Suomi NPP": "viirs",
+              "NOAA-20": "viirs",
+              "NOAA-21": "viirs",
+              "NOAA-22": "viirs",
+              "Aqua": "modis",
+              "Terra": "modis",
+              "NOAA 19": "avhrr",
+              "NOAA 18": "avhrr",
+              "NOAA 15": "avhrr",
+              "Metop-A": "avhrr",
+              "Metop-B": "avhrr",
+              "Metop-C": "avhrr",
+              "FY-3D": "avhrr",
+              "FY-3C": "avhrr"}
 
-from . import version
-__version__ = version.get_versions()['version']
+VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
+                        "NOAA-20", "NOAA 20"]
+MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
+MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
+                         "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
+
+SATELLITE_MEOS_TRANSLATION = {"NOAA 19": "NOAA_19",
+                              "NOAA 18": "NOAA_18",
+                              "NOAA 15": "NOAA_15",
+                              "METOP-A": "M02",
+                              "METOP-B": "M01",
+                              "FENGYUN 3A": "FENGYUN-3A",
+                              "FENGYUN 3B": "FENGYUN-3B",
+                              "FENGYUN 3C": "FENGYUN-3C",
+                              "SUOMI NPP": "NPP"}

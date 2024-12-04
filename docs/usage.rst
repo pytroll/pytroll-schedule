@@ -1,6 +1,9 @@
 Usage
 =====
 
+Script to create a local satellite pass schedule
+------------------------------------------------
+
 To run the schedule script, it is now compulsory to provide a configuration file
 (see the config section on how these are formed). Command line arguments
 override what is provided in the configuration file.
@@ -58,3 +61,26 @@ Usage of the schedule script::
 	  --scisys              generate a SCISYS schedule file
 	  -p, --plot            generate plot images
 	  -g, --graph           save graph info
+
+
+Script to create instrument swath outlines in shapefile format for all passes scheduled
+---------------------------------------------------------------------------------------
+
+Usage of the script to create swath outlines in shapefile format::
+
+  usage: create_shapefiles_from_schedule [-h] [-l LOG_CONFIG] -s [LIST_OF_SATELLITES ...] -t TLE_FILEPATH -x XML_FILEPATH [-o OUTPUT_DIR] [-v]
+
+  options:
+    -h, --help            show this help message and exit
+    -l LOG_CONFIG, --log-config LOG_CONFIG
+                          Log config file to use instead of the standard logging.
+    -s [LIST_OF_SATELLITES ...], --satellites [LIST_OF_SATELLITES ...]
+                          Complete file path to the TLE file to use.
+    -t TLE_FILEPATH, --tle_filename TLE_FILEPATH
+                          Complete file path to the TLE file to use.
+    -x XML_FILEPATH, --xml_filename XML_FILEPATH
+                          Complete path to the XML satellite schedule file.
+    -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                          Path to the directory where the shapefiles will be stored.
+    -v, --verbose         Verbosity (between 1 and 2 occurrences with more leading to more verbose logging). WARN=0, INFO=1, DEBUG=2. This is overridden by the log
+                          config file if specified.
