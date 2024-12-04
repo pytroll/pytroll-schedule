@@ -143,7 +143,7 @@ def parse_args(args):
                         "verbose logging). WARN=0, INFO=1, "
                         "DEBUG=2. This is overridden by the log config file if specified.")
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 def run(args=None):
