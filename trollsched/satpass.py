@@ -24,6 +24,7 @@
 
 import ftplib
 import glob
+import hashlib
 import logging
 import logging.handlers
 import operator
@@ -301,9 +302,6 @@ class Pass(SimplePass):
         dur_hours, dur_reminder = divmod(dur_secs, 3600)
         dur_minutes, dur_seconds = divmod(dur_reminder, 60)
         duration = "{:0>2}:{:0>2}".format(dur_minutes, dur_seconds)
-
-
-        import hashlib
 
         pass_key = hashlib.md5(("{:s}|{:d}|{:d}|{:.3f}|{:.3f}".  # noqa : md5 is insecure, but not sensitive here.
                                 format(SATELLITE_MEOS_TRANSLATION.get(self.satellite.name.upper(),
