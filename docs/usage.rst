@@ -81,6 +81,6 @@ Usage of the script to create swath outlines in shapefile format::
     -x XML_FILEPATH, --xml_filename XML_FILEPATH
                           Complete path to the XML satellite schedule file.
     -o OUTPUT_DIR, --output_dir OUTPUT_DIR
-                          Complete path to the XML satellite schedule file.
+                          Path to the directory where the shapefiles will be stored.
     -v, --verbose         Verbosity (between 1 and 2 occurrences with more leading to more verbose logging). WARN=0, INFO=1, DEBUG=2. This is overridden by the log
                           config file if specified.

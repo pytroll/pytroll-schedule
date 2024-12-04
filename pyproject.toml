@@ -42,10 +42,6 @@ doc = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-apidoc"]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
-dev-dependencies = []
-
 [tool.hatch.metadata]
 allow-direct-references = true
 
