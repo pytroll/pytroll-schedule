@@ -201,6 +201,8 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
         try:
             gn = g.neighbours(passes_list[statnr].index(p[0]) + 1)
         except Exception:
+            logger.debug(f"len(passes_list)={len(passes_list)}  len(graph_set)={len(graph_set)} statnr={statnr} p={p}")
+            logger.debug("passes_list", passes_list)
             raise
 
         if gn[0] > len(passes_list[statnr]):
@@ -262,7 +264,7 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             ))
                             bufflist.append(cc)
 
-                        elif overlap < 0:
+                        else:
                             # If the current parent node's pass is not overlapping
                             # but BEFORE the pass from the recursion-return-list
                             # the recursion-list-node gets "simulated".
@@ -276,13 +278,11 @@ def collect_nodes(statnr, parnode, graph_set, newgraph, newpasses, passes_list, 
                             ]
                             cc.insert(0, (passes_list[statnr][n - 1], None))
                             bufflist.append(cc)
-
-                        else:
-                            pass
-
                 except Exception:
+                    logger.debug(f"\nCATCH\ngn:{gn}->{n}, col: {col}->{cx} statnr={statnr} statnr+i: {statnr + 1}")
+                    logger.debug(f"len(passes_list -n -cx): {len(passes_list[statnr])} {len(passes_list[statnr + 1])}")
                     for s in range(statnr, len(passes_list)):
-                        pass
+                        logger.debug(f"passes_list[{s}] => {passes_list[s]}")
                     raise
 
     return bufflist
@@ -319,10 +319,10 @@ def print_matrix(m, ly=-1, lx=-1):
     the last lx columns from the last ly rows.
     """
     for i, l in zip(range(ly), m[0:ly]):
-        pass
+        logger.debug(f"{i}: {l[:lx]}...")
+    logger.debug("[..., ...]")
     for i, l in zip(range(len(m) - ly - 1, len(m) - 1), m[-ly:]):
-        pass
-
+        logger.debug(f"{i}: ...{l[-lx:]}")
 
 def test_folding(g):
     """Test if the graphs could be "folded".
@@ -335,6 +335,7 @@ def test_folding(g):
     for u in range(g.order):
         for n in g.neighbours(u):
             if n < u:
+                logger.debug(f"{n}<{u}")
                 r = True
     return r
 
@@ -420,10 +421,16 @@ def main():
 
         from trollsched.schedule import conflicting_passes
         totpas = []
+
         for s, sp in allpasses.items():
+            logger.debug(f"s, len(sp): {s} {len(sp)}")
             totpas.extend(list(sp))
         passes = sorted(totpas, key=lambda x: x.risetime)
-        conflicting_passes(passes, timedelta(seconds=600))
+        cpg = conflicting_passes(passes, timedelta(seconds=600))
+        logger.debug(f"ALLPASSES: {len(allpasses)}")
+        logger.debug(f"PASSES: {len(passes)}")
+        logger.debug(f"CONFLGRPS: {len(cpg)}")
+        logger.debug(f"MAX: {max([len(g) for g in cpg])}")
 
         combined_stations(opts, pattern, station_list, graph, allpasses, start_time, start, forward)
 
