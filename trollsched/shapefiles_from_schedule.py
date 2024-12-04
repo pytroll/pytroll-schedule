@@ -86,9 +86,11 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
             platform_name = SATELLITE_NAMES.get(child.attrib["satellite"], child.attrib["satellite"])
             instrument = INSTRUMENT.get(platform_name)
             if not instrument:
+                logger.debug("Instrument not defined for platform %s", platform_name)
                 continue
 
             if platform_name not in satellites:
+                logger.debug("Satellite platform name not requested: %s", platform_name)
                 continue
             try:
                 overpass = create_pass(platform_name, instrument,
@@ -98,6 +100,9 @@ def shapefiles_from_schedule_xml_requests(filename, satellites, tle_file, output
                                                          "%Y-%m-%d-%H:%M:%S"),
                                        tle_filename=tle_file)
             except KeyError:
+                logger.warning(("Failed creating an pass instance for the overpass, for platform "
+                                "%s, instrument %s, and start-end times (%s,%s)"),
+                               platform_name, instrument, child.attrib["start-time"], child.attrib["end-time"])
                 continue
 
             output_filepath = Path(output_dir) / create_shapefile_filename(overpass)
