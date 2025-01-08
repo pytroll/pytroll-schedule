@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2024 PyTroll Community
+# Copyright (c) 2014 - 2025 PyTroll Community
 
 # Author(s):
 
@@ -75,7 +75,8 @@ INSTRUMENT = {"Suomi NPP": "viirs",
               "FY-3C": "avhrr"}
 
 VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
-                        "NOAA-20", "NOAA 20"]
+                        "NOAA-20", "NOAA 20", "NOAA-21", "NOAA 21"]
+
 MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
 MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
                          "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
