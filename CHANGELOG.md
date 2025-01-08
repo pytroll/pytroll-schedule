@@ -1,4 +1,34 @@
 ###############################################################################
+## Version 0.7.2 (2025/01/08)
+
+### Issues Closed
+
+* [Issue 90](https://github.com/pytroll/pytroll-schedule/issues/90) - Should be possible to store swath outlines as shapefiles ([PR 93](https://github.com/pytroll/pytroll-schedule/pull/93) by [@adybbroe](https://github.com/adybbroe))
+* [Issue 88](https://github.com/pytroll/pytroll-schedule/issues/88) - Change the avoid command line options to take a list ([PR 89](https://github.com/pytroll/pytroll-schedule/pull/89) by [@TAlonglong](https://github.com/TAlonglong))
+* [Issue 69](https://github.com/pytroll/pytroll-schedule/issues/69) - Add slstr as instrument ([PR 70](https://github.com/pytroll/pytroll-schedule/pull/70) by [@TAlonglong](https://github.com/TAlonglong))
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 92](https://github.com/pytroll/pytroll-schedule/pull/92) - Bugfix - slstr not yet properly supported
+* [PR 86](https://github.com/pytroll/pytroll-schedule/pull/86) - Add a test for runing from start to finish
+* [PR 81](https://github.com/pytroll/pytroll-schedule/pull/81) - Fix ftp downloading for older python versions
+
+#### Features added
+
+* [PR 95](https://github.com/pytroll/pytroll-schedule/pull/95) - Fix a few minor issues raised in PR93 which were accidentally left out
+* [PR 93](https://github.com/pytroll/pytroll-schedule/pull/93) - Create instrument swath outlines as shapefiles ([90](https://github.com/pytroll/pytroll-schedule/issues/90))
+* [PR 89](https://github.com/pytroll/pytroll-schedule/pull/89) - Issue 88 command line option avoid as list ([88](https://github.com/pytroll/pytroll-schedule/issues/88))
+* [PR 87](https://github.com/pytroll/pytroll-schedule/pull/87) - Add noaa21
+* [PR 86](https://github.com/pytroll/pytroll-schedule/pull/86) - Add a test for runing from start to finish
+* [PR 70](https://github.com/pytroll/pytroll-schedule/pull/70) - Issue 69 add slstr ([69](https://github.com/pytroll/pytroll-schedule/issues/69))
+
+In this release 9 pull requests were closed.
+
+
 ## Version 0.7.1 (2024/02/16)
 
 
