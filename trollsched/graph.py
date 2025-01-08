@@ -135,7 +135,7 @@ class Graph():
         
         To generate a pdf out of it::
             
-            dot sched.gv -Tpdf -otruc.pdf.
+            dot sched.gv -Tpdf -osched.pdf.
         """
         with open(filename, "w") as fd_:
             fd_.write('digraph schedule { \n size="80, 10";\n center="1";\n')
