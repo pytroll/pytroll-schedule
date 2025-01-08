@@ -40,3 +40,7 @@ tmp
 .vscode
 .ropeproject
 *~
+
+# Version
+# this should be generated automatically when installed
+trollsched/version.py

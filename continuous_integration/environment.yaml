@@ -1,0 +1,38 @@
+name: test-environment
+channels:
+  - conda-forge
+dependencies:
+  - xarray
+  - dask
+  - distributed
+  - toolz
+  - sphinx
+  - matplotlib
+  - cartopy
+  - scipy
+  - pyyaml
+  - coveralls
+  - coverage
+  - codecov
+  - behave
+  - netcdf4
+  - paramiko
+  - oauthlib
+  - watchdog
+  - s3fs
+  - shapely
+  - pyproj
+  - pandas
+  - geopandas
+  - mock
+  - pytest
+  - pytest-cov
+  - responses
+  - platformdirs
+  - defusedxml
+  - pyorbital
+  - pyresample
+  - trollsift
+  - pip
+  - pip:
+    - posttroll

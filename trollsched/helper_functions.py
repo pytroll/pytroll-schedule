@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018 Adam.Dybbroe
+# Copyright (c) 2018, 2024 Adam.Dybbroe
 
 # Author(s):
 
@@ -20,17 +20,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Helper functions for the pytroll-schedule methods. E.g. nightshade method
-for Cartopy as available in Basemap
+"""Helper functions for the pytroll-schedule methods.
 
+E.g. nightshade method for Cartopy as available in Basemap.
 """
 
-import numpy as np
 from datetime import datetime
+
+import numpy as np
 
 
 def sun_pos(dt=None):
-    """This function computes a rough estimate of the coordinates for
+    """Get location on earth where the sun is in zenith at time *dt*.
+
+    This function computes a rough estimate of the coordinates for
     the point on the surface of the Earth where the Sun is directly
     overhead at the time dt. Precision is down to a few degrees. This
     means that the equinoxes (when the sign of the latitude changes)
@@ -47,7 +50,7 @@ def sun_pos(dt=None):
     dt: datetime
         Defaults to datetime.utcnow()
 
-    Returns
+    Returns:
     -------
     lat, lng: tuple of floats
         Approximate coordinates of the point where the sun is
@@ -70,8 +73,7 @@ def sun_pos(dt=None):
 
 
 def fill_dark_side(ax, time=None, **kwargs):
-    """
-    Plot a fill on the dark side of the planet (without refraction).
+    """Plot a fill on the dark side of the planet (without refraction).
 
     Parameters
     ----------
@@ -83,7 +85,6 @@ def fill_dark_side(ax, time=None, **kwargs):
             Passed on to Matplotlib's ax.fill()
 
     """
-
     import cartopy.crs as ccrs
 
     lat, lng = sun_pos(time)

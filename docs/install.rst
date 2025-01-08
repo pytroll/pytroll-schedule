@@ -3,7 +3,7 @@ Installation
 	mkdir $HOME/PyTROLL
 	cd !$
 	mkdir data-in data-out etc
-	
+
 	#dnf install pyshp python-configobj numpy numpy-f2py scipy python-numexpr \
 	#python-pillow proj proj-epsg proj-nad pyproj python2-matplotlib python-basemap
 	#
@@ -16,15 +16,15 @@ Installation
 	wget https://github.com/pytroll/trollcast/archive/master.zip -O trollcast-master.zip
 	wget https://github.com/pytroll/pytroll-schedule/archive/master.zip -O pytroll-schedule-master.zip
 	wget https://github.com/pytroll/trollduction/archive/master.zip -O trollduction-master.zip
-	
-	
+
+
 	for ff in *.zip ; do
 	   unzip -u $ff
 	   cd $(basename $ff .zip)
 	   python setup.py build
 	   python setup.py install --user
 	done
-	
+
 	cat <<EE
 	export PPP_CONFIG_DIR=$HOME/PyTROLL/etc
 	export XRIT_DECOMPRESS_OUTDIR=$HOME/PyTROLL/data-out

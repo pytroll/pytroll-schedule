@@ -1,4 +1,4 @@
-# Copyright (c) 2013 - 2019 PyTroll
+# Copyright (c) 2013 - 2024 Pytroll community
 
 # Author(s):
 
@@ -29,21 +29,14 @@ from urllib.parse import urlparse
 
 import numpy as np
 from pyorbital import astronomy
-
-from trollsched.writers import generate_meos_file, generate_metno_xml_file, generate_sch_file, generate_xml_file
-
-try:
-    from pyresample import parse_area_file
-except ImportError:
-    # Older versions of pyresample:
-    from pyresample.utils import parse_area_file
-
+from pyresample import parse_area_file
 
 from trollsched import MIN_PASS, utils
 from trollsched.combine import get_combined_sched
 from trollsched.graph import Graph
 from trollsched.satpass import SimplePass, get_next_passes
 from trollsched.spherical import get_twilight_poly
+from trollsched.writers import generate_meos_file, generate_metno_xml_file, generate_sch_file, generate_xml_file
 
 logger = logging.getLogger(__name__)
 
@@ -211,26 +204,6 @@ class Station:
         return allpasses
 
 
-class SatScore:
-    """docstring for SatScore."""
-
-    def __init__(self, day, night):
-        """Initialize the score."""
-        self.day = day
-        self.night = night
-
-
-class Satellite:
-    """docstring for Satellite."""
-
-    def __init__(self, name, day, night,
-                 schedule_name=None, international_designator=None):
-        """Initialize the satellite."""
-        self.name = name
-        self.international_designator = international_designator
-        self.score = SatScore(day, night)
-        self.schedule_name = schedule_name or name
-
 
 class Scheduler:
     """docstring for Scheduler."""
@@ -319,7 +292,7 @@ def fermib(t):
     return 1 / (np.exp((t - a) / b) + 1)
 
 
-combination = {}
+combination: dict[SimplePass, SimplePass] = {}
 
 
 def combine(p1, p2, area_of_interest):
@@ -442,8 +415,7 @@ def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
     graph = Graph(n_vertices=n_vertices + 2)
 
     def add_arc(graph, p1, p2, hook=None):
-        logger.debug("Adding arc between " + str(p1) +
-                     " and " + str(p2) + "...")
+        logger.debug(f"Adding arc between {p1} and {p2}...")
         if p1 in avoid_list or p2 in avoid_list:
             w = 0
             logger.debug("...0 because in the avoid_list!")
@@ -451,12 +423,7 @@ def get_best_sched(overpasses, area_of_interest, delay, avoid_list=None):
             w = combine(p1, p2, area_of_interest)
         logger.debug("...with weight " + str(w))
 
-#         with open("/tmp/schedule.gv", "a") as fp_:
-#             fp_.write('        "' + str(p1) + '" -> "' + str(p2) +
-#                       '" [ label = "' + str(w) + '" ];\n')
-
-        graph.add_arc(passes.index(p1) + 1,
-                      passes.index(p2) + 1, w)
+        graph.add_arc(passes.index(p1) + 1, passes.index(p2) + 1, w)
         if hook is not None:
             hook()
 
@@ -822,7 +789,7 @@ def parse_args(args=None):
                                            description="(additional parameter changing behaviour)")
     group_spec.add_argument("-a", "--avoid",
                             default=[],
-                            nargs='*',
+                            nargs="*",
                             help="xml request file(s) with passes to avoid")
     group_spec.add_argument("--no-aqua-terra-dump", action="store_false",
                             help="do not consider Aqua/Terra-dumps")

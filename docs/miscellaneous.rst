@@ -22,12 +22,12 @@ The ftp adressses are:
 
 
 .. Earth Observing System Polar Ground Network (EPGN)
-   
+
    EPGN ground stations: Alaska Ground Station (AGS), Poker Flat, the Svalbard
    Satellite Station (SGS), the Kongsberg–Lockheed Martin ground station (SKS),
    and the SvalSat ground station (SG3) in Norway, as well as the SSC North
    Pole facility.
-   
+
    SSC's North Pole Facility hosting the two antennas USAK04 & USAK05 (part of EPGN)
 
 
@@ -52,7 +52,3 @@ This will be read by Pytroll-schedule in order to disregard Metop-A where there 
 no Direct Readout available over the relavnt local reception station. NOT YET IMPLEMENTED!
 
 .. FIXME!
-
-
-
- 
