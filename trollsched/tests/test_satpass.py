@@ -372,6 +372,13 @@ class TestSwathBoundary:
         cov = mypass.area_coverage(self.euron1)
         assert cov == pytest.approx(0.786836, 1e-5)
 
+        tstart = datetime.strptime("2025-03-03T11:53:01", "%Y-%m-%dT%H:%M:%S")
+        tend = tstart + timedelta(seconds=60*12.2)
+        tle1 = "1 57490U 23111A   25061.77275788  .00000196  00000+0  11297-3 0  9996"
+        tle2 = "2 57490  98.7372 134.1450 0001865  84.6719 275.4671 14.20001545 81964"
+        mypass = Pass("FENGYUN 3F", tstart, tend, instrument="mersi-3", tle1=tle1, tle2=tle2, frequency=100)
+        cov = mypass.area_coverage(self.euron1)
+        assert cov == pytest.approx(0.70125, 1e-5)
 
     def test_arctic_is_not_antarctic(self):
         """Test that artic and antarctic are not mixed up."""
