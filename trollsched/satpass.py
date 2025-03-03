@@ -44,6 +44,7 @@ from pyresample.boundary import AreaDefBoundary
 from trollsched import (
     JPSS_TLE_NAMES,
     MERSI2_PLATFORM_NAMES,
+    MERSI3_PLATFORM_NAMES,
     MERSI_PLATFORM_NAMES,
     MIN_PASS,
     NUMBER_OF_FOVS,
@@ -172,6 +173,9 @@ class Pass(SimplePass):
             elif "mersi-2" in instrument:
                 logger.warning("Instrument is a sequence! Assume mersi-2...")
                 instrument = "mersi-2"
+            elif "mersi-3" in instrument:
+                logger.warning("Instrument is a sequence! Assume mersi-3...")
+                instrument = "mersi-3"
             else:
                 raise TypeError("Instrument is a sequence! Don't know which one to choose!")
 
@@ -578,6 +582,8 @@ def get_next_passes(satellites,
                 instrument = "mersi"
             elif sat.name.upper() in MERSI2_PLATFORM_NAMES:
                 instrument = "mersi-2"
+            elif sat.name.upper() in MERSI3_PLATFORM_NAMES:
+                instrument = "mersi-3"
             else:
                 instrument = "unknown"
 

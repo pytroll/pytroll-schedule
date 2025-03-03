@@ -56,7 +56,9 @@ SATELLITE_NAMES = {"npp": "Suomi NPP",
                    "noaa21": "NOAA-21",
                    "noaa22": "NOAA-22",
                    "fengyun3d": "FY-3D",
-                   "fengyun3c": "FY-3C"
+                   "fengyun3c": "FY-3C",
+                   "fengyun3e": "FY-3E",
+                   "fengyun3f": "FY-3F"
                    }
 
 INSTRUMENT = {"Suomi NPP": "viirs",
@@ -80,6 +82,7 @@ VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
 MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
 MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
                          "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
+MERSI3_PLATFORM_NAMES = ["FENGYUN 3F", "FENGYUN-3F", "FY-3F"]
 
 SATELLITE_MEOS_TRANSLATION = {"NOAA 19": "NOAA_19",
                               "NOAA 18": "NOAA_18",
