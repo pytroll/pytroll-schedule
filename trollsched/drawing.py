@@ -25,6 +25,7 @@
 import logging
 import logging.handlers
 import os
+from tempfile import gettempdir
 
 import matplotlib as mpl
 import numpy as np
@@ -47,7 +48,7 @@ if not BASEMAP_NOT_CARTOPY:
         "CARTOPY_PRE_EXISTING_DATA_DIR", cartopy.config["pre_existing_data_dir"])
 
 
-class MapperBasemap(object):
+class MapperBasemap:
     """A class to generate nice plots with basemap."""
 
     def __init__(self, **proj_info):
@@ -74,13 +75,15 @@ class MapperBasemap(object):
         self.map.drawparallels(np.arange(-90, 90, 30))
 
     def __enter__(self):
+        """Enter the mapper context."""
         return self.map
 
     def __exit__(self, etype, value, tb):
+        """Exit the mapper context."""
         pass
 
 
-class MapperCartopy(object):
+class MapperCartopy:
     """A class to generate nice plots with Cartopy."""
 
     def __init__(self, **proj_info):
@@ -127,24 +130,24 @@ class MapperCartopy(object):
         fill_dark_side(self._ax, time=utctime, color=color, alpha=alpha)
 
     def __call__(self, *args):
+        """Call the mapper."""
         return args
 
     def __enter__(self):
+        """Enter the mapper context."""
         return self
 
     def __exit__(self, etype, value, tb):
+        """Exit the mapper context."""
         pass
 
 
-if BASEMAP_NOT_CARTOPY:
-    Mapper = MapperBasemap
-else:
-    Mapper = MapperCartopy
+Mapper = MapperBasemap if BASEMAP_NOT_CARTOPY else MapperCartopy
 
 
 def save_fig(pass_obj,
              poly=None,
-             directory="/tmp/plots",
+             directory=None,
              overwrite=False,
              labels=None,
              extension=".png",
@@ -167,6 +170,8 @@ def save_fig(pass_obj,
     logger.debug("Save fig " + str(pass_obj))
     rise = pass_obj.risetime.strftime("%Y%m%d%H%M%S")
     fall = pass_obj.falltime.strftime("%Y%m%d%H%M%S")
+    if directory is None:
+        directory = os.path.join(gettempdir(), "plots")
     if not os.path.exists(directory):
         logger.debug("Create plot dir " + directory)
         os.makedirs(directory)
@@ -247,8 +252,10 @@ def main():
     from trollsched.satpass import get_next_passes
 
     passes = get_next_passes(["noaa 19", "suomi npp"], datetime.now(), 24, (16, 58, 0))
+
+    directory = os.path.join(gettempdir(), "plots")
     for p in passes:
-        save_fig(p, directory="/tmp/plots/")
+        save_fig(p, directory=directory)
 
 
 if __name__ == "__main__":
