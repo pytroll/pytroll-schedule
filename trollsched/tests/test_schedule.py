@@ -45,7 +45,7 @@ class TestTools:
                 self.risetime = rise
                 self.falltime = fall
 
-        ref_time = datetime.utcnow()
+        ref_time = datetime(2020, 1, 1, 18, 0)
         passes = [MyPass(ref_time, ref_time + timedelta(minutes=10)),
                   MyPass(ref_time + timedelta(minutes=10.01),
                          ref_time + timedelta(minutes=20))]
@@ -372,7 +372,7 @@ def test_pyorbitals_platform_name(tmp_path):
     with open(config_file, "w") as fd:
         fd.write(yaml.dump(config))
 
-    run(["-c", os.fspath(config_file), "-x", "-t", os.fspath(tle_file)])
+    run(["-c", os.fspath(config_file), "-x", "-t", os.fspath(tle_file), "-s", "2024-03-30T15:00"])
     assert sched_file in tmp_path.iterdir()
 
 
@@ -436,7 +436,8 @@ def test_schedule_avoid(tmp_path):
 
     start_time = datetime(2024, 5, 8, 0, 0, 0)
     run(["-c", os.fspath(config_file), "-x", "-v", "-t", os.fspath(tle_file),
-         "--start-time", start_time.strftime("%Y-%m-%dT%H:%M:%S"), "--avoid", os.fspath(avoid_file)])
+         "--start-time", start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+         "--avoid", os.fspath(avoid_file)])
     assert sched_file in tmp_path.iterdir()
 
     sched_file_passes = get_passes_from_xml_file([sched_file])

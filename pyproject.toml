@@ -37,6 +37,9 @@ compare_scheds = "trollsched.compare:run"
 
 [project.optional-dependencies]
 doc = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-apidoc"]
+test = [
+    "pytest>=8.3.5",
+]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
