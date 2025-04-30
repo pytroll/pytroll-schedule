@@ -1,3 +1,22 @@
+## Version 0.7.3 (2025/04/30)
+
+### Issues Closed
+
+* [Issue 99](https://github.com/pytroll/pytroll-schedule/issues/99) - Build sometimes allocates 24 GB of RAM ([PR 100](https://github.com/pytroll/pytroll-schedule/pull/100) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 96](https://github.com/pytroll/pytroll-schedule/issues/96) - Add fengyun3f mersi-3
+* [Issue 65](https://github.com/pytroll/pytroll-schedule/issues/65) - Mapping in collections is depricated since 3.3 and removed in 3.10
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 100](https://github.com/pytroll/pytroll-schedule/pull/100) - Fix test running long ([99](https://github.com/pytroll/pytroll-schedule/issues/99))
+
+In this release 1 pull request was closed.
+
+
 ###############################################################################
 ## Version 0.7.2 (2025/01/08)
 
