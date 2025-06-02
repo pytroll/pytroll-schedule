@@ -41,7 +41,7 @@ def generate_sch_file(output_file, overpasses, coords):
 
 def generate_metno_xml_file(output_file, allpasses, coords, start, end, station_name, center_id, report_mode=False):
     """Generate a meto xml file."""
-    import defusedxml.ElementTree as ET
+    from xml.etree import ElementTree as ET  # noqa
 
     reqtime = datetime.utcnow()
     time_format = "%Y-%m-%dT%H:%M:%S"
