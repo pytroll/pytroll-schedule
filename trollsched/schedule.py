@@ -137,7 +137,11 @@ class Station:
             logger.info("Done!")
 
         if opts.metno_xml:
-            generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), allpasses,
+            generate_metno_xml_file(build_filename("file_metno_xml_all", pattern, pattern_args), allpasses,
+                                    self.coords, start_time + timedelta(hours=sched.start),
+                                    start_time + timedelta(hours=sched.forward), self.id, sched.center_id,
+                                    report_mode=True)
+            generate_metno_xml_file(build_filename("file_metno_xml", pattern, pattern_args), schedule,
                                     self.coords, start_time + timedelta(hours=sched.start),
                                     start_time + timedelta(hours=sched.forward), self.id, sched.center_id,
                                     report_mode=True)
