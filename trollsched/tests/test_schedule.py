@@ -314,6 +314,35 @@ class TestAll:
             assert (metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds == 0
             assert (metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds == 0
 
+    def test_write_metno_xml(self, tmp_path):
+        """Test that writing pass list in metno xml format work as expected."""
+        from datetime import timezone
+        from trollsched.writers import generate_metno_xml_file
+        import defusedxml.ElementTree as ET
+
+        allpasses = get_next_passes(self.satellites, self.utctime,
+                                    4, (16, 58, 0), tle_file="nonexisting")
+        coords = (10, 60, 0.1)
+        written_test_file = generate_metno_xml_file(tmp_path / "test.xml", allpasses,
+                                                    coords, self.utctime,
+                                                    self.utctime + timedelta(hours=5), "id", "center_id",
+                                                    report_mode=True)
+        print(written_test_file)
+        # Read back to test content
+        tree = ET.parse(written_test_file)
+        root = tree.getroot()
+        assert root.find('properties/project').text == 'Pytroll'
+        assert root.find('properties/type').text == 'report'
+        assert root.find('properties/station').text == 'id'
+        assert root.find('properties/requested-by').text == 'center_id'
+        assert root.find('properties/file-start').text == '2018-11-28T10:00:00'
+        assert root.find('properties/file-end').text == '2018-11-28T15:00:00'
+        expected_aos = ['20181128104520', '20181128122622']
+        expected_los = ['20181128110046', '20181128124107']
+        for overpass, exp_aos, exp_los in zip(root.iter("pass"), expected_aos, expected_los):
+            assert overpass.attrib["aos"] == exp_aos
+            assert overpass.attrib["los"] == exp_los
+
 
 euron1 = """euron1:
   description: Northern Europe - 1km
@@ -444,3 +473,4 @@ def test_schedule_avoid(tmp_path):
     avoid_file_passes = get_passes_from_xml_file([avoid_file])
     for avoid_pass in avoid_file_passes:
         assert avoid_pass not in sched_file_passes
+
