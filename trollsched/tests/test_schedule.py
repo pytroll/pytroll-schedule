@@ -320,18 +320,14 @@ class TestAll:
         from trollsched.writers import generate_metno_xml_file
         import defusedxml.ElementTree as ET
 
-        os.environ["TLES"] = "Set-to-avoid-tle-download-from-net"
-        # mymock:
-        with patch("pyorbital.orbital.Orbital") as mymock:
-            instance = mymock.return_value
-            instance.get_next_passes = self.orb.get_next_passes
-            instance.get_observer_look = self.orb.get_observer_look
-            instance.get_lonlatalt = self.orb.get_lonlatalt
-            instance.get_orbit_number = self.orb.get_orbit_number
-            instance.orbit_elements = self.orb.orbit_elements
+        with open(tmp_path / "tle.file", "wt") as f:
+            f.write(self.satellites[0].upper() + "\n")
+            f.write(self.tles[self.satellites[0]]['line1'] + "\n")
+            f.write(self.tles[self.satellites[0]]['line2'] + "\n")
+            f.close()
 
             allpasses = get_next_passes(self.satellites, self.utctime,
-                                        4, (16, 58, 0), tle_file="nonexisting")
+                                        4, (16, 58, 0), tle_file=str(tmp_path / "tle.file"))
             coords = (10, 60, 0.1)
             written_test_file = generate_metno_xml_file(tmp_path / "test.xml", allpasses,
                                                         coords, self.utctime,
@@ -351,7 +347,6 @@ class TestAll:
             for overpass, exp_aos, exp_los in zip(root.iter("pass"), expected_aos, expected_los):
                 assert overpass.attrib["aos"] == exp_aos
                 assert overpass.attrib["los"] == exp_los
-
 
 euron1 = """euron1:
   description: Northern Europe - 1km
