@@ -1,3 +1,13 @@
+## Version 0.7.5 (2025/06/12)
+
+### Issues Closed
+
+* [Issue 103](https://github.com/pytroll/pytroll-schedule/issues/103) - Add write the metno xml schedule
+* [Issue 101](https://github.com/pytroll/pytroll-schedule/issues/101) - The generation of metno xml file failes with AttributeError in main
+
+In this release 2 issues were closed.
+
+###############################################################################
 ## Version 0.7.3 (2025/04/30)
 
 ### Issues Closed
