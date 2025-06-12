@@ -320,29 +320,33 @@ class TestAll:
         from trollsched.writers import generate_metno_xml_file
         import defusedxml.ElementTree as ET
 
-        allpasses = get_next_passes(self.satellites, self.utctime,
-                                    4, (16, 58, 0), tle_file="nonexisting")
-        coords = (10, 60, 0.1)
-        written_test_file = generate_metno_xml_file(tmp_path / "test.xml", allpasses,
-                                                    coords, self.utctime,
-                                                    self.utctime + timedelta(hours=5), "id", "center_id",
-                                                    report_mode=True)
-        print(written_test_file)
-        # Read back to test content
-        tree = ET.parse(written_test_file)
-        root = tree.getroot()
-        assert root.find('properties/project').text == 'Pytroll'
-        assert root.find('properties/type').text == 'report'
-        assert root.find('properties/station').text == 'id'
-        assert root.find('properties/requested-by').text == 'center_id'
-        assert root.find('properties/file-start').text == '2018-11-28T10:00:00'
-        assert root.find('properties/file-end').text == '2018-11-28T15:00:00'
-        expected_aos = ['20181128104520', '20181128122622']
-        expected_los = ['20181128110046', '20181128124107']
-        for overpass, exp_aos, exp_los in zip(root.iter("pass"), expected_aos, expected_los):
-            assert overpass.attrib["aos"] == exp_aos
-            assert overpass.attrib["los"] == exp_los
+        with open(tmp_path / "tle.file", "wt") as f:
+            f.write(self.satellites[0].upper() + "\n")
+            f.write(self.tles[self.satellites[0]]['line1'] + "\n")
+            f.write(self.tles[self.satellites[0]]['line2'] + "\n")
+            f.close()
 
+            allpasses = get_next_passes(self.satellites, self.utctime,
+                                        4, (16, 58, 0), tle_file=str(tmp_path / "tle.file"))
+            coords = (10, 60, 0.1)
+            written_test_file = generate_metno_xml_file(tmp_path / "test.xml", allpasses,
+                                                        coords, self.utctime,
+                                                        self.utctime + timedelta(hours=5), "id", "center_id",
+                                                        report_mode=True)
+            # Read back to test content
+            tree = ET.parse(written_test_file)
+            root = tree.getroot()
+            assert root.find('properties/project').text == 'Pytroll'
+            assert root.find('properties/type').text == 'report'
+            assert root.find('properties/station').text == 'id'
+            assert root.find('properties/requested-by').text == 'center_id'
+            assert root.find('properties/file-start').text == '2018-11-28T10:00:00'
+            assert root.find('properties/file-end').text == '2018-11-28T15:00:00'
+            expected_aos = ['20181128105342', '20181128123444']
+            expected_los = ['20181128110906', '20181128124925']
+            for overpass, exp_aos, exp_los in zip(root.iter("pass"), expected_aos, expected_los):
+                assert overpass.attrib["aos"] == exp_aos
+                assert overpass.attrib["los"] == exp_los
 
 euron1 = """euron1:
   description: Northern Europe - 1km
