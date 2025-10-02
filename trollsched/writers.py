@@ -95,6 +95,7 @@ def generate_xml_requests(sched, start, end, station_name, center_id, report_mod
         typep.text = "report"
     else:
         typep.text = "request"
+    antenna = ET.SubElement(props, "antenna")
     station = ET.SubElement(props, "station")
     station.text = station_name
     file_start = ET.SubElement(props, "file-start")
