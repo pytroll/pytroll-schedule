@@ -317,8 +317,10 @@ class TestAll:
     def test_write_xml(self, tmp_path):
         """Test that writing pass list following EUMETSAT xml format works as expected."""
         from datetime import timezone
-        from trollsched.writers import generate_xml_file
+
         import defusedxml.ElementTree as ET
+
+        from trollsched.writers import generate_xml_file
 
         with open(tmp_path / "tle.file", "wt") as f:
             f.write(self.satellites[0].upper() + "\n")
@@ -355,8 +357,10 @@ class TestAll:
     def test_write_metno_xml(self, tmp_path):
         """Test that writing pass list in metno xml format work as expected."""
         from datetime import timezone
-        from trollsched.writers import generate_metno_xml_file
+
         import defusedxml.ElementTree as ET
+
+        from trollsched.writers import generate_metno_xml_file
 
         with open(tmp_path / "tle.file", "wt") as f:
             f.write(self.satellites[0].upper() + "\n")
