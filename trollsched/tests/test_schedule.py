@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014 - 2024 Pytroll
+# Copyright (c) 2014 - 2025 Pytroll
 
 # Author(s):
 
@@ -314,6 +314,44 @@ class TestAll:
             assert (metopa_passes[0].uptime - datetime(2018, 12, 4, 9, 17, 48, 530484)).seconds == 0
             assert (metopa_passes[0].risetime - datetime(2018, 12, 4, 9, 17, 21, 644605)).seconds == 0
 
+    def test_write_xml(self, tmp_path):
+        """Test that writing pass list following EUMETSAT xml format works as expected."""
+        from datetime import timezone
+        from trollsched.writers import generate_xml_file
+        import defusedxml.ElementTree as ET
+
+        with open(tmp_path / "tle.file", "wt") as f:
+            f.write(self.satellites[0].upper() + "\n")
+            f.write(self.tles[self.satellites[0]]['line1'] + "\n")
+            f.write(self.tles[self.satellites[0]]['line2'] + "\n")
+            f.close()
+
+            allpasses = get_next_passes(self.satellites, self.utctime,
+                                        4, (16, 58, 0), tle_file=str(tmp_path / "tle.file"))
+
+            filename = str(tmp_path / "test.xml")
+            written_test_file = generate_xml_file(allpasses,
+                                                  self.utctime,
+                                                  self.utctime + timedelta(hours=5),
+                                                  filename,
+                                                  "id", "center_id")
+
+            # Read back to test content
+            tree = ET.parse(written_test_file)
+            root = tree.getroot()
+            assert root.find('properties/project').text == 'Pytroll'
+            assert root.find('properties/type').text == 'request'
+            assert root.find('properties/station').text == 'id'
+            assert root.find('properties/antenna').text is None
+            assert root.find('properties/requested-by').text == 'center_id'
+            assert root.find('properties/file-start').text == '2018-11-28-10:00:00'
+            assert root.find('properties/file-end').text == '2018-11-28-15:00:00'
+            expected_aos = ['20181128105342', '20181128123444']
+            expected_los = ['20181128110906', '20181128124925']
+            for overpass, exp_aos, exp_los in zip(root.iter("pass"), expected_aos, expected_los):
+                assert overpass.attrib["aos"] == exp_aos
+                assert overpass.attrib["los"] == exp_los
+
     def test_write_metno_xml(self, tmp_path):
         """Test that writing pass list in metno xml format work as expected."""
         from datetime import timezone
@@ -347,6 +385,7 @@ class TestAll:
             for overpass, exp_aos, exp_los in zip(root.iter("pass"), expected_aos, expected_los):
                 assert overpass.attrib["aos"] == exp_aos
                 assert overpass.attrib["los"] == exp_los
+
 
 euron1 = """euron1:
   description: Northern Europe - 1km
@@ -477,4 +516,3 @@ def test_schedule_avoid(tmp_path):
     avoid_file_passes = get_passes_from_xml_file([avoid_file])
     for avoid_pass in avoid_file_passes:
         assert avoid_pass not in sched_file_passes
-
