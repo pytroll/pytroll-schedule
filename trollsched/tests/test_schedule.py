@@ -218,10 +218,10 @@ class TestAll:
             rise_times = [p.risetime for p in allpasses]
             fall_times = [p.falltime for p in allpasses]
 
-            assert abs((rt1 - rise_times[0]).total_seconds()) < 1.0
-            assert abs((rt2 - rise_times[1]).total_seconds()) < 1.0
-            assert abs((ft1 - fall_times[0]).total_seconds()) < 1.0
-            assert abs((ft2 - fall_times[1]).total_seconds()) < 1.0
+            assert abs((rt1 - rise_times[0]).total_seconds()) < 0.02
+            assert abs((rt2 - rise_times[1]).total_seconds()) < 0.02
+            assert abs((ft1 - fall_times[0]).total_seconds()) < 0.02
+            assert abs((ft2 - fall_times[1]).total_seconds()) < 0.02
 
             assert all([p.instrument == "viirs" for p in allpasses])
 
