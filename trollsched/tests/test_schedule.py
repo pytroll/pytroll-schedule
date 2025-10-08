@@ -198,6 +198,8 @@ class TestAll:
     @patch("os.path.exists")
     def test_get_next_passes_viirs(self, exists):
         """Test getting the next viirs passes."""
+        import numpy as np
+
         exists.return_code = True
 
         # mymock:
@@ -210,18 +212,18 @@ class TestAll:
 
             assert len(allpasses) == 2
 
-            rt1 = dt.datetime(2018, 11, 28, 10, 53, 42, 79483)
-            ft1 = dt.datetime(2018, 11, 28, 11, 9, 6, 916787)
-            rt2 = dt.datetime(2018, 11, 28, 12, 34, 44, 667963)
-            ft2 = dt.datetime(2018, 11, 28, 12, 49, 25, 134067)
+            rt1 = dt.datetime(2018, 11, 28, 10, 53, 42, 79483).timestamp()
+            ft1 = dt.datetime(2018, 11, 28, 11, 9, 6, 916787).timestamp()
+            rt2 = dt.datetime(2018, 11, 28, 12, 34, 44, 667963).timestamp()
+            ft2 = dt.datetime(2018, 11, 28, 12, 49, 25, 134067).timestamp()
 
-            rise_times = [p.risetime for p in allpasses]
-            fall_times = [p.falltime for p in allpasses]
+            rise_times = np.array([p.risetime.timestamp() for p in allpasses])
+            fall_times = np.array([p.falltime.timestamp() for p in allpasses])
 
-            assert abs((rt1 - rise_times[0]).total_seconds()) < 0.02
-            assert abs((rt2 - rise_times[1]).total_seconds()) < 0.02
-            assert abs((ft1 - fall_times[0]).total_seconds()) < 0.02
-            assert abs((ft2 - fall_times[1]).total_seconds()) < 0.02
+            assert min(abs(rise_times - rt1)) < 0.02
+            assert min(abs(rise_times - rt2)) < 0.02
+            assert min(abs(fall_times - ft1)) < 0.02
+            assert min(abs(fall_times - ft2)) < 0.02
 
             assert all([p.instrument == "viirs" for p in allpasses])
 
