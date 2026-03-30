@@ -62,7 +62,7 @@ jobs:
           pytest --cov=trollsched trollsched/tests --cov-report=xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           file: ./coverage.xml
           env_vars: PYTHON_VERSION
