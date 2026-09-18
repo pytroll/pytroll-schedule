@@ -38,6 +38,23 @@ INSTRUMENT = {"avhrr/3": "avhrr",
               "avhrr-3": "avhrr",
               "mwhs-2": "mwhs2"}
 
+INSTRUMENTS_TAKING_SCAN_POINTS = {"ascat", "amsua", "mhs", "mwhs2", "atms", "metimage"}
+
+SECONDS_PER_SCAN_OF_INSTRUMENTS_SAMPLED_AT_EVERY_SCAN = {
+    "ascat": 3.74747474747,
+    "amsua": 8.,
+    "mhs": 8. / 3.,
+    "mwhs2": 8. / 3.,
+    "atms": 8. / 3.,
+    "metimage": 1.729,
+}
+
+
+def _canonical_instrument_name(instrument):
+    """Return the name pyorbital knows the instrument by."""
+    return INSTRUMENT.get(instrument, instrument)
+
+
 class InstrumentNotSupported(Exception):
     """Exception to capture cases when instrument are (yet) not supported."""
 
@@ -92,25 +109,14 @@ class SwathBoundary(Boundary):
 
     def create_instrument_geometry(self, instrument, scans_nb, scanpoints, scan_step, scan_angle):
         """Create an instrument geometry object."""
-        instrument_fun = getattr(geoloc_instrument_definitions,
-                                 INSTRUMENT.get(instrument, instrument))
+        instrument = _canonical_instrument_name(instrument)
+        instrument_fun = getattr(geoloc_instrument_definitions, instrument)
 
         if instrument.startswith("avhrr"):
             sgeom = instrument_fun(scans_nb, scanpoints, scan_angle=scan_angle, frequency=100)
-        elif instrument in ["ascat", ]:
-            sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument in ["amsua", "mhs"]:
-            sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument in ["mwhs2", ]:
-            sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument == "olci":
-            sgeom = instrument_fun(
-                scans_nb, scanpoints, scan_step=scan_step)
-        elif instrument == "viirs":
+        elif instrument in ["viirs", "olci"]:
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
-        elif instrument in ["mhs", "atms", "mwhs-2"]:
-            sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument.startswith("slstr"):
+        elif instrument in INSTRUMENTS_TAKING_SCAN_POINTS or instrument.startswith("slstr"):
             sgeom = instrument_fun(scans_nb, scanpoints)
         else:
             logger.warning("Instrument not tested: %s", instrument)
@@ -197,44 +203,23 @@ class SwathBoundary(Boundary):
 
     def get_steps_and_duration(self, scan_step):
         """Get the steps and duration for the instrument."""
-        if self.overpass.instrument == "viirs":
+        instrument = _canonical_instrument_name(self.overpass.instrument)
+        if instrument in SECONDS_PER_SCAN_OF_INSTRUMENTS_SAMPLED_AT_EVERY_SCAN:
+            sec_scan_duration = SECONDS_PER_SCAN_OF_INSTRUMENTS_SAMPLED_AT_EVERY_SCAN[instrument]
+            along_scan_reduce_factor = 1
+            scan_step = 1
+        elif instrument == "viirs":
             sec_scan_duration = 1.779166667
             along_scan_reduce_factor = 1
-        elif self.overpass.instrument.startswith("avhrr"):
+        elif instrument.startswith("avhrr"):
             sec_scan_duration = 1. / 6.
             along_scan_reduce_factor = 0.1
-        elif self.overpass.instrument == "ascat":
-            sec_scan_duration = 3.74747474747
-            along_scan_reduce_factor = 1
-            # Overwrite the scan step
-            scan_step = 1
-        elif self.overpass.instrument == "amsua":
-            sec_scan_duration = 8.
-            along_scan_reduce_factor = 1
-            # Overwrite the scan step
-            scan_step = 1
-        elif self.overpass.instrument == "mhs":
-            sec_scan_duration = 8./3.
-            along_scan_reduce_factor = 1
-            # Overwrite the scan step
-            scan_step = 1
-        elif self.overpass.instrument == "mwhs2":
-            sec_scan_duration = 8./3.
-            along_scan_reduce_factor = 1
-            # Overwrite the scan step
-            scan_step = 1
-        elif self.overpass.instrument == "olci":
+        elif instrument == "olci":
             # 3 minutes of data is 4091 300meter lines:
             sec_scan_duration = 0.04399902224395014
             along_scan_reduce_factor = 1
             # Overwrite the scan step
             scan_step = 100
-        elif self.overpass.instrument == "atms":
-            sec_scan_duration = 8/3.
-            along_scan_reduce_factor = 1
-            # Overwrite the scan step
-            scan_step = 1
-
         else:
             # Assume AVHRR!
             logmsg = ("Instrument scan duration not known. Setting it to AVHRR. Instrument: ")

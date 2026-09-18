@@ -40,7 +40,8 @@ NUMBER_OF_FOVS = {
     "atms": 96,
     "ascat": 42,
     "viirs": 6400,
-    "mwhs-2": 98
+    "mwhs-2": 98,
+    "metimage": 3144,
 }
 
 SATELLITE_NAMES = {"npp": "Suomi NPP",
