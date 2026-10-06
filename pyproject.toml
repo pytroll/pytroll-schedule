@@ -8,7 +8,7 @@ authors = [
 dependencies = [
     "numpy",
     "pyresample >= 1.22",
-    "pyorbital",
+    "pyorbital >= 1.13",
     "shapely",
     "geopandas",
     "pandas",
