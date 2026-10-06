@@ -103,8 +103,9 @@ class SwathBoundary(Boundary):
             sgeom = instrument_fun(scans_nb, scanpoints)
         elif instrument in ["mwhs2", ]:
             sgeom = instrument_fun(scans_nb, scanpoints)
-        elif instrument in ["olci", ]:
-            sgeom = instrument_fun(scans_nb, scanpoints)
+        elif instrument == "olci":
+            sgeom = instrument_fun(
+                scans_nb, scanpoints, scan_step=scan_step)
         elif instrument == "viirs":
             sgeom = instrument_fun(scans_nb, scanpoints, scan_step=scan_step)
         elif instrument in ["mhs", "atms", "mwhs-2"]:

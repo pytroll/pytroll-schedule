@@ -5,14 +5,16 @@ description = "Scheduling satellite passes in Python"
 authors = [
     { name = "The Pytroll Team", email = "pytroll@googlegroups.com" }
 ]
-dependencies = ["numpy",
-                "pyresample >= 1.22",
-                "pyorbital",
-                "shapely",
-                "geopandas",
-                "pandas",
-                "pyyaml",
-                "defusedxml"]
+dependencies = [
+    "numpy",
+    "pyresample >= 1.22",
+    "pyorbital",
+    "shapely",
+    "geopandas",
+    "pandas",
+    "pyyaml",
+    "defusedxml",
+]
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
