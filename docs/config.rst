@@ -100,6 +100,16 @@ this section.
 ``file_graph``
 	Graph files with information about the computation.
 
+``file_html``
+	Path and filename of the interactive HTML schedule page written with
+	``--html`` (default: ``{dir_output}/{date}-{time}-schedule-{station}.html``).
+	See :doc:`viewer`.
+
+``file_coastlines``
+	Shapefile with coastlines or country outlines for the maps of the HTML
+	page.  When unset, Natural Earth data is downloaded through cartopy, which
+	needs internet access; see :doc:`viewer` for an offline setup.
+
 
 Stations
 --------
@@ -143,6 +153,12 @@ Stations
 	File with area definitions, and the area referenced therein.
 	This area is taken into computation, only satellite passes which swaths
 	are cross-sectioning this area are considered for scheduling.
+
+``antenna``
+	Optional. Name/ID of the antenna of this station, written to the
+	``<antenna>`` element in the properties of the generated xml request and
+	report files (also in the coordinated schedules). If omitted, the element
+	is left empty.
 
 ``satellites``
 	Satellites receivable from this station.
@@ -205,3 +221,52 @@ A few examples for satellite sections, assigning scores to each satellite.
 
 ``day``
 	Weight value for satellite swath parts on the day-side of the terminator.
+
+``trimmable``
+	Optional, ``false`` by default. When two passes of satellites both marked
+	``trimmable: true`` overlap in time, they may be shortened so that both can
+	be received. The overlap is shared equally where their coverage allowances
+	permit, with the scheduling delay in between and the minimum pass duration
+	preserved. By default, only reception outside the area of interest is
+	removed. If the conflict cannot be resolved within these constraints,
+	nothing is trimmed and the scheduler picks one pass as usual.
+	Overlapping pairs are considered even when other candidate passes start
+	between them; an intervening candidate does not prevent a feasible trim.
+
+	After selection, unused trimmed time is restored where it does not
+	conflict with another selected pass or the required scheduling delay.
+	A pass therefore does not remain shortened solely to accommodate a
+	trimming partner that was not selected. This applies to single-station
+	and coordinated output, including reports and plots. It does not change
+	which passes the scheduler selects.
+
+``max_coverage_loss``
+	Optional number from 0 to 100, expressed in percent, with a default of 0.
+	When ``trimmable: true``, this sets the maximum fraction of each pass's
+	original coverage of the area of interest that may be lost through
+	trimming. For example, 5 retains at least 95 percent of the area that the
+	untrimmed pass covered, not 95 percent of the entire area of interest or
+	of the pass duration. The limit remains relative to the original pass
+	even when both ends are trimmed in a chain of overlaps.
+
+	A small numerical tolerance of 0.01 percent applies to the retained
+	coverage threshold because of swath-boundary sampling. Setting the
+	allowance does not enable trimming by itself; both satellites must still
+	be marked ``trimmable: true``. A value of 100 allows all area coverage to
+	be lost, but does not remove the minimum-duration or scheduling-delay
+	constraints.
+
+For example, allow each of these satellites to lose up to 5 percent of its
+original coverage when resolving a conflict::
+
+    satellites:
+        metop-sga1:
+            day: 0.7
+            night: 0.5
+            trimmable: true
+            max_coverage_loss: 5
+        fengyun 3f:
+            day: 0.8
+            night: 0.2
+            trimmable: true
+            max_coverage_loss: 5

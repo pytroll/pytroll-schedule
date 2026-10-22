@@ -40,7 +40,8 @@ NUMBER_OF_FOVS = {
     "atms": 96,
     "ascat": 42,
     "viirs": 6400,
-    "mwhs-2": 98
+    "mwhs-2": 98,
+    "metimage": 3144,
 }
 
 SATELLITE_NAMES = {"npp": "Suomi NPP",
@@ -82,7 +83,8 @@ VIIRS_PLATFORM_NAMES = ["SUOMI NPP", "SNPP",
 MERSI_PLATFORM_NAMES = ["FENGYUN 3C", "FENGYUN-3C", "FY-3C"]
 MERSI2_PLATFORM_NAMES = ["FENGYUN 3D", "FENGYUN-3D", "FY-3D",
                          "FENGYUN 3E", "FENGYUN-3E", "FY-3E"]
-MERSI3_PLATFORM_NAMES = ["FENGYUN 3F", "FENGYUN-3F", "FY-3F"]
+MERSI3_PLATFORM_NAMES = ["FENGYUN 3F", "FENGYUN-3F", "FY-3F",
+                         "FENGYUN 3H", "FENGYUN-3H", "FY-3H"]
 
 SATELLITE_MEOS_TRANSLATION = {"NOAA 19": "NOAA_19",
                               "NOAA 18": "NOAA_18",

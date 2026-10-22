@@ -84,3 +84,59 @@ def fake_xml_schedule_file(tmp_path):
         fpt.write(FAKE_XML_SCHEDULE)
 
     return file_path
+
+
+NOVEMBER_2025_TLES = """NOAA-21
+1 54234U 22150A   25324.73837060  .00000000  00000+0  74562-4 0 00019
+2 54234  98.7436 261.3254 0002715  82.9084 208.0969 14.19515328156977
+FENGYUN 3F
+1 57490U 23111A   25325.02782213  .00000090  00000+0  62835-4 0  9991
+2 57490  98.7110  33.6690 0000896  74.2365 285.8911 14.19885292119329
+METOP-SGA1
+1 65159U 25172A   25324.45800682  .00000090  00000+0  61125-4 0  9999
+2 65159  98.6957  22.6525 0001569  98.6969 261.4387 14.21581732 14136
+AWS
+1 60543U 24149CD  25324.47370566  .00001306  00000+0  14164-3 0  9990
+2 60543  97.7048  35.6425 0003571  86.6949 273.4677 14.89823109 68227
+"""
+
+
+@pytest.fixture
+def november_2025_tle_file(tmp_path):
+    """Write real TLEs of NOAA-21, FY-3F, Metop-SGA1 and AWS from November 2025."""
+    file_path = tmp_path / "november_2025.tle"
+    file_path.write_text(NOVEMBER_2025_TLES)
+    return file_path
+
+
+OCTOBER_2026_TLES = """FENGYUN 3F
+1 57490U 23111A   26288.96242057  .00000042  00000+0  39992-4 0  9995
+2 57490  98.6717 356.6449 0001514  96.7864 263.3485 14.19955112166005
+FENGYUN 3H
+1 65815U 25219A   26288.53756938  .00000059  00000+0  48351-4 0  9994
+2 65815  98.6870 227.0075 0001548  78.7299 281.4051 14.19937292 54465
+METOP-SGA1
+1 65159U 25172A   26288.60636292  .00000036  00000+0  36401-4 0  9999
+2 65159  98.7403 346.3339 0000964 107.9009 252.2274 14.21470582 60896
+"""
+
+
+@pytest.fixture
+def october_2026_tle_file(tmp_path):
+    """Write real TLEs of FY-3F, FY-3H and Metop-SGA1 from October 2026."""
+    file_path = tmp_path / "october_2026.tle"
+    file_path.write_text(OCTOBER_2026_TLES)
+    return file_path
+
+
+@pytest.fixture(autouse=True)
+def _no_tle_download(monkeypatch):
+    """Fail fast if a test would fetch TLEs from the internet.
+
+    Tests must use fixed TLEs (a fixture file) so that they are reproducible
+    and do not depend on, or get throttled by, celestrak.
+    """
+    def refuse(*args, **kwargs):
+        raise RuntimeError("Tests must not fetch TLEs from the internet; use a fixture TLE file")
+
+    monkeypatch.setattr("pyorbital.tlefile.fetch", refuse)

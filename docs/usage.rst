@@ -61,6 +61,34 @@ Usage of the schedule script::
 	  --scisys              generate a SCISYS schedule file
 	  -p, --plot            generate plot images
 	  -g, --graph           save graph info
+	  --html                generate an interactive HTML page of the schedule
+	                        (see :doc:`viewer`)
+
+
+When using ``--avoid``, satellite identifiers in the XML are matched against
+both the declared satellite names and their configured ``schedule_name``
+aliases. For sequential runs on different antennas, use the same
+``schedule_name`` for each shared satellite in both configurations.
+Alias matches require overlapping reception windows; other passes of the
+same satellite are not penalised merely because their names match.
+Avoidance retains its existing scoring penalty rather than strictly
+excluding matching passes.
+
+
+.. warning::
+
+   Coordinated scheduling writes local pickle artifacts, and ``--multiproc``
+   loads the per-station ``allpasses.<station>.pkl`` results. The output
+   directory must be trusted and must not be writable by untrusted users.
+   Do not supply or reuse pickle artifacts from untrusted sources: loading
+   a malicious pickle can execute arbitrary code.
+
+.. warning::
+
+   Legacy ``ftp://`` output URLs are retained for compatibility. FTP uploads
+   send credentials and schedule contents without encryption; deployments
+   using them must explicitly accept that risk. For sensitive transfers,
+   write the output locally and use a separate encrypted transfer mechanism.
 
 
 Script to create instrument swath outlines in shapefile format for all passes scheduled
